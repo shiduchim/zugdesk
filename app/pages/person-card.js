@@ -350,6 +350,7 @@ function eventItem(e, b) {
     h('div', { class: 'tl-head' }, h('span', { class: 'via' }, [store.eventTypeLabel(e.type), ...who].join(' · ')), h('time', { datetime: e.at }, dateOnly(e.at))),
     h('p', { dir: 'auto', class: 'prewrap' }, e.text),
     h('div', { class: 'tl-actions' },
+      e.noteId ? h('a', { class: 'linkish', href: `#/home/note/${encodeURIComponent(e.noteId)}`, 'data-id': 'person-card.event-home-note' }, 'Open Home note') : null,
       h('button', { type: 'button', class: 'linkish', 'data-id': 'person-card.event-edit', onClick: () => eventSheet(e, b) }, 'Edit'),
       h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'person-card.event-delete', onClick: async () => {
         if (await confirmDialog({ title: 'Delete this entry?', text: 'It disappears from every place it is linked to.', ok: 'Delete', danger: true, dataId: 'person-card.event-delete-dialog' })) { await store.events.remove(e.id); toast('Deleted'); }

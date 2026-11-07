@@ -3,7 +3,7 @@
 // attachments) and the sheets (record/edit conversation, follow-up, folder,
 // filters, view picker). Views only arrange these; data always goes through store.js.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, promptText, bubbles, confirmDialog, comingLater } from '../js/ui.js';
+import { h, icon, toast, sheet, promptText, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { S, D, LAYOUTS, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel, optionsFor, clearFilters, fresh } from './contacts-data.js';
 
@@ -75,7 +75,7 @@ function actions(c) {
     h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.followup-btn', onClick: () => followUpSheet(c) }, ico('clock'), 'Set follow-up'),
     h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.folder-btn', onClick: () => folderSheet(c) }, ico('folder'), 'Move to folder'),
     h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.edit-btn', onClick: () => navigate(`/contacts/${encodeURIComponent(c.id)}/edit`) }, ico('edit'), 'Edit contact'),
-    h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.share-btn', onClick: () => comingLater('Send my profile', 7) }, ico('send'), 'Send my profile'));
+    h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.share-btn', onClick: async () => { const m = await import('./profile-share.js'); m.openShare({ contactId: c.id }); } }, ico('send'), 'Send my profile'));
 }
 
 function focusComposer(from) {
@@ -175,6 +175,7 @@ export function eventItem(e, c, latest) {
     h('p', { dir: 'auto' }, e.text),
     others.length ? h('div', { class: 'note' }, 'Also linked: ' + others.join(', ')) : null,
     h('div', { class: 'tl-actions' },
+      e.noteId ? h('a', { class: 'linkish', href: `#/home/note/${encodeURIComponent(e.noteId)}`, 'data-id': 'contact.event.home-note' }, 'Open Home note') : null,
       h('button', { class: 'linkish', type: 'button', 'data-id': 'contact.event.edit', onClick: () => eventSheet(e) }, 'Edit'),
       h('button', { class: 'linkish danger-text', type: 'button', 'data-id': 'contact.event.delete', onClick: async () => {
         if (await confirmDialog({ title: 'Delete this entry?', text: 'It disappears from every place it is linked to.', ok: 'Delete', danger: true, dataId: 'contact.event.delete-dialog' })) {

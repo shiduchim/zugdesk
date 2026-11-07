@@ -151,3 +151,38 @@
   --sh-ended-panel-bg:var(--danger-bg);
   --sh-ended-panel-text:var(--danger);
 }
+:root{
+  /* Stage 6 — Home (layout from source/ZivugMatch_Single_Mode_Home_Final_v8 .html, Claude look) */
+  --home-max:1120px;                 /* Home reading width on a computer */
+  --home-aside:340px;                /* Follow Ups column */
+  --note-plain-bg:var(--surface);  --note-plain-edge:var(--border);
+  --note-blue-bg:#EEF3FB;          --note-blue-edge:#D3DFF2;
+  --note-yellow-bg:#FBF5DD;        --note-yellow-edge:#EADFAE;
+  --note-peach-bg:#FCEFE5;         --note-peach-edge:#EFD3BE;
+  --note-green-bg:#EBF4EC;         --note-green-edge:#C9DFCC;
+  --note-lilac-bg:#F3EEF9;         --note-lilac-edge:#DDD1EC;
+  --note-hover-edge:#C9C4B8;
+  --note-pin:var(--link);
+  --note-pad:14px;
+  --fu-bg:#F6F8FC;  --fu-edge:#DCE4F1;  --fu-title:#35588F;  --fu-sub:#6E7F99;  --fu-line:#E3E9F3;
+  --fu-dot:24px;    --fu-dot-edge:#B9C8DE;  --fu-dot-done-bg:var(--ok-bg);  --fu-dot-done-edge:var(--ok);  --fu-dot-done-text:var(--ok);
+  --hist-date-width:64px;
+  --hl-known:#DCE6F7;  --hl-new:#EAE1F5;  --hl-time:#F8EBC8;  --hl-status:#F9DED4;
+  --chip-accepted-bg:var(--ok-bg);  --chip-accepted-text:var(--ok);  --chip-accepted-edge:#BFDCC6;
+  --chip-time-edge:#E6D3A2;  --chip-new-edge:#D9CBEA;  --chip-status-edge:#EFC6B8;
+  --star:#6B84AB;  --dot-on:#6B84AB;  --dot-off:#AFB7C2;  --dot-glow:0 0 0 4px #DDE8F5;
+  --dot-size:9px;  --dot-tap:32px;
+  --qmenu-width:290px;  --qmenu-max:min(420px,calc(100dvh - 24px));  --swatch:32px;
+  --ed-min:96px;
+}
+:root{
+  /* Stage 7 — My Profile (source/My Profile.html + my profile short tab.html, Claude look) */
+  --mp-col:680px;                   /* centred reading column */
+  --mp-nav-width:220px;             /* desktop section navigator */
+  --mp-card-bg:var(--surface-2);    /* short-version boxes */
+  --mp-card-edge:var(--border);
+  --mp-text-font:var(--font-mono);
+  --mp-text-size:12.5px;
+  --mp-untranslated:var(--muted);
+  --mp-preview-max:40dvh;
+}

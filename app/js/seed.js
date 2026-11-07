@@ -274,3 +274,71 @@ export function makeDemoShidduchim() {
   ev('demo_sev_043', 'demo_try_005', 'demo_off_004', 'נועה: No. The shidduch ended.', ago(20), { kind: 'ended', source: 'רחל לוי' });
   return { offers: O, tries: T, stageEvents: E, dateEvents: D };
 }
+
+// ---------- Stage 6: fictional Home notes ----------
+// A note is one record (title, colour, pin, links). Its dated entries are conversation
+// records (events with noteId), so they also show in the linked contact / person history.
+export function makeDemoNotes() {
+  const day = 86400000, hour = 3600000;
+  const ago = (d, hrs = 0) => new Date(Date.now() - d * day - hrs * hour).toISOString();
+  const dayAhead = (d) => new Date(Date.now() + d * day).toISOString().slice(0, 10);
+  const N = [], E = [], F = [], A = [];
+  const note = (id, title, color, pinned, contactIds, personIds, entries) => {
+    N.push({ id, demo: true, title, color, pinned, contactIds, personIds, createdAt: entries[0][1], updatedAt: entries[entries.length - 1][1] });
+    entries.forEach(([text, at], i) => E.push({ id: `${id}_e${i + 1}`, demo: true, noteId: id, type: 'note', contactIds, personIds, text, at }));
+  };
+  note('demo_note_001', 'Mrs. Cohen about Yehuda Stern', 'blue', true, ['demo_c_001'], ['demo_p_001'], [
+    ['Spoke to Mrs. Cohen about Yehuda Stern. She will ask the family whether he is available right now.', ago(6, 2)],
+    ['Called Mrs. Cohen again. She heard back: they are happy to go ahead. References next.', ago(2, 4)]]);
+  note('demo_note_002', 'Questions to ask references', 'yellow', true, [], [], [
+    ['Ask about character, kindness, family values and how he treats people. Remember to listen carefully and write it down right after.', ago(12)]]);
+  note('demo_note_003', 'Dovid Weiss — second suggestion', 'peach', false, ['demo_c_004'], ['demo_p_002'], [
+    ['Rebbetzin Katz sent Dovid Weiss again — Rabbi Friedman suggested him last month too.', ago(4, 3)],
+    ['Want to hear from Rabbi Adler (reference) before deciding.', ago(4, 1)]]);
+  note('demo_note_004', 'Rabbi Friedman has new ideas', 'plain', false, ['demo_c_002'], [], [
+    ['Rabbi Friedman says he has a few new ideas. Call him back next week.', ago(1, 5)]]);
+  note('demo_note_005', 'Shira Adler — 2nd try', 'green', false, ['demo_c_010'], ['demo_p_003'], [
+    ['Mrs. Dahan says Shira agreed to try again. Date 1 is arranged.', ago(1, 1)]]);
+  F.push({ id: 'demo_hfu_001', demo: true, noteId: 'demo_note_004', contactId: 'demo_c_002', personId: null, kind: 'task', text: 'Call Rabbi Friedman back about his new ideas', dueAt: dayAhead(6), done: false, createdAt: ago(1, 5) });
+  F.push({ id: 'demo_hfu_002', demo: true, noteId: null, contactId: 'demo_c_003', personId: null, kind: 'waiting', text: 'Waiting for Mrs. Mizrahi to send the profile she mentioned', dueAt: null, done: false, createdAt: ago(3) });
+  F.push({ id: 'demo_hfu_003', demo: true, noteId: 'demo_note_003', contactId: 'demo_c_004', personId: 'demo_p_002', kind: 'task', text: 'Ask Rabbi Adler about Dovid Weiss', dueAt: dayAhead(2), done: true, doneAt: ago(0, 3), createdAt: ago(4, 1) });
+  A.push({ id: 'demo_act_001', demo: true, at: ago(2, 3), what: 'Changed note colour', text: 'Mrs. Cohen about Yehuda Stern · Blue', noteId: 'demo_note_001', contactIds: [], personIds: [], href: null });
+  return { notes: N, events: E, followUps: F, activity: A };
+}
+
+// ---------- Stage 7: a fictional example owner profile ----------
+// Same sample identity as the My Profile design (source/My Profile.html). Marked demo so
+// "Remove all demo data" clears it; the first real edit turns it into the owner's own record.
+export function makeDemoProfile() {
+  const day = 86400000;
+  const ago = (d) => new Date(Date.now() - d * day).toISOString();
+  const facts = [
+    ['f_bg', 'Religious background', 'Chabad'], ['f_learn', 'Learning', 'Daily learning seder'],
+    ['f_edu', 'Education', 'Yeshiva in Israel; degree in architecture'], ['f_height', 'Height', '178 cm'],
+    ['f_lang', 'Languages', 'Hebrew, English, Russian'], ['f_status', 'Status', 'Never married'],
+    ['f_family', 'Family', 'Parents in Jerusalem; 2 married sisters, 1 brother'], ['f_int', 'Interests', 'Hiking, piano, cooking for friends'],
+    ['f_kohen', 'Kohen', 'No'],
+  ].map(([id, label, value]) => ({ id, label, value }));
+  const profile = { id: 'me', demo: true, name: 'Daniel Ben-Ami', age: '34', city: 'Jerusalem', occupation: 'Architect',
+    intro: 'An architect who loves good conversations and a welcoming home.', facts,
+    about: 'Warm, thoughtful, and down to earth. I enjoy learning, good conversations, and making a home feel welcoming. Weekends are for a long walk, a good sefer, and cooking something for whoever shows up.',
+    looking: 'A kind, sincere woman who values Torah, warmth, and building a happy home together. Someone who laughs easily and takes people seriously.',
+    sections: [],
+    contact: { inquiriesName: 'Mrs. Rivka Ben-Ami (mother)', inquiriesPhone: '052-555-0118', phone: '052-555-0177', email: 'daniel.benami@example.com' },
+    references: [
+      { id: 'ref_1', name: 'Rabbi Moshe Levi', relation: 'My rosh yeshiva', phone: '02-555-0144', privateNote: 'Ask him first before giving out his number.' },
+      { id: 'ref_2', name: 'Mr. Avi Shapiro', relation: 'Friend since yeshiva', phone: '054-555-0190', privateNote: '' }],
+    shortFacts: ['f_bg', 'f_learn', 'f_edu', 'f_height', 'f_lang'],
+    lang: 'en', translations: {}, createdAt: ago(30), updatedAt: ago(18) };
+  const cohenText = 'Name: Daniel Ben-Ami\nAge: 34\nCity: Jerusalem\nWork: Architect at a design studio\nBackground: Chabad\nHeight: 178 cm\nLooking for: A kind, sincere woman who values Torah, warmth, and building a happy home together.\nPhotos available on request.';
+  const versions = [{ id: 'demo_pv_001', demo: true, title: 'Mrs. Cohen', lang: 'en', text: cohenText, savedAt: ago(16), createdAt: ago(16) }];
+  const notes = [
+    { id: 'demo_note_me1', demo: true, me: true, title: 'Ask Rabbi Levi if he’ll be a reference', color: 'plain', pinned: false, contactIds: [], personIds: [], createdAt: ago(9), updatedAt: ago(9) },
+    { id: 'demo_note_me2', demo: true, me: true, title: 'Mrs. Cohen will show my profile', color: 'plain', pinned: false, contactIds: ['demo_c_001'], personIds: [], createdAt: ago(5), updatedAt: ago(5) }];
+  const events = [
+    { id: 'demo_note_me1_e1', demo: true, noteId: 'demo_note_me1', type: 'note', contactIds: [], personIds: [], text: 'Ask Rabbi Levi if he’ll be a reference.', at: ago(9) },
+    { id: 'demo_note_me2_e1', demo: true, noteId: 'demo_note_me2', type: 'note', contactIds: ['demo_c_001'], personIds: [], text: 'Mrs. Cohen will show my profile to the Levin family this week. Call her Thursday.', at: ago(5) }];
+  const shares = [{ id: 'demo_sh_001', demo: true, at: ago(5), createdAt: ago(5), recipientContactId: 'demo_c_001', recipientName: 'Mrs. Rivka Cohen', channel: 'whatsapp',
+    what: 'Short version · Mrs. Cohen', text: cohenText, files: [], confirmed: true }];
+  return { profile, versions, notes, events, shares };
+}
