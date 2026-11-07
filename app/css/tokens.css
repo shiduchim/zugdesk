@@ -58,3 +58,17 @@
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --safe-top:env(safe-area-inset-top,0px);
 }
+:root{
+  /* Stage 2 — Contacts + shared controls */
+  --btn-small-height:36px;
+  --chip-height:34px;
+  --bubble-height:36px;
+  --selected-bg:#EFEBE1;
+  --selected-edge:#1F1F1E;
+  --dir-row-pad:10px;
+  --a-upper-height:clamp(220px,40dvh,380px);  /* Layout A: names + quick facts area */
+  --rail-width:104px;                          /* narrow sidebar view */
+  --desk-nav-width:200px;                      /* desktop: app navigation column */
+  --desk-dir-width:360px;                      /* desktop: contact directory column */
+  --pane-height:calc(100dvh - var(--topbar-height) - var(--safe-top) - var(--nav-height) - var(--safe-bottom) - 12px);
+}

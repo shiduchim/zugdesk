@@ -22,6 +22,9 @@ const NAV = {
 
 route('/home', () => import('../pages/home.js'));
 route('/contacts', () => import('../pages/contacts.js'));
+route('/contacts/new', () => import('../pages/contact-form.js'));
+route('/contacts/:id/edit', () => import('../pages/contact-form.js'));
+route('/contacts/:id/history', () => import('../pages/contacts.js'));
 route('/contacts/:id', () => import('../pages/contacts.js'));
 route('/people', () => import('../pages/people.js'));
 route('/shidduchim', () => import('../pages/shidduchim.js'));
