@@ -14,7 +14,7 @@
 .manage-row{display:flex;align-items:center;gap:4px;min-height:40px;border-top:1px solid var(--border)}
 .manage-row>span{flex:1;min-width:0;overflow-wrap:anywhere}
 @media (max-width:420px){
-  .form-foot .manage{flex-basis:100%}
+  .form-foot .manage{flex-basis:100%;text-align:start}
   .form-foot .spacer{display:none}
   .form-foot .btn{flex:1}
 }

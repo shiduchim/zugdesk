@@ -157,3 +157,62 @@ export function makeDemoActivity(contacts) {
   }
   return { events, followUps };
 }
+
+// ---------- Stage 3/4: fictional suggested people ----------
+// Linked to the hand-written starter contacts (demo_c_001 …). Originals are kept
+// word for word as "received" text; extracted fields only hold what the text says.
+export function makeDemoPeople() {
+  const day = 86400000;
+  const ago = (d) => new Date(Date.now() - d * day).toISOString();
+  const P = [], SRC = [], INT = [], EV = [], FU = [];
+  const card = (id, role, name, number, contactId = null) => ({ id, role, name, number, email: '', contactId });
+
+  P.push({ id: 'demo_p_001', demo: true, kind: 'guy', name: 'Yehuda Stern', age: '29', city: 'Jerusalem', occupation: 'Accountant',
+    languages: ['English', 'Hebrew'], about: 'Calm and organised. Learns every morning before work and enjoys hiking.',
+    looking: 'Someone warm and sincere who values a Torah home.', maxAge: '28',
+    contactCards: [card('k1', 'shadchan', 'Mrs. Rivka Cohen', '053-555-0001', 'demo_c_001'), card('k2', 'mother', 'Mrs. Stern', '052-555-7781')],
+    sender: 'Mrs. Rivka Cohen', senderContactId: 'demo_c_001', know: ['Never spoke'], yearsKnown: '', howKnow: '',
+    answers: { pStatus: ['Never been married'], pLevel: 'Strong', pBackground: ['Yeshivish'], pTraits: ['Kind', 'Quiet'] },
+    religiousOther: '', contactIds: ['demo_c_001'], createdAt: ago(9), updatedAt: ago(9) });
+  SRC.push({ id: 'demo_src_001', demo: true, personId: 'demo_p_001', sender: 'Mrs. Rivka Cohen', senderContactId: 'demo_c_001', receivedAt: ago(9),
+    text: 'Name: Yehuda Stern\nAge: 29\nCity: Jerusalem\nOccupation: Accountant\nLanguages: English, Hebrew\n\nAbout: Calm and organised. Learns every morning before work and enjoys hiking.\nLooking for: Someone warm and sincere who values a Torah home.\nUp to age: 28\n\nShadchan: Mrs. Rivka Cohen 053-555-0001\nMother: Mrs. Stern 052-555-7781' });
+  INT.push({ id: 'demo_int_001', demo: true, personId: 'demo_p_001', side: 'mine', value: 'Want to learn more', reason: 'Sounds serious and settled.', at: ago(8) });
+  INT.push({ id: 'demo_int_002', demo: true, personId: 'demo_p_001', side: 'theirs', value: 'Checking availability', reason: '', reportedBy: 'Mrs. Rivka Cohen', reportedByContactId: 'demo_c_001', at: ago(6) });
+  EV.push({ id: 'demo_pev_001', demo: true, type: 'whatsapp', contactIds: ['demo_c_001'], personIds: ['demo_p_001'], at: ago(6),
+    text: 'Mrs. Cohen will ask the family whether he is available right now.' });
+  FU.push({ id: 'demo_pfu_001', demo: true, personId: 'demo_p_001', contactId: 'demo_c_001', text: 'Ask Mrs. Cohen if she heard back', dueAt: ago(-3).slice(0, 10), done: false });
+
+  P.push({ id: 'demo_p_002', demo: true, kind: 'guy', name: 'Dovid Weiss', age: '31', city: 'Lakewood', occupation: 'Software developer',
+    languages: ['English', 'Yiddish'], about: 'Works part-time and learns afternoons. Friendly, enjoys music.', looking: '', maxAge: '',
+    contactCards: [card('k1', 'shadchan', 'Rabbi Yosef Friedman', '(732) 555-0002', 'demo_c_002'), card('k2', 'reference', 'Rabbi Adler', ''), card('k3', 'unknown', '', '(848) 555-4410')],
+    sender: 'Rebbetzin Devorah Katz', senderContactId: 'demo_c_004', know: [], yearsKnown: '', howKnow: '',
+    answers: { pBackground: ['Yeshivish'], pTraits: ['Outgoing'] },
+    religiousOther: '', contactIds: ['demo_c_002', 'demo_c_004'], createdAt: ago(20), updatedAt: ago(4) });
+  SRC.push({ id: 'demo_src_002', demo: true, personId: 'demo_p_002', sender: 'Rabbi Yosef Friedman', senderContactId: 'demo_c_002', receivedAt: ago(20),
+    text: 'Dovid Weiss, 31, Lakewood.\nSoftware developer, learns afternoons.\nShadchan: Rabbi Yosef Friedman (732) 555-0002\nReference: Rabbi Adler' });
+  SRC.push({ id: 'demo_src_003', demo: true, personId: 'demo_p_002', sender: 'Rebbetzin Devorah Katz', senderContactId: 'demo_c_004', receivedAt: ago(4),
+    text: 'Name: Dovid Weiss\nAge: 31\nCity: Lakewood\nOccupation: Software developer\nAbout: Works part-time and learns afternoons. Friendly, enjoys music.\nContact: (848) 555-4410' });
+  INT.push({ id: 'demo_int_003', demo: true, personId: 'demo_p_002', side: 'mine', value: 'Not sure yet', reason: 'Want to hear from a reference first.', at: ago(4) });
+
+  P.push({ id: 'demo_p_003', demo: true, kind: 'girl', name: 'Shira Adler', age: '27', city: 'Beit Shemesh', occupation: 'Teacher',
+    languages: ['Hebrew', 'English'], about: 'Teaches second grade. Family-oriented and enjoys long walks.', looking: 'A kind, growing person who values learning.', maxAge: '',
+    contactCards: [card('k1', 'shadchan', 'Mrs. Malka Dahan', '053-555-0010', 'demo_c_010')],
+    sender: 'Mrs. Malka Dahan', senderContactId: 'demo_c_010', know: ['Talked by phone'], yearsKnown: '', howKnow: 'Spoke once about a community event',
+    answers: { pStatus: ['Never been married'], pBackground: ['Dati Leumi'] },
+    religiousOther: '', contactIds: ['demo_c_010'], createdAt: ago(12), updatedAt: ago(12) });
+  SRC.push({ id: 'demo_src_004', demo: true, personId: 'demo_p_003', sender: 'Mrs. Malka Dahan', senderContactId: 'demo_c_010', receivedAt: ago(12),
+    text: 'Name: Shira Adler\nAge: 27\nCity: Beit Shemesh\nOccupation: Teacher\nLanguages: Hebrew, English\nAbout: Teaches second grade. Family-oriented and enjoys long walks.\nLooking for: A kind, growing person who values learning.\nShadchan: Mrs. Malka Dahan 053-555-0010' });
+
+  P.push({ id: 'demo_p_004', demo: true, kind: 'girl', name: 'נועה ברק', age: '26', city: 'Petah Tikva', occupation: 'אחות',
+    languages: ['Hebrew'], about: 'שמחה, חמה ואוהבת לעזור.', looking: '', maxAge: '',
+    contactCards: [card('k1', 'shadchan', 'רחל לוי', '054-555-0020', 'demo_c_020')],
+    sender: 'רחל לוי', senderContactId: 'demo_c_020', know: [], yearsKnown: '', howKnow: '',
+    answers: {}, religiousOther: '', contactIds: ['demo_c_020'], createdAt: ago(3), updatedAt: ago(3) });
+  SRC.push({ id: 'demo_src_005', demo: true, personId: 'demo_p_004', sender: 'רחל לוי', senderContactId: 'demo_c_020', receivedAt: ago(3),
+    text: 'שם: נועה ברק\nגיל: 26\nעיר: Petah Tikva\nמקצוע: אחות\nעל עצמי: שמחה, חמה ואוהבת לעזור.\nשדכנית: רחל לוי 054-555-0020' });
+
+  // Saved for later: an original whose owner is not filed yet.
+  SRC.push({ id: 'demo_src_006', demo: true, personId: null, sender: '', senderContactId: null, receivedAt: ago(1),
+    text: 'Forwarded from a group:\n30, Brooklyn, works in IT. Looking for someone kind and steady.\nContact: (718) 555-9032' });
+  return { people: P, sources: SRC, interests: INT, events: EV, followUps: FU };
+}

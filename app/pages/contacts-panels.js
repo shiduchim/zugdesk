@@ -211,9 +211,11 @@ function peopleSection(c) {
   const ppl = [...ids].map(id => D.peopleById.get(id)).filter(Boolean);
   return h('section', { class: 'psec', 'data-id': 'contact.people' },
     h('h3', { class: 'eyebrow' }, 'People suggested'),
-    ppl.length ? h('div', {}, ppl.map(p => h('a', { class: 'row-link', href: '#/people', 'data-id': 'contact.person-link' },
-      h('div', { class: 'avatar' }, store.initials(p)), h('div', { class: 'row-main' }, h('div', { class: 'row-title', dir: 'auto' }, p.name || store.displayName(p))))))
-      : h('p', { class: 'note' }, 'No suggested people linked yet. Adding people arrives in Stage 3.'));
+    ppl.length ? h('div', {}, ppl.map(p => h('a', { class: 'row-link', href: `#/people/${encodeURIComponent(p.id)}`, 'data-id': 'contact.person-link' },
+      h('div', { class: 'avatar' }, store.initials(p)), h('div', { class: 'row-main' }, h('div', { class: 'row-title', dir: 'auto' }, p.name || store.displayName(p)),
+        h('div', { class: 'row-sub', dir: 'auto' }, [p.age, p.city, p.occupation].filter(Boolean).join(' · ') || 'Details not recorded')))))
+      : h('p', { class: 'note' }, 'No suggested people linked yet.'),
+    h('a', { class: 'btn small', href: `#/people/new/by/${encodeURIComponent(c.id)}`, 'data-id': 'contact.add-person' }, 'Add a person they suggested'));
 }
 
 function notesSection(c) {

@@ -103,6 +103,7 @@ export function sheet({ title, dataId, body, actions = [], className = '' }) {
         h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger' : ''), type: 'button', 'data-id': dataId + '.' + a.id,
           onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label))) : null);
     dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
+    dlg.addEventListener('close', () => finish(null));
     document.body.append(dlg);
     dlg.showModal();
     dlg.finish = finish;

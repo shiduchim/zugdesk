@@ -3,10 +3,11 @@
 // `demo: true` marks fictional seed records so Settings can remove them
 // without touching anything the owner typed.
 import { idb, tx, STORES, DB_VERSION, deleteDatabase } from './db.js';
-import { makeDemoContacts, makeDemoActivity } from './seed.js';
+import { makeDemoContacts, makeDemoActivity, makeDemoPeople } from './seed.js';
 
 export const SCHEMA_VERSION = DB_VERSION;
-export const APP_VERSION = '0.2.0'; // Stage 2
+export const APP_VERSION = '0.4.0';
+export const STAGE = 4; // last finished stage (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -71,7 +72,8 @@ const PREF_DEFAULTS = {
   navArrangement: 'three',   // 'three' = Home/Contacts/Shidduchim (+Profile); 'four' adds People & Ideas
   contactsLayout: 'a',       // phone view: a | split | rail | tabs | list | inbox (spec/contacts.md CT-13)
   contactsSort: 'recent',    // recent | oldest | name | city | language | community
-  contactsSplit: 260,        // upper pane height (px) in the top/bottom split view
+  contactsSplit: 260,
+  personKind: 'guy',         // Add Person: last chosen Guy / Girl        // upper pane height (px) in the top/bottom split view
 };
 export function getPrefs() {
   try { return { ...PREF_DEFAULTS, ...(JSON.parse(localStorage.getItem(PREF_KEY) || '{}')) }; }
@@ -104,7 +106,25 @@ export async function init() {
     await addDemoActivity((await contacts.list()).filter(c => c.demo));
     await setMeta('demoActivityV1', { at: now() });
   }
+  // Stage 3/4: a few fictional suggested people, linked to the starter demo contacts.
+  if (!(await getMeta('demoPeopleV1'))) {
+    if ((await contacts.list()).some(c => c.demo)) await loadDemoPeople();
+    await setMeta('demoPeopleV1', { at: now() });
+  }
   await setMeta('schemaVersion', SCHEMA_VERSION);
+}
+
+export async function loadDemoPeople() {
+  const d = makeDemoPeople();
+  const have = new Set((await people.list()).map(p => p.id));
+  if (d.people.every(p => have.has(p.id))) return 0;
+  await people.saveMany(d.people.filter(p => !have.has(p.id)));
+  for (const [col, rows] of [[sources, d.sources], [interests, d.interests], [events, d.events], [followUps, d.followUps]]) {
+    const ids = new Set((await col.list()).map(r => r.id));
+    const fresh = rows.filter(r => !ids.has(r.id));
+    if (fresh.length) await col.saveMany(fresh);
+  }
+  return d.people.length;
 }
 
 // Adds fictional demo contacts up to `total` (idempotent: demo ids are fixed).
@@ -238,21 +258,70 @@ export const CHOICE_DEFAULTS = {
   roles: ['shadchan', 'reference', 'friend', 'family', 'helper'],
 };
 export const CHOICE_NAMES = { ages: 'Ages they work with', communities: 'Religious groups', languages: 'Languages', roles: 'Roles' };
+// Add Person lists (spec/add-person.md AP-06 / AP-10). Same storage, own keys.
+export const PERSON_CHOICE_DEFAULTS = {
+  pStatus: ['Never been married', 'Divorced', 'Has children'],
+  pReligious: ['Kohen', 'Prays 3× daily', 'Baal Teshuvah', 'Kosher for Kohen'],
+  pLevel: ['Light', 'Moderate', 'Strong'],
+  pTzniut: ['Light', 'Moderate', 'Strong'],
+  pBackground: ['Chabad', 'Yeshivish', 'Breslev', 'Sephardi', 'Dati Leumi'],
+  pTraits: ['Kind', 'Quiet', 'Outgoing', 'Athletic'],
+  pBody: ['Regular', 'Overweight', 'Highly overweight'],
+};
 export async function getChoices() {
   const saved = (await getMeta('choices')) || {};
   const out = {};
-  for (const [k, defs] of Object.entries(CHOICE_DEFAULTS)) out[k] = saved[k] || defs.map(v => ({ v, hidden: false }));
+  for (const [k, defs] of Object.entries({ ...CHOICE_DEFAULTS, ...PERSON_CHOICE_DEFAULTS })) out[k] = saved[k] || defs.map(v => ({ v, hidden: false }));
+  for (const [k, list] of Object.entries(saved)) if (!(k in out) && Array.isArray(list)) out[k] = list; // user-made categories
   return out;
 }
 export async function saveChoices(choices) { await setMeta('choices', choices); emit({ store: 'meta', type: 'choices' }); }
+
+// ---------- Add Person categories (order, hide, delete, custom) ----------
+// Saved in `meta` so backups carry them. Deleting a category only changes the form;
+// values already saved on people stay on the person record.
+export const PERSON_CATEGORY_DEFAULTS = [
+  { key: 'about', name: 'About & Looking For', jump: 'About' },
+  { key: 'personal', name: 'Personal Info', jump: 'Personal' },
+  { key: 'contacts', name: 'Contacts & Source', jump: 'Contacts' },
+  { key: 'known', name: 'How well do I know them?', jump: 'Know them' },
+  { key: 'status', name: 'Status', jump: 'Status' },
+  { key: 'religious', name: 'Religious', jump: 'Religious' },
+  { key: 'lifestyle', name: 'Character & Lifestyle', jump: 'Character & Lifestyle' },
+].map(c => ({ ...c, builtin: true, hidden: false }));
+export async function getPersonCategories() {
+  return (await getMeta('personCategories')) || PERSON_CATEGORY_DEFAULTS.map(c => ({ ...c }));
+}
+export async function savePersonCategories(list) { await setMeta('personCategories', list); emit({ store: 'meta', type: 'personCategories' }); }
+
+// ---------- people helpers ----------
+export const PHONE_ROLES = [['person', 'Their phone'], ['shadchan', 'Shadchan'], ['unknown', 'Unknown'], ['mother', 'Mother'], ['father', 'Father'], ['reference', 'Reference'], ['other', 'Other']];
+export const phoneRoleLabel = (r) => (PHONE_ROLES.find(x => x[0] === r) || PHONE_ROLES[2])[1];
+// No plus signs in the app: an international prefix is written as 00.
+export function cleanPhone(n) { const s = (n || '').trim(); return s.startsWith(String.fromCharCode(43)) ? '00' + s.slice(1) : s; }
+export const phoneDigits = (p) => (p || '').replace(/\D/g, '').slice(-9);
+export const personName = (p) => (p && p.name) || '(no name yet)';
+export async function sourcesForPerson(personId) {
+  return (await sources.byIndex('personId', personId)).sort((a, b) => (a.receivedAt || a.createdAt || '').localeCompare(b.receivedAt || b.createdAt || ''));
+}
+export async function unfiledSources() {
+  return (await sources.list()).filter(s => !s.personId).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+}
+export async function interestsForPerson(personId) {
+  return (await interests.byIndex('personId', personId)).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+}
+export async function eventsForPerson(personId) {
+  return (await events.byIndex('personIds', personId)).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+}
 
 // ---------- small helpers pages share ----------
 export function displayName(c) {
   return [c.title, c.firstName, c.lastName].filter(Boolean).join(' ').trim() || c.name || '(no name)';
 }
 export function initials(c) {
-  const parts = [c.firstName, c.lastName].filter(Boolean);
-  const s = parts.length ? parts.map(p => p[0]).join('') : (c.name || '?').slice(0, 2);
+  let parts = [c.firstName, c.lastName].filter(Boolean);
+  if (!parts.length && c.name) parts = c.name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
+  const s = parts.length ? parts.map(p => [...p][0]).join('') : '?';
   return s.toUpperCase();
 }
 export function formatDate(iso) {
