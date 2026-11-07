@@ -216,3 +216,61 @@ export function makeDemoPeople() {
     text: 'Forwarded from a group:\n30, Brooklyn, works in IT. Looking for someone kind and steady.\nContact: (718) 555-9032' });
   return { people: P, sources: SRC, interests: INT, events: EV, followUps: FU };
 }
+
+// Stage 5: fictional formal offers for the demo people (one couple = me + one person).
+// Lanes: Yehuda = In Progress (Date 1 happened, Date 2 arranged); Dovid = Offer (waiting
+// for his answer); Shira = 2nd Try in progress with the 1st Try ended; Noa = Ended (said No).
+export function makeDemoShidduchim() {
+  const day = 86400000, hour = 3600000;
+  const ago = (d, hrs = 0) => new Date(Date.now() - d * day - hrs * hour).toISOString();
+  const local = (d, hrs) => { const x = new Date(Date.now() - d * day); x.setHours(hrs, 0, 0, 0); const p = (n) => String(n).padStart(2, '0'); return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())}T${p(x.getHours())}:00`; };
+  const O = [], T = [], E = [], D = [];
+  const ev = (id, tryId, offerId, text, at, extra = {}) => E.push({ id, demo: true, tryId, offerId, text, source: '', eventAt: null, kind: 'note', at, ...extra });
+
+  // Yehuda Stern — In Progress
+  O.push({ id: 'demo_off_001', demo: true, personId: 'demo_p_001', personName: 'Yehuda Stern', contactId: 'demo_c_001', status: 'progress', createdAt: ago(8), updatedAt: ago(1) });
+  T.push({ id: 'demo_try_001', demo: true, offerId: 'demo_off_001', personId: 'demo_p_001', n: 1, myAnswer: 'Yes', theirAnswer: 'Yes', refsChecked: true, phase: 'dating', endedBy: null, endedReason: '', endedAt: null, startedAt: ago(8), createdAt: ago(8), updatedAt: ago(1) });
+  ev('demo_sev_001', 'demo_try_001', 'demo_off_001', 'Offer recorded.', ago(8), { kind: 'offer' });
+  ev('demo_sev_002', 'demo_try_001', 'demo_off_001', 'References checked.', ago(7, 3), { kind: 'refs' });
+  ev('demo_sev_003', 'demo_try_001', 'demo_off_001', 'Me: Yes.', ago(6, 5), { kind: 'answer' });
+  ev('demo_sev_004', 'demo_try_001', 'demo_off_001', 'Yehuda: Yes.', ago(6, 1), { kind: 'answer', source: 'Mrs. Rivka Cohen' });
+  ev('demo_sev_005', 'demo_try_001', 'demo_off_001', 'Both said Yes; moved to In Progress.', ago(6, 1), { kind: 'stage' });
+  D.push({ id: 'demo_dt_001', demo: true, tryId: 'demo_try_001', offerId: 'demo_off_001', n: 1, when: local(3, 19), where: 'Hotel lobby, Jerusalem', status: 'Happened', feedback: 'Easy to talk to. Would like to meet again.', at: ago(5), createdAt: ago(5), updatedAt: ago(2) });
+  ev('demo_sev_006', 'demo_try_001', 'demo_off_001', 'Date 1 happened.', ago(2, 20), { kind: 'date', eventAt: local(3, 19) });
+  D.push({ id: 'demo_dt_002', demo: true, tryId: 'demo_try_001', offerId: 'demo_off_001', n: 2, when: local(-4, 19), where: 'Jerusalem', status: 'Arranged', feedback: '', at: ago(1), createdAt: ago(1), updatedAt: ago(1) });
+  ev('demo_sev_007', 'demo_try_001', 'demo_off_001', 'Date 2 arranged.', ago(1), { kind: 'date' });
+
+  // Dovid Weiss — Offer, waiting for his answer
+  O.push({ id: 'demo_off_002', demo: true, personId: 'demo_p_002', personName: 'Dovid Weiss', contactId: 'demo_c_002', status: 'offers', createdAt: ago(3), updatedAt: ago(2) });
+  T.push({ id: 'demo_try_002', demo: true, offerId: 'demo_off_002', personId: 'demo_p_002', n: 1, myAnswer: 'Yes', theirAnswer: '', refsChecked: false, phase: 'checking', endedBy: null, endedReason: '', endedAt: null, startedAt: ago(3), createdAt: ago(3), updatedAt: ago(2) });
+  ev('demo_sev_010', 'demo_try_002', 'demo_off_002', 'Offer recorded. Waiting for Dovid’s answer.', ago(3), { kind: 'offer' });
+  ev('demo_sev_011', 'demo_try_002', 'demo_off_002', 'Me: Yes.', ago(2), { kind: 'answer' });
+
+  // Shira Adler — 1st Try ended after two dates; 2nd Try just started, both Yes, Date 1 arranged
+  O.push({ id: 'demo_off_003', demo: true, personId: 'demo_p_003', personName: 'Shira Adler', contactId: 'demo_c_010', status: 'progress', createdAt: ago(120), updatedAt: ago(0, 6) });
+  T.push({ id: 'demo_try_003', demo: true, offerId: 'demo_off_003', personId: 'demo_p_003', n: 1, myAnswer: 'Yes', theirAnswer: 'No', refsChecked: true, phase: 'ended', endedBy: 'them', endedReason: 'Timing was not right.', endedAt: ago(100), startedAt: ago(120), createdAt: ago(120), updatedAt: ago(100) });
+  ev('demo_sev_020', 'demo_try_003', 'demo_off_003', 'Offer recorded.', ago(120), { kind: 'offer' });
+  ev('demo_sev_021', 'demo_try_003', 'demo_off_003', 'References checked.', ago(118), { kind: 'refs' });
+  ev('demo_sev_022', 'demo_try_003', 'demo_off_003', 'Both said Yes; moved to In Progress.', ago(116), { kind: 'stage' });
+  D.push({ id: 'demo_dt_010', demo: true, tryId: 'demo_try_003', offerId: 'demo_off_003', n: 1, when: local(112, 19), where: 'Beit Shemesh', status: 'Happened', feedback: '', at: ago(113), createdAt: ago(113), updatedAt: ago(112) });
+  ev('demo_sev_023', 'demo_try_003', 'demo_off_003', 'Date 1 happened.', ago(111, 20), { kind: 'date', eventAt: local(112, 19) });
+  D.push({ id: 'demo_dt_011', demo: true, tryId: 'demo_try_003', offerId: 'demo_off_003', n: 2, when: local(105, 19), where: 'Jerusalem', status: 'Happened', feedback: '', at: ago(107), createdAt: ago(107), updatedAt: ago(105) });
+  ev('demo_sev_024', 'demo_try_003', 'demo_off_003', 'Date 2 happened.', ago(104, 20), { kind: 'date', eventAt: local(105, 19) });
+  ev('demo_sev_025', 'demo_try_003', 'demo_off_003', 'Shira: No. The shidduch ended. Reason: Timing was not right.', ago(100), { kind: 'ended', source: 'Mrs. Malka Dahan' });
+  T.push({ id: 'demo_try_004', demo: true, offerId: 'demo_off_003', personId: 'demo_p_003', n: 2, myAnswer: 'Yes', theirAnswer: 'Yes', refsChecked: false, phase: 'dating', endedBy: null, endedReason: '', endedAt: null, startedAt: ago(2), createdAt: ago(2), updatedAt: ago(0, 6) });
+  ev('demo_sev_030', 'demo_try_004', 'demo_off_003', 'The 2nd Try started.', ago(2), { kind: 'try' });
+  ev('demo_sev_031', 'demo_try_004', 'demo_off_003', 'Me: Yes.', ago(1, 8), { kind: 'answer' });
+  ev('demo_sev_032', 'demo_try_004', 'demo_off_003', 'Shira: Yes.', ago(1, 2), { kind: 'answer', source: 'Mrs. Malka Dahan' });
+  ev('demo_sev_033', 'demo_try_004', 'demo_off_003', 'Both said Yes; moved to In Progress.', ago(1, 2), { kind: 'stage' });
+  D.push({ id: 'demo_dt_020', demo: true, tryId: 'demo_try_004', offerId: 'demo_off_003', n: 1, when: local(-6, 20), where: 'Jerusalem', status: 'Arranged', feedback: '', at: ago(0, 6), createdAt: ago(0, 6), updatedAt: ago(0, 6) });
+  ev('demo_sev_034', 'demo_try_004', 'demo_off_003', 'Date 1 arranged.', ago(0, 6), { kind: 'date' });
+
+  // נועה ברק — Ended: she said No after references
+  O.push({ id: 'demo_off_004', demo: true, personId: 'demo_p_004', personName: 'נועה ברק', contactId: 'demo_c_020', status: 'ended', createdAt: ago(30), updatedAt: ago(20) });
+  T.push({ id: 'demo_try_005', demo: true, offerId: 'demo_off_004', personId: 'demo_p_004', n: 1, myAnswer: 'Thinking', theirAnswer: 'No', refsChecked: true, phase: 'ended', endedBy: 'them', endedReason: '', endedAt: ago(20), startedAt: ago(30), createdAt: ago(30), updatedAt: ago(20) });
+  ev('demo_sev_040', 'demo_try_005', 'demo_off_004', 'Offer recorded.', ago(30), { kind: 'offer' });
+  ev('demo_sev_041', 'demo_try_005', 'demo_off_004', 'Me: Thinking.', ago(28), { kind: 'answer' });
+  ev('demo_sev_042', 'demo_try_005', 'demo_off_004', 'References checked.', ago(25), { kind: 'refs' });
+  ev('demo_sev_043', 'demo_try_005', 'demo_off_004', 'נועה: No. The shidduch ended.', ago(20), { kind: 'ended', source: 'רחל לוי' });
+  return { offers: O, tries: T, stageEvents: E, dateEvents: D };
+}
