@@ -1,13 +1,21 @@
 // Settings — Show labels, navigation arrangement, demo data, backup/restore, reset.
 import * as store from '../js/store.js';
-import { h, icon, section, toast, confirmDialog, comingLater } from '../js/ui.js';
+import { h, icon, section, toast, confirmDialog } from '../js/ui.js';
+import { LAYOUTS, SORTS, load as loadData } from './contacts-data.js';
+import { viewSheet } from './contacts-panels.js';
 
 let unsub = null;
 
+let gen = 0; // bumps on every render/destroy so stale async work never paints another page
+
 export async function render(root) {
+  unsub && unsub(); unsub = null; // never stack listeners when Settings redraws itself
+  const token = ++gen;
+  const live = () => token === gen;
   const prefs = store.getPrefs();
   const c = await store.counts();
   const all = await store.contacts.list();
+  if (!live()) return;
   const demoCount = all.filter(x => x.demo).length;
   const ownCount = all.length - demoCount;
   root.classList.add('settings');
@@ -36,8 +44,11 @@ export async function render(root) {
         radio('nav', 'four', 'Four destinations', 'Home · Contacts · People & Ideas · Shidduchim · Profile', prefs.navArrangement, (v) => store.setPref('navArrangement', v)))),
 
     section('Contacts view', 'settings.contacts-layout',
-      h('p', { class: 'note' }, 'Phone layouts (Layout A, list, inbox, side-rail…) and sorting defaults arrive in Stage 2.'),
-      h('button', { class: 'btn', 'data-id': 'settings.contacts-layout-btn', onClick: () => comingLater('Contacts layout picker', 2) }, 'Choose layout — coming in Stage 2')),
+      h('p', { class: 'note' }, `Phone view now: ${(LAYOUTS.find(l => l[0] === prefs.contactsLayout) || LAYOUTS[0])[1]}. Also changeable from the View button on Contacts. On a computer, Contacts always uses the three-area view.`),
+      h('button', { class: 'btn', 'data-id': 'settings.contacts-layout-btn', onClick: async () => { await loadData(); await viewSheet(); if (live()) { root.innerHTML = ''; render(root); } } }, h('span', { html: icon('layout') }).firstChild, 'Choose Contacts view'),
+      h('label', { class: 'field', 'data-id': 'settings.contacts-sort' }, h('span', { class: 'note' }, 'Default sort for Contacts'),
+        h('select', { class: 'input', onChange: (e) => { store.setPref('contactsSort', e.target.value); toast('Sort saved'); } },
+          SORTS.map(([v, l]) => h('option', { value: v, selected: prefs.contactsSort === v || null }, l))))),
 
     section('Demo data', 'settings.demo',
       h('p', { class: 'note', 'data-id': 'settings.demo-count' },
@@ -77,16 +88,21 @@ export async function render(root) {
 
     section('About', 'settings.about',
       h('dl', { class: 'facts about' },
-        fact('App', `ZugDesk v${store.APP_VERSION} · Stage 1`),
+        fact('App', `ZugDesk v${store.APP_VERSION} · Stage 2`),
         fact('Data schema', `v${store.SCHEMA_VERSION}`),
         fact('Records', Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`).join(' · ') || 'none'),
         fact('Storage', typeof indexedDB !== 'undefined' ? 'IndexedDB on this device' : 'unavailable'),
         fact('Offline', 'serviceWorker' in navigator ? (navigator.serviceWorker.controller ? 'ready' : 'installing…') : 'not supported'))),
   );
 
-  unsub = store.subscribe((ch) => { if (ch.store !== 'prefs') { root.innerHTML = ''; root.classList.remove('settings'); render(root); } });
+  unsub = store.subscribe((ch) => {
+    if (ch.store === 'prefs' || !live()) return;
+    clearTimeout(redrawTimer);
+    redrawTimer = setTimeout(() => { if (live()) { root.innerHTML = ''; render(root); } }, 60);
+  });
 }
-export function destroy() { unsub && unsub(); unsub = null; }
+let redrawTimer = 0;
+export function destroy() { unsub && unsub(); unsub = null; gen++; clearTimeout(redrawTimer); }
 
 function fact(k, v) { return h('div', { class: 'fact' }, h('dt', {}, k), h('dd', {}, v)); }
 

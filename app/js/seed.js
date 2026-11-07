@@ -121,3 +121,39 @@ export function makeDemoContacts(total = 200) {
   }
   return out;
 }
+
+// ---------- fictional conversation history + follow-ups (Stage 2) ----------
+// Fixed ids (demo_ev_<contact>_<n>) keep loading idempotent. Texts are generic and
+// invented; they never claim an offer, a Yes/No answer or a delivered message.
+const EVENT_TEXTS = {
+  call: ['Spoke briefly. Asked for an updated résumé before suggesting anyone.', 'Called back in the evening. Will think about who might fit and get back to me.', 'Short call. Mentioned two families she wants to check with first.', 'Asked about my plans for the next year and preferred city.'],
+  whatsapp: ['Sent my short profile. Reply: “Thank you, I will look at it this week.”', 'Asked if I am available to hear ideas after Yom Tov.', 'Wrote that she is still waiting for an answer from the other side.', 'Shared a name to look into; I asked for more details first.'],
+  email: ['Received an email asking for two references.', 'Sent the updated profile by email. No reply recorded yet.', 'Email with a few questions about hashkafa and plans.'],
+  text: ['Text: “Are you free to talk tomorrow evening?”', 'Texted a reminder about the profile I sent.'],
+  note: ['Personal note: prefers short written summaries first.', 'Personal note: best reached after 8 PM.', 'Personal note: met at a wedding, very warm and organised.'],
+};
+const FU_TEXTS = ['Ask whether there is any news', 'Send updated short profile', 'Call back after Shabbos', 'Check if references were contacted'];
+const TYPE_OF = { 'WhatsApp': 'whatsapp', 'Phone call': 'call', 'Email': 'email', 'Text message': 'text' };
+
+export function makeDemoActivity(contacts) {
+  const events = [], followUps = [];
+  for (const c of contacts) {
+    const n = parseInt((c.id.match(/(\d+)$/) || [])[1] || '0', 10);
+    if (!n) continue;
+    const rnd = mulberry32(9000 + n);
+    if (!c.lastContactAt) continue; // nothing recorded stays nothing recorded
+    const count = n <= 20 ? 2 + Math.floor(rnd() * 3) : (rnd() > 0.5 ? 1 : 0);
+    let at = new Date(c.lastContactAt).getTime();
+    for (let k = 0; k < count; k++) {
+      const type = k === 0 ? (TYPE_OF[c.preferredContact] || 'call') : pick(rnd, ['call', 'whatsapp', 'email', 'text', 'note']);
+      events.push({ id: `demo_ev_${pad3(n)}_${k + 1}`, demo: true, type, text: pick(rnd, EVENT_TEXTS[type]),
+        at: new Date(at).toISOString(), contactIds: [c.id], personIds: [] });
+      at -= (3 + Math.floor(rnd() * 40)) * 86400000;
+    }
+    if (c.status === 'follow-up') {
+      const due = new Date(Date.now() + Math.floor(rnd() * 10 - 3) * 86400000).toISOString().slice(0, 10);
+      followUps.push({ id: `demo_fu_${pad3(n)}`, demo: true, contactId: c.id, personId: null, text: pick(rnd, FU_TEXTS), dueAt: due, done: false });
+    }
+  }
+  return { events, followUps };
+}

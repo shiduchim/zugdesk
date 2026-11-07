@@ -35,6 +35,18 @@ const paths = {
   tag: '<path d="M3 12V4h8l9 9-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>',
   phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>',
+  folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+  message: '<path d="M4 5h16v11H9l-5 4z"/>',
+  mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 6.5 12 13l8.5-6.5"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  send: '<path d="M21 3 10 14"/><path d="M21 3l-7 18-4-7-7-4z"/>',
+  layout: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M10 4v16"/><path d="M10 11h11"/>',
+  sort: '<path d="M7 4v16"/><path d="M3.5 16.5 7 20l3.5-3.5"/><path d="M14 6h7"/><path d="M14 11h5"/><path d="M14 16h3"/>',
+  filter: '<path d="M3 5h18l-7 8v6l-4-2v-4z"/>',
+  file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
+  chevron: '<path d="M9 5l7 7-7 7"/>',
+  more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
 };
 export function icon(name, size) {
   const s = size ? `width="${size}" height="${size}"` : '';
@@ -74,4 +86,57 @@ export function section(eyebrow, dataId, ...children) {
   return h('section', { class: 'section', 'data-id': dataId },
     eyebrow ? h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, eyebrow)) : null,
     ...children);
+}
+
+// Sheet dialog with arbitrary body. Resolves with the action id (or the value its
+// `run` returns), or null when closed. A `run` returning false keeps it open.
+export function sheet({ title, dataId, body, actions = [], className = '' }) {
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
+    const dlg = h('dialog', { class: 'sheet form-sheet ' + className, 'data-id': dataId },
+      h('div', { class: 'sheet-head' },
+        h('h2', {}, title),
+        h('button', { class: 'btn small', type: 'button', 'data-id': dataId + '.close', onClick: () => finish(null) }, 'Close')),
+      h('div', { class: 'sheet-body' }, body),
+      actions.length ? h('div', { class: 'btn-row sheet-actions' }, actions.map(a =>
+        h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger' : ''), type: 'button', 'data-id': dataId + '.' + a.id,
+          onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label))) : null);
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
+    document.body.append(dlg);
+    dlg.showModal();
+    dlg.finish = finish;
+  });
+}
+
+// Small text prompt (e.g. "New folder", "Add a language"). Resolves trimmed text or null.
+export async function promptText({ title, label, value = '', ok = 'Add', dataId = 'dialog.prompt' }) {
+  const input = h('input', { class: 'input', value, dir: 'auto', 'data-id': dataId + '.input', 'aria-label': label });
+  const p = sheet({ title, dataId, body: [h('div', { class: 'field' }, h('label', {}, label), input)],
+    actions: [{ id: 'ok', label: ok, primary: true, run: () => input.value.trim() || (toast('Type something first'), false) }] });
+  setTimeout(() => input.focus(), 50);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); input.closest('dialog').querySelector('[data-id$=".ok"]').click(); } });
+  return p;
+}
+
+// Selectable bubbles. `multi` toggles many; otherwise one (tap again clears).
+export function bubbles({ options, selected = [], multi = true, dataId, onChange, extra }) {
+  let sel = [...selected];
+  const wrap = h('div', { class: 'bubbles', role: multi ? 'group' : 'radiogroup', 'data-id': dataId });
+  const draw = () => {
+    wrap.innerHTML = '';
+    for (const [v, label] of options) {
+      const on = sel.includes(v);
+      wrap.append(h('button', { type: 'button', class: 'bubble', 'aria-pressed': on ? 'true' : 'false', dir: 'auto', onClick: () => {
+        sel = multi ? (on ? sel.filter(x => x !== v) : [...sel, v]) : (on ? [] : [v]);
+        draw(); onChange && onChange(multi ? sel : (sel[0] ?? ''));
+      } }, label));
+    }
+    if (extra) wrap.append(extra);
+  };
+  draw();
+  wrap.getValue = () => multi ? sel : (sel[0] ?? '');
+  wrap.setOptions = (o) => { options = o; draw(); };
+  wrap.select = (v) => { if (!sel.includes(v)) sel = multi ? [...sel, v] : [v]; draw(); onChange && onChange(multi ? sel : v); };
+  return wrap;
 }

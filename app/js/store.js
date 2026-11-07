@@ -3,10 +3,10 @@
 // `demo: true` marks fictional seed records so Settings can remove them
 // without touching anything the owner typed.
 import { idb, tx, STORES, DB_VERSION, deleteDatabase } from './db.js';
-import { makeDemoContacts } from './seed.js';
+import { makeDemoContacts, makeDemoActivity } from './seed.js';
 
 export const SCHEMA_VERSION = DB_VERSION;
-export const APP_VERSION = '0.1.0'; // Stage 1
+export const APP_VERSION = '0.2.0'; // Stage 2
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -69,7 +69,9 @@ const PREF_KEY = 'zugdesk.prefs';
 const PREF_DEFAULTS = {
   showLabels: false,
   navArrangement: 'three',   // 'three' = Home/Contacts/Shidduchim (+Profile); 'four' adds People & Ideas
-  contactsLayout: 'list',
+  contactsLayout: 'a',       // phone view: a | split | rail | tabs | list | inbox (spec/contacts.md CT-13)
+  contactsSort: 'recent',    // recent | oldest | name | city | language | community
+  contactsSplit: 260,        // upper pane height (px) in the top/bottom split view
 };
 export function getPrefs() {
   try { return { ...PREF_DEFAULTS, ...(JSON.parse(localStorage.getItem(PREF_KEY) || '{}')) }; }
@@ -97,6 +99,11 @@ export async function init() {
     if (count === 0) await loadDemoContacts(FIRST_RUN_SEED);
     await setMeta('seeded', { at: now(), count: FIRST_RUN_SEED });
   }
+  // Stage 2: demo contacts loaded before conversations existed get their fictional history once.
+  if (!(await getMeta('demoActivityV1'))) {
+    await addDemoActivity((await contacts.list()).filter(c => c.demo));
+    await setMeta('demoActivityV1', { at: now() });
+  }
   await setMeta('schemaVersion', SCHEMA_VERSION);
 }
 
@@ -105,8 +112,18 @@ export async function loadDemoContacts(total = FULL_DEMO_SEED) {
   const existing = await contacts.list();
   const have = new Set(existing.map(c => c.id));
   const fresh = makeDemoContacts(total).filter(c => !have.has(c.id));
-  if (fresh.length) await contacts.saveMany(fresh);
+  if (fresh.length) { await contacts.saveMany(fresh); await addDemoActivity(fresh); }
   return fresh.length;
+}
+
+async function addDemoActivity(demoContacts) {
+  if (!demoContacts.length) return;
+  const { events: evs, followUps: fus } = makeDemoActivity(demoContacts);
+  const haveEv = new Set((await events.list()).map(e => e.id));
+  const haveFu = new Set((await followUps.list()).map(f => f.id));
+  const e2 = evs.filter(e => !haveEv.has(e.id)), f2 = fus.filter(f => !haveFu.has(f.id));
+  if (e2.length) await events.saveMany(e2);
+  if (f2.length) await followUps.saveMany(f2);
 }
 
 // Removes every record flagged demo:true in every store. Owner-typed data stays.
@@ -183,6 +200,51 @@ export function downloadJSON(obj, filename) {
   a.href = url; a.download = filename; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
 }
+
+// ---------- conversations (ConversationEvent: one record, many links) ----------
+// type: 'call' | 'whatsapp' | 'email' | 'text' | 'note' | '' (unknown)
+export const EVENT_TYPES = [
+  ['call', 'Phone call'], ['whatsapp', 'WhatsApp'], ['email', 'Email'], ['text', 'Text message'], ['note', 'Personal note'], ['', 'Not sure'],
+];
+export const eventTypeLabel = (t) => (EVENT_TYPES.find(x => x[0] === (t || '')) || EVENT_TYPES[5])[1];
+
+export async function eventsForContact(contactId) {
+  const list = await events.byIndex('contactIds', contactId);
+  return list.sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+}
+export async function recordEvent({ id, contactIds = [], personIds = [], type = '', text = '', at }) {
+  const existing = id ? await events.get(id) : null;
+  return events.save({ ...(existing || {}), id, contactIds, personIds, type, text: text.trim(), at: at || now() });
+}
+export async function followUpsForContact(contactId) {
+  const list = await followUps.byIndex('contactId', contactId);
+  return list.sort((a, b) => (a.done - b.done) || (a.dueAt || '9').localeCompare(b.dueAt || '9'));
+}
+
+// Last recorded conversation = newest of the typed "last contact" date and the newest logged event.
+// Missing means "nothing recorded in the app", never "never contacted".
+export function lastRecorded(c, latestEventAt) {
+  const a = c.lastContactAt || '', b = latestEventAt || '';
+  return (a > b ? a : b) || null;
+}
+
+// ---------- user-managed choices (bubbles in Add Shadchan) ----------
+// Stored in `meta` so they travel with export/import. Each list keeps order;
+// hidden choices stay on records that already use them.
+export const CHOICE_DEFAULTS = {
+  ages: ['30 and under'],
+  communities: ['Chabad', 'Haredi', 'Litvish', 'Bukharian', 'Sephardi', 'Breslev', 'Dati Leumi', 'Modern Orthodox', 'Yeshivish'],
+  languages: ['English', 'Hebrew', 'Yiddish', 'French', 'Russian', 'Spanish'],
+  roles: ['shadchan', 'reference', 'friend', 'family', 'helper'],
+};
+export const CHOICE_NAMES = { ages: 'Ages they work with', communities: 'Religious groups', languages: 'Languages', roles: 'Roles' };
+export async function getChoices() {
+  const saved = (await getMeta('choices')) || {};
+  const out = {};
+  for (const [k, defs] of Object.entries(CHOICE_DEFAULTS)) out[k] = saved[k] || defs.map(v => ({ v, hidden: false }));
+  return out;
+}
+export async function saveChoices(choices) { await setMeta('choices', choices); emit({ store: 'meta', type: 'choices' }); }
 
 // ---------- small helpers pages share ----------
 export function displayName(c) {

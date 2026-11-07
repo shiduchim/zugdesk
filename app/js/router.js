@@ -28,9 +28,10 @@ export async function resolve(container, onChange) {
     if (current && current.mod.destroy) { try { current.mod.destroy(); } catch (e) { console.error(e); } }
     const mod = await r.loader();
     container.innerHTML = '';
+    container.className = 'content'; // pages add their own classes; never let them leak to the next page
     container.scrollTop = 0; window.scrollTo(0, 0);
     current = { mod, path, params };
-    await mod.render(container, params);
+    await mod.render(container, params, path);
     onChange && onChange(path, params, mod);
     return;
   }
