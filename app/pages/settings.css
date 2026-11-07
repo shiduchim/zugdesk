@@ -1,0 +1,8 @@
+.settings .btn-row .btn{flex:1 1 160px}
+.settings .about dl{margin:0}
+.settings input[type=file]{display:none}
+.radio-list{display:flex;flex-direction:column}
+.radio-list label{display:flex;align-items:flex-start;gap:12px;min-height:var(--touch-min);padding:8px 0;border-top:1px solid var(--border);cursor:pointer}
+.radio-list label:first-child{border-top:0}
+.radio-list input{margin:4px 0 0;width:18px;height:18px;flex-shrink:0;accent-color:var(--text)}
+.radio-list small{display:block;color:var(--muted);font-size:var(--font-sm)}

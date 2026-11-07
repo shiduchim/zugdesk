@@ -1,0 +1,11 @@
+.contacts-list{display:flex;flex-direction:column}
+.contact-detail .name-row{display:flex;align-items:center;gap:12px;padding:8px 0 16px}
+.contact-detail .name-row .avatar{width:48px;height:48px;font-size:16px}
+.contact-detail .name-row h1{font-size:20px;min-width:0;overflow-wrap:anywhere}
+.contact-detail .name-row .sub{color:var(--muted);font-size:var(--font-sm)}
+.contacts-tools{display:flex;gap:var(--gap);align-items:center;margin-bottom:var(--gap)}
+.contacts-tools .input{flex:1}
+.status-pill{display:inline-flex;align-items:center;min-height:22px;padding:0 8px;border-radius:999px;font-size:11.5px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.04em;background:var(--surface-2);color:var(--muted);flex-shrink:0}
+.status-pill.waiting{background:var(--warn-bg);color:var(--warn)}
+.status-pill.follow-up{background:#EAF0FB;color:var(--link)}
+.status-pill.active{background:var(--ok-bg);color:var(--ok)}
