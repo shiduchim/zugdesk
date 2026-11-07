@@ -48,4 +48,6 @@ Keep labels unique and stable; give every new element one.
 - Every button must work or clearly say "coming later" — no silent placeholders.
 - Check at 360 and 390 px widths (Playwright is available) before saying a page is done.
 - Commit with a clear message and push to the session's branch; pushes publish automatically.
+- **No plus signs (+) anywhere visible** in the app: no + icons, no "+ Add" labels, no + in phone numbers (use 00 for country codes). Use words like "Add" or "New".
+- End of every stage: update ROADMAP.md, commit, push, and create the PR without being asked.
 - The owner prefers step-by-step, plain-language instructions for anything they must do themselves.

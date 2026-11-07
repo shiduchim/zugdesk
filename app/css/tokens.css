@@ -1,0 +1,60 @@
+/* ZugDesk design tokens — every size and colour lives here.
+   Visual source: source/My Profile.html (Claude minimalist, warm light). */
+:root{
+  /* colours */
+  --bg:#FAF8F3;
+  --surface:#FFFFFF;
+  --surface-2:#F3F1EA;
+  --text:#1F1F1E;
+  --muted:#66655F;
+  --border:#E4E1D9;
+  --avatar:#E6E3DA;
+  --link:#2F56B0;
+  --accent:#1F1F1E;
+  --accent-text:#FFFFFF;
+  --danger:#B3261E;
+  --danger-bg:#FBEDEB;
+  --ok:#2E6B3A;
+  --ok-bg:#EAF3EC;
+  --warn:#8A5A00;
+  --warn-bg:#FBF2DE;
+  --label-bg:#2F56B0;
+  --label-text:#FFFFFF;
+  --focus:#2F56B0;
+
+  /* type */
+  --font:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --font-mono:"JetBrains Mono",Consolas,"DejaVu Sans Mono",monospace;
+  --font-base:14px;
+  --font-sm:13px;
+  --font-xs:11.5px;
+  --font-lg:16px;
+  --font-title:18px;
+  --font-h1:22px;
+  --line:1.5;
+
+  /* spacing */
+  --gap:8px;
+  --gap-sm:4px;
+  --gap-lg:16px;
+  --pad-page:16px;
+  --radius:8px;
+  --radius-lg:12px;
+
+  /* controls */
+  --btn-height:44px;
+  --btn-pad-x:14px;
+  --input-height:44px;
+  --touch-min:44px;
+  --icon:18px;
+  --avatar-size:40px;
+
+  /* layout */
+  --topbar-height:48px;
+  --nav-height:60px;
+  --nav-icon:22px;
+  --nav-font:11px;
+  --content-max:720px;
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+  --safe-top:env(safe-area-inset-top,0px);
+}
