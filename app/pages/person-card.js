@@ -2,9 +2,10 @@
 // My Profile (source/Shadchanim Offers.html). Reads the one shared person record; editing
 // opens the Add Person form. Interest never creates, ends or reopens a formal offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, confirmDialog, comingLater } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { loadPerson, pron, kindLabel, dateOnly, LISTS } from './people-data.js';
+import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
@@ -196,17 +197,53 @@ function offersTab(b) {
       history(theirs.slice(1), 'theirs')),
     sec('Formal offers and shidduchim', 'person-card.formal', null,
       offersList.length
-        ? h('dl', { class: 'facts' }, offersList.map(o => fact(dateOnly(o.createdAt), [o.status || 'Offer', o.note].filter(Boolean).join(' · '))))
+        ? offersList.map(o => formalRow(o, b))
         : h('p', {}, 'No formal offer has been created. Saving a name or recording interest does not move anyone into In Progress.'),
       h('dl', { class: 'facts' },
         fact('Existing tries', b.tries.length ? String(b.tries.length) : 'None'),
         b.fus.filter(f => !f.done)[0] ? fact('Next step', b.fus.filter(f => !f.done).sort((a, c) => (a.dueAt || '9').localeCompare(c.dueAt || '9'))[0].text) : null),
-      h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.start-offer', onClick: () => comingLater('Starting a formal offer', 5) }, 'Start a formal offer — coming in Stage 5')),
+      offersList.length
+        ? h('p', { class: 'note' }, 'Answers, dates, ending and Try Again are recorded on the shidduch itself, never here.')
+        : h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.start-offer', onClick: () => startOfferSheet(b) }, 'Start a formal offer')),
     sec('Suggested by', 'person-card.suggested', null,
       suggestedBy(b),
       h('p', { class: 'note' }, 'One person record. Several sources. No duplicate profiles.')),
     h('p', { class: 'note pc-foot' }, 'Formal dates and earlier tries, once there are any, live in Shidduchim with their own history. This card only shows a short status.'),
   ];
+}
+
+// Short status of the one formal offer (one couple = one record); opens the Shidduchim page.
+function formalRow(o, b) {
+  const tries = b.tries.filter(t => t.offerId === o.id).sort((a, c) => (a.n || 0) - (c.n || 0));
+  const cur = tries[tries.length - 1];
+  const m = { o, person: b.p, cur: { t: cur || {} } };
+  let text = 'Offer';
+  if (cur) {
+    const lane = laneOf(cur);
+    text = lane === 'ended' ? `Ended by ${endedByName(m, cur)}` + (cur.endedReason ? ' · ' + cur.endedReason : '') : `${laneLabel(lane)} · ${stageWord(cur, [])}`;
+    if (tries.length > 1) text += ` · ${tryName(tries.length)}`;
+  }
+  return h('a', { class: 'row-link', href: `#/shidduchim/${encodeURIComponent(o.id)}`, 'data-id': 'person-card.offer-link' },
+    h('div', { class: 'row-main' }, h('div', { class: 'row-title', dir: 'auto' }, text), h('div', { class: 'row-sub' }, `Started ${dateOnly(o.createdAt)} · open in Shidduchim`)),
+    ico('chevron'));
+}
+
+// Only this explicit step creates a formal offer. The shadchan is optional and can be set later.
+async function startOfferSheet(b) {
+  const p = b.p;
+  const linked = (p.contactIds || []).map(id => b.contactsById.get(id)).filter(Boolean);
+  let contactId = p.senderContactId && linked.some(c => c.id === p.senderContactId) ? p.senderContactId : (linked[0]?.id || null);
+  const res = await sheet({ title: `Start a formal offer · ${store.personName(p)}`, dataId: 'start-offer-sheet',
+    body: [h('p', {}, 'This creates one shidduch record for you and ', h('span', { dir: 'auto' }, store.personName(p)), '. It starts in Offers with both answers waiting; it moves to In Progress only when both sides say Yes.'),
+      linked.length ? h('div', { class: 'field' }, h('label', {}, 'Shadchan (optional)'),
+        bubbles({ options: linked.map(c => [c.id, store.displayName(c)]), selected: contactId ? [contactId] : [], multi: false, dataId: 'start-offer-sheet.shadchan', onChange: (v) => { contactId = v || null; } }))
+        : h('p', { class: 'note' }, 'No shadchan is linked to this person yet. You can set one on the shidduch afterwards.'),
+      h('p', { class: 'note' }, 'Your private interest and the reported response above stay as they are; they are separate from the formal answers.')],
+    actions: [{ id: 'start', label: 'Start offer', primary: true }] });
+  if (res !== 'start') return;
+  const o = await startOffer({ personId: p.id, contactId });
+  toast('Formal offer started');
+  navigate(`/shidduchim/${encodeURIComponent(o.id)}`);
 }
 
 function interestView(i, side) {

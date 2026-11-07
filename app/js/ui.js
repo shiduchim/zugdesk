@@ -55,11 +55,13 @@ export function icon(name, size) {
 export function iconEl(name) { const span = h('span', { class: 'ico', html: icon(name) }); return span.firstChild; }
 
 let toastTimer;
-export function toast(msg, ms = 2600) {
+// Optional `action`: { label, run } adds one button (e.g. Undo) to the toast.
+export function toast(msg, ms = 2600, action = null) {
   let t = document.getElementById('toast');
   if (!t) { t = h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' }); document.body.append(t); }
   t.textContent = msg; t.classList.remove('hidden');
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
+  if (action) t.append(h('button', { type: 'button', class: 'toast-action', 'data-id': 'toast.action', onClick: () => { t.classList.add('hidden'); clearTimeout(toastTimer); action.run(); } }, action.label));
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), action ? Math.max(ms, 5000) : ms);
 }
 
 // Confirm dialog. Resolves true/false. `danger` colours the OK button.

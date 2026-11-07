@@ -117,3 +117,37 @@
   --fact-key:128px;
   --avatar-lg:48px;
 }
+:root{
+  /* Stage 5 — Shidduchim (layout from source/ZivugMatch_Shidduchim_…_v7 EXPANDED.html, Claude look).
+     Bar colours are the provisionally approved design colours from spec/shidduchim.md. */
+  --sh-seg-early:#28B6AD;          /* Offer, References */
+  --sh-seg-dates-a:#826CEB;        /* Dates 1–4 */
+  --sh-seg-dates-b:#B85AC4;        /* Dates 5–8 */
+  --sh-seg-marriage:#D0A041;
+  --sh-seg-empty:#E1E3EC;          /* not completed */
+  --sh-seg-past:#9AA0AD;           /* ended try: completed steps, darker gray */
+  --sh-seg-past-empty:#E6E7EC;     /* ended try: unfinished steps, lighter gray */
+  --sh-seg-height:7px;
+  --sh-seg-height-lg:9px;
+  --sh-seg-gap:4px;
+  --sh-tab-gradient:linear-gradient(110deg,#E0F2EC 0%,#E8EAFA 57%,#F8E6F2 100%);  /* selected lane tab (kept from the reference) */
+  --sh-tab-text:#295D62;
+  --sh-tabbar-bg:var(--surface-2);
+  --sh-yes-bg:#DCF3E9;  --sh-yes-text:#126B59;  --sh-yes-edge:#A5DCCB;
+  --sh-no-bg:#FFEBDE;   --sh-no-text:#A54422;   --sh-no-edge:#F5C2AD;
+  --sh-think-bg:#FFF3D4;--sh-think-text:#8A6209;--sh-think-edge:#E9D39D;
+  --sh-wait-bg:var(--surface-2);--sh-wait-text:var(--muted);--sh-wait-edge:var(--border);
+  --sh-checking-bg:var(--info-bg);--sh-checking-text:var(--link);
+  --sh-dating-bg:#EAE6FD;--sh-dating-text:#6554A8;
+  --sh-ended-bg:var(--surface-2);--sh-ended-text:var(--muted);
+  --sh-stage-text:#37887F;         /* stage word on a card (Offer / References / Date n) */
+  --sh-heart-bg:#FFF0F6;--sh-heart-text:#D05A90;
+  --sh-heart-ended-bg:var(--surface-2);--sh-heart-ended-text:var(--muted);
+  --sh-calendar-bg:#F1EEFF;--sh-calendar-text:#7C66BE;
+  --sh-card-pad:14px;
+  --sh-bubble-height:36px;
+  --sh-choice-height:44px;
+  --sh-panel-width:276px;
+  --sh-ended-panel-bg:var(--danger-bg);
+  --sh-ended-panel-text:var(--danger);
+}

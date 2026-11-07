@@ -35,6 +35,8 @@ route('/people/:id/edit/:section', () => import('../pages/person-form.js'));
 route('/people/:id', () => import('../pages/person-card.js'));
 route('/people/:id/:tab', () => import('../pages/person-card.js'));
 route('/shidduchim', () => import('../pages/shidduchim.js'));
+route('/shidduchim/:id', () => import('../pages/shidduch-detail.js'));
+route('/shidduchim/:id/:tab', () => import('../pages/shidduch-detail.js'));
 route('/profile', () => import('../pages/profile.js'));
 route('/settings', () => import('../pages/settings.js'));
 

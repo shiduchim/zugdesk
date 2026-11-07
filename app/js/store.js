@@ -3,11 +3,11 @@
 // `demo: true` marks fictional seed records so Settings can remove them
 // without touching anything the owner typed.
 import { idb, tx, STORES, DB_VERSION, deleteDatabase } from './db.js';
-import { makeDemoContacts, makeDemoActivity, makeDemoPeople } from './seed.js';
+import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim } from './seed.js';
 
 export const SCHEMA_VERSION = DB_VERSION;
-export const APP_VERSION = '0.4.0';
-export const STAGE = 4; // last finished stage (shown in Settings → About)
+export const APP_VERSION = '0.5.0';
+export const STAGE = 5; // last finished stage (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -74,6 +74,7 @@ const PREF_DEFAULTS = {
   contactsSort: 'recent',    // recent | oldest | name | city | language | community
   contactsSplit: 260,
   personKind: 'guy',         // Add Person: last chosen Guy / Girl        // upper pane height (px) in the top/bottom split view
+  shidduchimView: 'compact', // Shidduchim list: compact | expanded
 };
 export function getPrefs() {
   try { return { ...PREF_DEFAULTS, ...(JSON.parse(localStorage.getItem(PREF_KEY) || '{}')) }; }
@@ -111,7 +112,23 @@ export async function init() {
     if ((await contacts.list()).some(c => c.demo)) await loadDemoPeople();
     await setMeta('demoPeopleV1', { at: now() });
   }
+  // Stage 5: fictional formal offers, tries, dates and history for the demo people.
+  if (!(await getMeta('demoShidduchimV1'))) {
+    if ((await people.list()).some(p => p.demo)) await loadDemoShidduchim();
+    await setMeta('demoShidduchimV1', { at: now() });
+  }
   await setMeta('schemaVersion', SCHEMA_VERSION);
+}
+
+export async function loadDemoShidduchim() {
+  const d = makeDemoShidduchim();
+  let added = 0;
+  for (const [col, rows] of [[offers, d.offers], [tries, d.tries], [stageEvents, d.stageEvents], [dateEvents, d.dateEvents]]) {
+    const ids = new Set((await col.list()).map(r => r.id));
+    const fresh = rows.filter(r => !ids.has(r.id));
+    if (fresh.length) { await col.saveMany(fresh); added += fresh.length; }
+  }
+  return added;
 }
 
 export async function loadDemoPeople() {
@@ -124,6 +141,7 @@ export async function loadDemoPeople() {
     const fresh = rows.filter(r => !ids.has(r.id));
     if (fresh.length) await col.saveMany(fresh);
   }
+  await loadDemoShidduchim();
   return d.people.length;
 }
 
