@@ -1,0 +1,59 @@
+/* People & Ideas list + person card (My Profile reading layout). Tokens only (css/tokens.css). */
+.people-page .intro{margin-bottom:12px}
+.people-page .ct-search{margin-bottom:10px}
+.filter-chips{margin-bottom:4px}
+.filter-chips .bubble{min-height:var(--chip-height)}
+.person-row .row-tags{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;max-width:40%}
+.person-row .row-tags .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.strong{background:var(--selected-bg);color:var(--text)}
+.people-page .row-link .row-main{text-decoration:none;color:var(--text)}
+
+/* ---- person card: narrow reading column like My Profile ---- */
+.person-card-page{max-width:var(--card-col)}
+.pc-namebar{display:flex;align-items:center;gap:var(--gap);min-height:var(--touch-min)}
+.pc-namebar h1{font-size:var(--font-h1);min-width:0;overflow-wrap:anywhere}
+.pc-namebar .spacer{flex:1}
+.pc-kind{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.icon-btn.bordered{border:1px solid var(--border);background:var(--surface)}
+.pc-actions{display:flex;gap:var(--gap);flex-wrap:wrap;margin:6px 0 10px}
+.pc-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap-sm);padding:var(--gap) 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.pc-tabs button{min-height:var(--btn-height);border:0;border-radius:var(--radius);background:transparent;color:var(--muted);font-weight:500}
+.pc-tabs button[aria-selected="true"]{background:var(--tab-active-bg);color:var(--text);font-weight:600}
+.pc-body{display:flex;flex-direction:column}
+
+.pc-summary{display:flex;align-items:flex-start;gap:12px;padding:var(--gap-lg) 0;border-bottom:1px solid var(--border)}
+.avatar.lg{width:var(--avatar-lg);height:var(--avatar-lg);font-size:15px}
+.pc-summary-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pc-summary-line{font-weight:500;font-size:var(--font-lg);overflow-wrap:anywhere}
+.clamp{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.pc-sec{padding:var(--gap-lg) 0;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:10px}
+.pc-sec-head{display:flex;align-items:center;gap:var(--gap);min-height:32px}
+.pc-sec-head .eyebrow{flex:1;font-weight:400}
+.pc-sec-head .icon-btn{width:36px;height:36px}
+.pc-sec .facts .fact{grid-template-columns:var(--fact-key) minmax(0,1fr) auto;padding:6px 0}
+.pc-sec .fact .priv{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);padding-top:2px}
+.pc-sec .fact .small{font-size:var(--font-sm);color:var(--muted)}
+.pc-add{font-size:var(--font-sm);align-self:flex-start;min-height:32px;display:inline-flex;align-items:center}
+.pc-keep-row{display:flex;align-items:center;gap:12px;min-height:var(--touch-min);padding:6px 0;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start;width:100%}
+.pc-keep-row svg{width:17px;height:17px;flex-shrink:0;color:var(--muted)}
+.pc-keep-row .grow{flex:1;min-width:0}
+.pc-stamp{padding:12px 0}
+.pc-danger{padding:4px 0 12px}
+.pc-foot{padding:12px 0}
+
+.interest{display:flex;flex-direction:column;gap:4px}
+.interest-value{font-weight:600;font-size:var(--font-lg)}
+.pc-history summary{cursor:pointer;font-size:var(--font-sm);color:var(--link);min-height:32px;display:flex;align-items:center}
+.pc-sec .composer-foot{display:flex;gap:var(--gap);align-items:center}
+.pc-sec .composer-foot .input.date{flex:1;min-width:0}
+.fu-row.done .fu-main span:first-child{text-decoration:line-through;color:var(--muted)}
+.fu-row input[type="checkbox"]{width:20px;height:20px;flex-shrink:0;accent-color:var(--text)}
+.fu-main{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:0;background:transparent;padding:6px 0;text-align:start;color:var(--text)}
+
+@media (max-width:380px){
+  .pc-sec .facts .fact{grid-template-columns:96px minmax(0,1fr) auto}
+}
+.pc-sec dl.facts{margin:0}
+.pc-sec>.btn{align-self:flex-start}
+.people-page .avatar svg{width:18px;height:18px}

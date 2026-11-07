@@ -27,6 +27,13 @@ route('/contacts/:id/edit', () => import('../pages/contact-form.js'));
 route('/contacts/:id/history', () => import('../pages/contacts.js'));
 route('/contacts/:id', () => import('../pages/contacts.js'));
 route('/people', () => import('../pages/people.js'));
+route('/people/new', () => import('../pages/person-form.js'));
+route('/people/new/from/:sourceId', () => import('../pages/person-form.js'));
+route('/people/new/by/:contactId', () => import('../pages/person-form.js'));
+route('/people/:id/edit', () => import('../pages/person-form.js'));
+route('/people/:id/edit/:section', () => import('../pages/person-form.js'));
+route('/people/:id', () => import('../pages/person-card.js'));
+route('/people/:id/:tab', () => import('../pages/person-card.js'));
 route('/shidduchim', () => import('../pages/shidduchim.js'));
 route('/profile', () => import('../pages/profile.js'));
 route('/settings', () => import('../pages/settings.js'));
@@ -38,7 +45,9 @@ function renderNav() {
   const items = NAV[prefs.navArrangement] || NAV.three;
   const inner = $('#nav .inner');
   inner.innerHTML = '';
-  const path = currentPath();
+  let path = currentPath();
+  // Three-destination layout: People & Ideas lives inside Shidduchim.
+  if (prefs.navArrangement !== 'four' && (path === '/people' || path.startsWith('/people/'))) path = '/shidduchim';
   for (const it of items) {
     const active = path === it.path || path.startsWith(it.path + '/');
     inner.append(h('a', { href: '#' + it.path, 'data-id': it.id, 'aria-current': active ? 'page' : null },

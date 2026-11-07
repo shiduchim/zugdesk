@@ -33,6 +33,8 @@ These files are large: use grep / read in parts, never read a whole file unless 
   Pages never keep their own copies of records — see `spec/build-handoff.md` section C.
 - Installable on the phone (manifest + service worker).
 - Visual style: Claude minimalist look from `source/My Profile.html` (Inter / JetBrains Mono, warm light).
+- **Every colour, corner, shadow and font is a token in `app/css/tokens.css`.** Page CSS and JS never write raw colours
+  (no `#hex`, `rgb()`, numeric `border-radius` or `box-shadow`). A future warm theme = one file that redefines the tokens.
 
 ## Element labels (important for cheap edits)
 

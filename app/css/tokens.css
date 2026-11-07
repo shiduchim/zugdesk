@@ -72,3 +72,48 @@
   --desk-dir-width:360px;                      /* desktop: contact directory column */
   --pane-height:calc(100dvh - var(--topbar-height) - var(--safe-top) - var(--nav-height) - var(--safe-bottom) - 12px);
 }
+:root{
+  /* Theme tokens — page CSS must use ONLY these (no raw colours, corners, shadows or fonts).
+     A future warm theme = one extra file that redefines these names, e.g.
+     css/theme-warm.css with  :root[data-theme="warm"]{ --bg:…; --accent:…; }  */
+  --accent-hover:#000000;
+  --danger-edge:#E7C7C3;
+  --info-bg:#EAF0FB;
+  --info-text:var(--link);
+  --knob:#FFFFFF;
+  --backdrop:rgba(31,31,30,.35);
+  --label-outline:rgba(47,86,176,.55);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.3);
+  --shadow:0 4px 16px rgba(0,0,0,.18);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.2);
+  --radius-xs:2px;
+  --radius-sm:4px;
+  --radius-md:6px;
+  --radius-pill:999px;
+  --radius-round:50%;
+  --radius-toggle:13px;
+
+  /* Stage 3 — Add Person (layout from source/ZivugMatch_Add_Person_Prototype_v3_0.html, Claude look) */
+  --chosen-bg:var(--ok-bg);        /* selected oval row ("gentle highlight across the whole row") */
+  --chosen-edge:var(--ok);
+  --chosen-text:var(--text);
+  --tick-bg:var(--ok);
+  --tick-text:var(--accent-text);
+  --card-bg:var(--surface);
+  --card-edge:var(--border);
+  --dropzone-bg:var(--surface-2);
+  --original-bg:var(--surface-2);
+  --original-font:var(--font-mono);
+  --original-size:12.5px;
+  --tab-active-bg:var(--selected-bg);
+  --orig-pane-width:40%;            /* Basic Info: original on the left */
+  --orig-pane-max:32dvh;            /* narrow phones: original stacked on top, this tall */
+  --jump-height:40px;
+  --row-height:44px;                /* oval rows (Status, Religious, Know them) */
+  --tick-size:20px;
+
+  /* Stage 4 — People & Ideas card (source/Shadchanim Offers.html = My Profile look) */
+  --card-col:640px;                 /* narrow reading column */
+  --fact-key:128px;
+  --avatar-lg:48px;
+}

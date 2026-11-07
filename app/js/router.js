@@ -26,6 +26,8 @@ export async function resolve(container, onChange) {
     if (!m) continue;
     const params = Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])]));
     if (current && current.mod.destroy) { try { current.mod.destroy(); } catch (e) { console.error(e); } }
+    // A sheet left open (e.g. phone Back while it was showing) never stays over the next page.
+    document.querySelectorAll('dialog[open]').forEach(d => d.close());
     const mod = await r.loader();
     container.innerHTML = '';
     container.className = 'content'; // pages add their own classes; never let them leak to the next page

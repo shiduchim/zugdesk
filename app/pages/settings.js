@@ -88,7 +88,7 @@ export async function render(root) {
 
     section('About', 'settings.about',
       h('dl', { class: 'facts about' },
-        fact('App', `ZugDesk v${store.APP_VERSION} · Stage 2`),
+        fact('App', `ZugDesk v${store.APP_VERSION} · Stage ${store.STAGE}`),
         fact('Data schema', `v${store.SCHEMA_VERSION}`),
         fact('Records', Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`).join(' · ') || 'none'),
         fact('Storage', typeof indexedDB !== 'undefined' ? 'IndexedDB on this device' : 'unavailable'),
