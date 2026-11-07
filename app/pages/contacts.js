@@ -22,7 +22,7 @@ async function renderList(root) {
   root.append(
     h('div', { class: 'page-head' },
       h('h1', {}, 'Contacts'),
-      h('button', { class: 'btn', 'data-id': 'contacts.add-btn', onClick: () => comingLater('Add Shadchan', 2) }, h('span', { html: icon('plus') }).firstChild, 'Add')),
+      h('button', { class: 'btn', 'data-id': 'contacts.add-btn', onClick: () => comingLater('Add Shadchan', 2) }, 'Add')),
     h('div', { class: 'contacts-tools' },
       h('input', { class: 'input', type: 'search', placeholder: 'Search — coming in Stage 2', 'data-id': 'contacts.search', onFocus: (e) => { e.target.blur(); comingLater('Search', 2); } }),
       h('button', { class: 'btn', 'data-id': 'contacts.sort-btn', onClick: () => comingLater('Sort', 2) }, 'Sort'),

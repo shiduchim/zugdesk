@@ -66,10 +66,10 @@ const pad3 = n => String(n).padStart(3, '0');
 function phoneFor(country, rnd, n) {
   const d = pad3(n).padStart(4, '0');
   if (country === 'Israel') return `05${2 + (n % 3)}-555-${d}`;
-  if (country === 'UK') return `+44 7700 900${pad3(n % 1000)}`;
-  if (country === 'France' || country === 'Belgium') return `+33 6 55 55 ${pad3(n % 1000).slice(0,2)} ${pad3(n % 1000).slice(1)}`;
-  if (country === 'Australia') return `+61 4 5555 ${d}`;
-  if (country === 'South Africa') return `+27 55 555 ${d}`;
+  if (country === 'UK') return `0044 7700 900${pad3(n % 1000)}`;
+  if (country === 'France' || country === 'Belgium') return `0033 6 55 55 ${pad3(n % 1000).slice(0,2)} ${pad3(n % 1000).slice(1)}`;
+  if (country === 'Australia') return `0061 4 5555 ${d}`;
+  if (country === 'South Africa') return `0027 55 555 ${d}`;
   return `(${['212','718','732','845','410','323','312','305','416','514'][n % 10]}) 555-${d}`;
 }
 

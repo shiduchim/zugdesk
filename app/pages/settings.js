@@ -46,7 +46,7 @@ export async function render(root) {
         h('button', { class: 'btn', 'data-id': 'settings.load-demo-btn', disabled: demoCount >= store.FULL_DEMO_SEED || null, onClick: async () => {
           const added = await store.loadDemoContacts(store.FULL_DEMO_SEED);
           toast(added ? `Added ${added} demo contacts` : 'All 200 demo contacts are already loaded');
-        } }, h('span', { html: icon('plus') }).firstChild, `Load ${store.FULL_DEMO_SEED} demo contacts`),
+        } }, `Load ${store.FULL_DEMO_SEED} demo contacts`),
         h('button', { class: 'btn danger', 'data-id': 'settings.remove-demo-btn', disabled: demoCount === 0 || null, onClick: async () => {
           if (await confirmDialog({ title: 'Remove all demo data?', text: `Removes ${demoCount} fictional demo contacts (and any other demo records). Everything you typed yourself stays.`, ok: 'Remove demo data', danger: true, dataId: 'settings.remove-demo-dialog' })) {
             const n = await store.removeDemoData(); toast(`Removed ${n} demo records`);
