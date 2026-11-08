@@ -81,3 +81,5 @@
 .person-row .row-title,.person-row .row-sub{text-align:left}
 .person-row .row-main{align-items:flex-start}
 .person-row .row-title[dir="auto"],.person-row .row-sub[dir="auto"]{unicode-bidi:plaintext}
+/* My Profile has two tabs: equal halves (owner request) */
+.mp-tabs button{flex:1 1 0}
