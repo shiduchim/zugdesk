@@ -24,7 +24,7 @@ export function latestByPerson(ints) {
 
 export function ideaStatus(p, l = {}, hasOffer = false) {
   const P = pron(p), mine = l.mine?.value, theirs = l.theirs?.value;
-  if (hasOffer) return { key: 'shidduch', label: 'In Shidduchim' };
+  if (hasOffer) return { key: 'shidduch', label: 'In a shidduch' };
   if (MINE_NO.includes(mine)) return { key: 'closed', label: 'Not for me' };
   if (THEIRS_NO.includes(theirs)) return { key: 'closed', label: `${P.He} said no` };
   if (MINE_YES.includes(mine)) return { key: 'waiting', label: `Waiting for ${P.him}` };
