@@ -366,13 +366,21 @@ function customFact(f, otherTitle = '') {
     lab.addEventListener('change', () => saveNow(true)); val.addEventListener('change', () => saveNow(true));
     box.firstChild.classList.add('with-del'); box.firstChild.append(delBtn); return [h('div', { class: 'fact mp-edit-row fact-line', 'data-id': 'profile.fact-custom' }, h('dd', {}, box))];
   }
-  const save = async () => { await saveNow(); OPEN = null; draw(true); };
-  [lab, val].forEach(i => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } }));
-  setTimeout(() => val.focus(), 30);
-  box.append(delBtn, h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
-    h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => { OPEN = null; draw(true); } }, 'Cancel'),
-    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')));
-  return [row, box];
+  // Tapped one fact: type right in its place (the text only), Delete beside it.
+  const txt = h('input', { class: 'input', dir: 'auto', value: f.value || f.label, 'aria-label': 'Fact', 'data-id': 'profile.fact-custom-value' });
+  const save = async () => {
+    const x = txt.value.trim();
+    if (x) { const nf = f.value ? { ...f, value: x } : { ...f, label: x }; P.me = await PD.saveProfile(P.me, lang, { facts: (P.me.facts || []).map(y => y.id === f.id ? nf : y) }); toast('Saved'); }
+    OPEN = null; draw(true);
+  };
+  txt.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  setTimeout(() => { txt.focus(); txt.setSelectionRange(txt.value.length, txt.value.length); }, 30);
+  return [h('div', { class: 'fact mp-edit-row', 'data-id': 'profile.fact-custom' },
+    h('dt', { dir: 'auto' }, f.value ? f.label : otherTitle),
+    h('dd', {}, h('div', { class: 'mp-fact-inplace' }, txt, delBtn)),
+    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => { OPEN = null; draw(true); } }, 'Cancel'),
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')))];
 }
 function tapFact(id, label, value, dataId) {
   if (!value) return [];
