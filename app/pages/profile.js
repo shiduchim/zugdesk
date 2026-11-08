@@ -92,7 +92,7 @@ function sec(title, id, dataId, editSec, ...kids) {
       editSec ? h('a', { class: 'icon-btn', href: editAt(editSec), 'aria-label': 'Edit ' + title.toLowerCase(), 'data-id': dataId + '-edit', html: icon('edit') }) : null),
     ...kids);
 }
-const fact = (k, v, dataId, extra = null) => h('div', { class: 'fact', 'data-id': dataId }, h('dt', { dir: 'auto' }, k), h('dd', { dir: 'auto' }, v || notYet()), extra);
+const fact = (k, v, dataId, extra = null) => !v ? null : h('div', { class: 'fact', 'data-id': dataId }, h('dt', { dir: 'auto' }, k), h('dd', { dir: 'auto' }, v), extra); // empty = left out
 function profileTab(v) {
   const l = PD.L(lang);
   const c = v.contact;

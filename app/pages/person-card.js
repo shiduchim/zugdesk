@@ -67,7 +67,9 @@ function sec(title, dataId, editHref, ...kids) {
       editHref ? h('a', { class: 'icon-btn', href: editHref, 'aria-label': 'Edit ' + title.toLowerCase(), 'data-id': dataId + '-edit', html: icon('edit') }) : null),
     ...kids);
 }
-const fact = (k, v, dataId) => h('div', { class: 'fact', 'data-id': dataId }, h('dt', {}, k), h('dd', { dir: 'auto' }, v == null || v === '' || (Array.isArray(v) && !v.length) ? NR() : Array.isArray(v) ? v.join(', ') : v));
+// Empty answers are left out of the profile screen (owner request): no "Not recorded" rows.
+const isEmpty = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
+const fact = (k, v, dataId) => isEmpty(v) ? null : h('div', { class: 'fact', 'data-id': dataId }, h('dt', {}, k), h('dd', { dir: 'auto' }, Array.isArray(v) ? v.join(', ') : v));
 const firstName = (p) => (p.name || '').trim().split(/\s+/)[0] || pron(p).him;
 
 // ---------- Profile ----------
@@ -85,7 +87,7 @@ function profileTab(b) {
     h('div', { class: 'pc-summary', 'data-id': 'person-card.summary' },
       h('div', { class: 'avatar lg' }, store.initials(p)),
       h('div', { class: 'pc-summary-text' },
-        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || 'Age, city and occupation not recorded'),
+        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || ''),
         own.length ? h('div', { class: 'pc-summary-line pc-own-phone', 'data-id': 'person-card.phone' }, own.map((n, i) => [i ? ' · ' : '', h('a', { href: 'tel:' + n.replace(/[^0-9]/g, ''), class: 'mono' }, n)])) : null,
         p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
       h('a', { class: 'icon-btn', href: `#/people/${enc}/edit/basic`, 'aria-label': 'Edit basic info', 'data-id': 'person-card.summary-edit', html: icon('edit') })),
@@ -107,25 +109,23 @@ function profileTab(b) {
         ...custom.map(([k, v]) => fact((p.answerLabels || {})[k] || k, v, 'person-card.fact-custom')),
         fact('Profile source', first ? [first.sender || 'Sender not recorded', dateOnly(first.receivedAt || first.createdAt)].join(' · ') : (p.sender || ''), 'person-card.fact-source')),
       h('a', { class: 'pc-add', href: edit('about'), 'data-id': 'person-card.add-fact' }, 'Add a fact…')),
-    sec(`About ${firstName(p)}`, 'person-card.about', edit('about'),
-      p.about ? h('p', { class: 'prewrap', dir: 'auto' }, p.about) : h('p', {}, NR())),
-    sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', edit('about'),
-      p.looking ? h('p', { class: 'prewrap', dir: 'auto' }, p.looking) : h('p', {}, NR())),
-    sec('Contacts and source', 'person-card.contacts', edit('contacts'),
+    !p.about ? null : sec(`About ${firstName(p)}`, 'person-card.about', edit('about'),
+      h('p', { class: 'prewrap', dir: 'auto' }, p.about)),
+    !p.looking ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', edit('about'),
+      h('p', { class: 'prewrap', dir: 'auto' }, p.looking)),
+    !(cards.length || p.sender) ? null : sec('Contacts and source', 'person-card.contacts', edit('contacts'),
       cards.length || p.sender ? h('dl', { class: 'facts' },
         ...cards.map(c => contactFact(c, b)),
         p.sender ? h('div', { class: 'fact' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(p.sender, p.senderContactId, b)), h('span', { class: 'priv' }, 'private')) : null)
         : h('p', {}, NR()),
       h('p', { class: 'note' }, 'A number given for a mother, father, reference or shadchan is never shown as their own number.')),
-    sec(`How I know ${P.him}`, 'person-card.known', edit('known'),
+    !((p.know || []).length || p.yearsKnown || p.howKnow) ? null : sec(`How I know ${P.him}`, 'person-card.known', edit('known'),
       (p.know || []).length || p.yearsKnown || p.howKnow ? h('dl', { class: 'facts' },
         fact('Contact', p.know, 'person-card.fact-know'),
         p.yearsKnown ? fact('Years known', p.yearsKnown) : null,
         p.howKnow ? fact('How', p.howKnow) : null) : h('p', {}, NR()),
       h('p', { class: 'note' }, 'Internal only. Never part of anything you share.')),
     sec('Also yours to keep', 'person-card.keep', null,
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'person-card.originals', onClick: () => originalsSheet(b) },
-        ico('file'), h('span', { class: 'grow' }, 'Original profiles'), h('span', { class: 'mono note' }, `${srcs.length} · private`), ico('chevron')),
       h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'person-card.attachments', onClick: () => attachmentsSheet(b) },
         ico('folder'), h('span', { class: 'grow' }, 'Attachments'), h('span', { class: 'mono note' }, `${atts.length ? atts.length : 'No files'} · private`), ico('chevron'))),
     h('div', { class: 'stamp pc-stamp' }, `updated ${dateOnly(p.updatedAt)} · added ${dateOnly(p.createdAt)}`),
@@ -150,16 +150,6 @@ function contactFact(c, b) {
     h('span', { class: 'priv' }, 'private'));
 }
 
-function originalsSheet(b) {
-  const list = [...b.srcs].reverse();
-  sheet({ title: 'Original profiles', dataId: 'person-card.originals-sheet', className: 'tall',
-    body: list.length ? [h('p', { class: 'note' }, 'Kept exactly as received. Newer versions never replace older ones.'),
-      ...list.map((s, i) => h('div', { class: 'orig-item' },
-        h('div', { class: 'eyebrow' }, [dateOnly(s.receivedAt || s.createdAt), s.sender || 'sender not recorded'].join(' · '), i === list.length - 1 ? ' · earliest' : ''),
-        s.text ? h('div', { class: 'orig-text', dir: 'auto' }, s.text) : null,
-        ...b.atts.filter(a => a.sourceId === s.id).map(a => h('a', { class: 'att-row', href: a.dataUrl, download: a.name }, ico('file'), h('span', { dir: 'auto' }, a.name)))))]
-      : [h('p', { class: 'note' }, 'No original was pasted or attached for this person.')] });
-}
 function attachmentsSheet(b) {
   sheet({ title: 'Attachments', dataId: 'person-card.attachments-sheet',
     body: b.atts.length ? b.atts.map(a => h('a', { class: 'att-row', href: a.dataUrl, download: a.name, 'data-id': 'person-card.attachment' }, ico('file'),
