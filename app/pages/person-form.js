@@ -711,8 +711,8 @@ function paintMe() {
   root.append(
     h('div', { class: 'me-top', 'data-id': 'me-form.top' },
       h('div', { class: 'me-top-row' },
-        h('button', { type: 'button', class: 'btn small', 'data-id': 'me-form.cancel', onClick: cancel }, 'Cancel'),
         h('h1', {}, 'Edit profile'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': 'me-form.cancel', onClick: cancel }, 'Cancel'),
         h('button', { type: 'button', class: 'btn small primary', 'data-id': 'me-form.save-top', onClick: saveMe }, 'Save')),
       h('nav', { class: 'jumpnav', 'aria-label': 'Jump to section', 'data-id': 'me-form.jumpnav' },
         jumps.map(([k, l]) => h('button', { type: 'button', class: 'jump', 'data-id': 'me-form.jump-' + k, onClick: () => jump(k) }, l)))),
