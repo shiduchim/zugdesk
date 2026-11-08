@@ -61,6 +61,7 @@
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --safe-top:env(safe-area-inset-top,0px);
   --vv-top:0px;                 /* set by app.js: keyboard-open shift on phones */
+  --edit-bar-btn:32px;          /* Cancel / Save / Done in the top Editing bar */
 }
 :root{
   /* Stage 2 — Contacts + shared controls */
