@@ -222,10 +222,13 @@ dialog.cal-sheet{padding:12px 12px calc(12px + var(--safe-bottom));max-width:min
 
 /* Dock (ui.js dock()): main buttons that never scroll away. Sits just above the bottom bar;
    when the slim bar slides away it follows it down to the screen edge. */
-:root{--dock-bottom:calc(var(--nav-height) + var(--safe-bottom))}
-body.shell-slim.bar-hidden{--dock-bottom:var(--safe-bottom)}
-body.focus-mode{--dock-bottom:var(--safe-bottom)}
-.dock{position:sticky;bottom:var(--dock-bottom);z-index:15;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:12px calc(var(--pad-page) * -1) 0;padding:8px var(--pad-page);background:var(--bg);border-top:1px solid var(--border);transition:bottom .2s ease}
+body{--dock-bottom:calc(var(--nav-height) + var(--safe-bottom));--dock-safe:0px} /* on body: follows the slim bar height */
+/* bar slid away (or no bar): the dock goes to the very edge and pads itself over the phone's home strip */
+body.shell-slim.bar-hidden,body.focus-mode{--dock-bottom:0px;--dock-safe:var(--safe-bottom)}
+.dock{position:sticky;bottom:var(--dock-bottom);z-index:15;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:12px calc(var(--pad-page) * -1) 0;padding:8px var(--pad-page) calc(8px + var(--dock-safe));background:var(--bg);border-top:1px solid var(--border);transition:bottom .2s ease,padding .2s ease}
+/* a page that ends with a dock or a Save bar needs no empty space under it: no gap above the bar,
+   no blank strip when the bar slides away */
+main.content:has(.dock),main.content:has(.form-foot),main.content:has(.me-foot){padding-bottom:0}
 .dock .grow{flex:1;min-width:0}
 .dock .btn{flex:none}
 @media (max-width:420px){.dock .btn.wide{flex:1}}

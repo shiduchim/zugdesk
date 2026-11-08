@@ -112,7 +112,7 @@ body.focus-mode main.content{margin-left:auto;padding-top:0;padding-bottom:var(-
 .me-body{padding-top:10px}
 .me-body .ap-sec{scroll-margin-top:calc(var(--topbar-height) + var(--safe-top) + var(--jump-height) + 16px)}
 .me-iam{align-self:flex-start;margin:0}
-.me-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;position:sticky;bottom:var(--dock-bottom);z-index:15;background:var(--bg);border-top:1px solid var(--border)}
+.me-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 0;position:sticky;bottom:var(--dock-bottom);z-index:15;background:var(--bg);border-top:1px solid var(--border);padding-bottom:calc(10px + var(--dock-safe))}
 .me-foot .spacer{flex:1}
 /* Body type: one column in Edit profile */
 body.focus-mode [data-id="person.body-type"]{flex-direction:column;align-items:stretch}
@@ -137,3 +137,5 @@ body.focus-mode [data-id="person.body-type"] .bubble{width:100%;justify-content:
 .me-doc{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 .me-doc .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .me-doc svg,.me-add svg{width:18px;height:18px;flex:none}
+body.focus-mode main.content:has(.me-foot){padding-bottom:0}
+.me-body:has(> .me-foot:last-child){padding-bottom:0}

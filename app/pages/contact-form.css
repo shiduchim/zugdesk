@@ -7,7 +7,7 @@
 .input.short{max-width:140px}
 .att-list{display:flex;flex-direction:column}
 .att-list .att-name{flex:1;min-width:0}
-.form-foot{position:sticky;bottom:var(--dock-bottom);z-index:15;transition:bottom .2s ease;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0;background:var(--bg);border-top:1px solid var(--border);z-index:5}
+.form-foot{position:sticky;bottom:var(--dock-bottom);z-index:15;transition:bottom .2s ease,padding .2s ease;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0 calc(12px + var(--dock-safe));background:var(--bg);border-top:1px solid var(--border);z-index:5}
 .form-foot .spacer{flex:1}
 .form-foot .manage{order:0;padding-left:0}
 .manage-body .eyebrow{margin-top:10px}
