@@ -752,18 +752,20 @@ function meRefs() {
   const c = d.p.contact, refs = d.p.references;
   if (!refs.some(r => !(r.name || '').trim())) refs.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); // one empty row always open
   return block({ key: 'me-refs', name: 'Inquiries and references' },
-    h('div', { class: 'me-sub' }, 'Who to call about me'),
-    h('div', { class: 'me-two' },
-      mIn('Name', c, 'inquiriesName', 'me-form.inq-name', { placeholder: 'e.g. Mrs. Cohen (mother)' }),
-      mIn('Phone', c, 'inquiriesPhone', 'me-form.inq-phone', { inputmode: 'tel' })),
-    h('div', { class: 'me-sub' }, 'References'),
-    ...refs.map(r => h('div', { class: 'me-item me-ref', 'data-id': 'me-form.reference' },
-      h('div', { class: 'me-two' }, mIn('Name', r, 'name', 'me-form.reference-name'), mIn('Phone', r, 'phone', 'me-form.reference-phone', { inputmode: 'tel' })),
-      h('div', { class: 'me-two' }, mIn('How they know me', r, 'relation', 'me-form.reference-relation'), mIn('Private note', r, 'privateNote', 'me-form.reference-note')),
-      (r.name || '').trim() ? mRemove('me-form.reference-remove', () => { d.p.references = d.p.references.filter(x => x !== r); }) : null)),
-    h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-reference', onClick: () => {
-      d.p.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); paint({ keepScroll: true });
-      const a = root.querySelectorAll('[data-id="me-form.reference-name"]'); a[a.length - 1]?.focus(); } }, 'Add another reference'));
+    h('div', { class: 'me-group', 'data-id': 'me-form.inquiries' },
+      h('div', { class: 'me-sub' }, 'Inquiries', h('span', { class: 'me-hint' }, 'who people call to ask about me')),
+      h('div', { class: 'me-two' },
+        mIn('Name', c, 'inquiriesName', 'me-form.inq-name', { placeholder: 'e.g. Mrs. Cohen (mother)' }),
+        mIn('Phone', c, 'inquiriesPhone', 'me-form.inq-phone', { inputmode: 'tel' }))),
+    h('div', { class: 'me-group', 'data-id': 'me-form.references' },
+      h('div', { class: 'me-sub' }, 'References', h('span', { class: 'me-hint' }, 'people who know me')),
+      ...refs.map(r => h('div', { class: 'me-item me-ref', 'data-id': 'me-form.reference' },
+        h('div', { class: 'me-two' }, mIn('Name', r, 'name', 'me-form.reference-name'), mIn('Phone', r, 'phone', 'me-form.reference-phone', { inputmode: 'tel' })),
+        h('div', { class: 'me-two' }, mIn('How they know me', r, 'relation', 'me-form.reference-relation'), mIn('Private note', r, 'privateNote', 'me-form.reference-note')),
+        (r.name || '').trim() ? mRemove('me-form.reference-remove', () => { d.p.references = d.p.references.filter(x => x !== r); }) : null)),
+      h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-reference', onClick: () => {
+        d.p.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); paint({ keepScroll: true });
+        const a = root.querySelectorAll('[data-id="me-form.reference-name"]'); a[a.length - 1]?.focus(); } }, 'Add another reference')));
 }
 function meSections() {
   return block({ key: 'me-sections', name: 'Your own sections' },

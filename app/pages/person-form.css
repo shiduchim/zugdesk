@@ -126,3 +126,7 @@ body.focus-mode [data-id="person.body-type"] .bubble{width:100%;justify-content:
 @media (max-width:340px){.me-two{grid-template-columns:minmax(0,1fr)}}
 .me-foot .manage{flex-basis:100%;text-align:start;padding-left:0}
 .me-foot .btn{flex:none}
+
+.me-group{border:1px solid var(--border);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.me-group .me-sub{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.me-hint{font-weight:400;font-size:var(--font-sm);color:var(--muted)}
