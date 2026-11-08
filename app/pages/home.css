@@ -245,3 +245,5 @@
 .home-history .hist-chevron svg{width:12px;height:12px}
 .home-history .hist-detail{margin:0 0 4px;padding:4px 6px}
 .home-composer-slot.hidden{display:none}
+.notes-delete-all{display:flex;justify-content:center;margin:18px 0 6px}
+.notes-delete-all .linkish{font-size:var(--font-sm);color:var(--danger)}

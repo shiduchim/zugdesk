@@ -399,6 +399,17 @@ function drawNotes() {
   if (!list.length) { els.notes.append(h('p', { class: 'note home-empty' }, D.notes.length ? 'No notes of your own yet. Notes about a person are on their Notes tab.' : 'No notes yet. Write one above — a title is optional.')); return; }
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
   if (other.length) els.notes.append(pinned.length ? h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))) : '', h('div', { class: 'note-list' }, other.map(noteCard)));
+  els.notes.append(h('div', { class: 'notes-delete-all' },
+    h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'home.notes-delete-all', onClick: () => deleteAllFlow(list) }, `Delete all ${list.length} notes`)));
+}
+// Deletes exactly the notes shown (My notes, or All). Pinned ones too. Follow Ups stay.
+async function deleteAllFlow(list) {
+  if (!list.length) return;
+  const which = U.allNotes ? 'all your notes, including the ones about people' : 'all your own notes (notes about people stay)';
+  if (!(await confirmDialog({ title: `Delete ${list.length} notes?`, text: `This deletes ${which}, pinned ones too, and their dated entries. Follow Ups stay. It cannot be undone — to keep a copy first, use Settings → Export backup.`, ok: `Delete ${list.length} notes`, danger: true, dataId: 'home.delete-all-dialog' }))) return;
+  await N.deleteNotes(list);
+  for (const n of list) delete drafts['note:' + n.id];
+  persist(); U.expanded = null; toast(`${list.length} notes deleted`);
 }
 
 function noteCard(n) {
