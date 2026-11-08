@@ -187,6 +187,7 @@
   --dot-size:9px;  --dot-tap:32px;
   --qmenu-width:290px;  --qmenu-max:min(420px,calc(100dvh - 24px));  --swatch:32px;
   --ed-min:96px;
+  --ed-title-font:18px;            /* note title while writing */
   --ed-font:16px;                  /* note writing text (cursor grows with it) */
 }
 :root{
