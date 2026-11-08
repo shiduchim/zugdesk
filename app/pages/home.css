@@ -230,13 +230,12 @@
 
 /* ---- History: compact, two rows per entry, like a command prompt ----
    row 1: date time · what happened · arrow   row 2: the text, up to 2 lines */
-.home-history{font-family:var(--font-mono);padding:8px 10px}
+.home-panel.home-history{font-family:var(--font-mono);padding:8px 10px;background:var(--hist-bg);border-color:var(--hist-edge)}
 .home-history .home-sec-eyebrow{display:none}
 .home-history .home-sec-head{margin-bottom:4px;padding-bottom:4px}
 .home-history h2{font-size:var(--font-base)}
 .home-history .hist-line{grid-template-columns:auto minmax(0,1fr) auto;column-gap:8px;row-gap:0;padding:3px 0;line-height:1.3;align-items:baseline}
 .home-history .hist-date{grid-column:1;grid-row:1;font-size:var(--font-xs);white-space:nowrap}
-.home-history .hist-date br{display:none}
 .home-history .hist-main{display:contents}
 .home-history .hist-main strong{grid-column:2;grid-row:1;font-size:var(--font-xs);min-width:0;overflow-wrap:anywhere}
 .home-history .hist-main p{grid-column:1 / 3;grid-row:2;font-size:var(--font-xs);min-width:0;overflow-wrap:anywhere}

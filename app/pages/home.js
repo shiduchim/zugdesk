@@ -504,7 +504,7 @@ function histRow(r) {
   const detailId = 'hist-' + r.key.replace(/[^a-zA-Z0-9_-]/g, '-');
   return h('li', { class: 'hist-row' + (open ? ' open' : ''), 'data-id': 'home.history-row' },
     h('div', { class: 'hist-line' },
-      h('span', { class: 'hist-date' }, store.formatDate(r.at), h('br'), d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })),
+      h('span', { class: 'hist-date' }, store.formatDate(r.at), ' ', d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })),
       h('div', { class: 'hist-main' }, h('strong', { dir: 'auto' }, r.what), h('p', { dir: 'auto', class: open ? 'prewrap' : 'clamp1' }, r.text)),
       h('button', { type: 'button', class: 'hist-chevron' + (open ? ' on' : ''), 'aria-expanded': open ? 'true' : 'false', 'aria-controls': detailId,
         'aria-label': (open ? 'Collapse' : 'Expand') + ' history entry: ' + r.what, 'data-id': 'home.history-chevron', html: icon('chevron'),
