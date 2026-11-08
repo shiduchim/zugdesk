@@ -191,7 +191,7 @@ function shortTab(v) {
     h('button', { type: 'button', class: 'btn', 'data-id': 'profile.short-new', onClick: async () => {
       const t = await promptText({ title: 'New short version', label: 'Name (e.g. who it is for)', ok: 'Create', dataId: 'profile.version-name' });
       if (!t) return;
-      const x = await store.profileVersions.save({ title: t, lang: sLang, text: sugg, savedAt: store.now() });
+      const x = await store.profileVersions.save({ title: t, lang: sLang, text: '', savedAt: store.now() });
       versionSheet(x);
     } }, 'New short version'),
     h('p', { class: 'stamp mp-foot' }, 'these are the texts people receive · copy any box'),
