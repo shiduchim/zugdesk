@@ -121,9 +121,10 @@ function profileTab(v) {
         ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
         ...tapFact('age', 'Age', v.age, 'profile.fact-age'), ...tapFact('city', 'City', v.city, 'profile.fact-city'), ...tapFact('work', 'Work / learning', v.occupation, 'profile.fact-work'),
         // one list in order: "name: value" rows and one-line facts (no value) together, newest last
-        ...v.facts.filter(f => f.value || f.label).flatMap(f => isCustom(f.id) ? customFact(f)
-          : f.value ? tapFact(f.id, f.label, f.value, 'profile.fact')
-          : [h('div', { class: 'fact fact-line', 'data-id': 'profile.fact-line' }, h('dd', { dir: 'auto' }, f.label))]),
+        // "name: value" facts first, then the one-line facts together under "Other facts" (text in the second column)
+        ...v.facts.filter(f => f.value).flatMap(f => isCustom(f.id) ? customFact(f) : tapFact(f.id, f.label, f.value, 'profile.fact')),
+        ...v.facts.filter(f => !f.value && f.label).flatMap((f, i) => isCustom(f.id) ? customFact(f, i === 0 ? 'Other facts' : '')
+          : [h('div', { class: 'fact', 'data-id': 'profile.fact-line' }, h('dt', {}, i === 0 ? 'Other facts' : ''), h('dd', { dir: 'auto' }, f.label))]),
         addFactRow())),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
     sec(l.looking, 'mp-looking', 'profile.looking', 'looking', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
@@ -339,10 +340,10 @@ function addFactRow() {
 }
 // Facts the owner added (Add a fact): tap to change the name / text, or delete it.
 const isCustom = (id) => (P.me?.facts || []).some(f => f.id === id);
-function customFact(f) {
+function customFact(f, otherTitle = '') {
   const open = OPEN === f.id || EDIT;
-  const show = f.value ? [h('dt', { dir: 'auto' }, f.label), h('dd', { dir: 'auto' }, f.value)] : [h('dd', { dir: 'auto' }, f.label)];
-  const row = h('div', { class: 'fact mp-tap' + (f.value ? '' : ' fact-line') + (open ? ' open' : ''), 'data-id': 'profile.fact-custom', role: 'button', tabindex: 0,
+  const show = f.value ? [h('dt', { dir: 'auto' }, f.label), h('dd', { dir: 'auto' }, f.value)] : [h('dt', {}, otherTitle), h('dd', { dir: 'auto' }, f.label)];
+  const row = h('div', { class: 'fact mp-tap' + (open ? ' open' : ''), 'data-id': 'profile.fact-custom', role: 'button', tabindex: 0,
     'aria-expanded': String(open), onClick: EDIT ? null : () => { OPEN = OPEN === f.id ? null : f.id; draw(true); } }, ...show);
   if (!open) return [row];
   const lab = h('input', { class: 'input', dir: 'auto', value: f.value ? f.label : '', placeholder: 'Name (optional)', 'aria-label': 'Fact name', 'data-id': 'profile.fact-custom-label' });
