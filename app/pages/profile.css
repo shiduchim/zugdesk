@@ -153,6 +153,9 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-add-fact-row .input{background:var(--surface)}
 .mp-add-fact-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mp-add-fact-full{margin-left:auto;font-size:var(--font-sm)}
-/* Edit boxes: Cancel / Save pinned to the top while scrolling (owner request) */
-.mp-form-bar{position:sticky;top:calc(var(--topbar-height) + var(--safe-top));z-index:8;background:var(--bg);align-items:center;padding:6px 0;margin-bottom:2px;border-bottom:1px solid var(--border)}
+/* While editing: Cancel / Save / Done in a bar fixed to the very top of the screen (owner request) */
+.mp-form-bar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0;
+  padding:calc(var(--safe-top) + 8px) var(--pad-page) 8px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
 .mp-form-bar-label{margin-right:auto;font-size:var(--font-xs);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.mp-form-bar .btn.small{min-height:var(--btn-height);padding:0 18px}
+body:has(.mp-form-bar){scroll-padding-top:calc(var(--safe-top) + 76px)}

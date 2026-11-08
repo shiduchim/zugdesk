@@ -94,7 +94,7 @@ function sec(title, id, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDIT : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), id, 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDIT ? h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDIT = false; OPEN = null; draw(true); } }, 'Done')
+      facts && EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'), h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDIT = false; OPEN = null; draw(true); } }, 'Done'))
       : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; draw(true); })
       : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
@@ -323,7 +323,7 @@ function addFactRow() {
     h('div', { class: 'mp-add-fact-row' }, lab, val),
     h('div', { class: 'mp-add-fact-foot' },
       h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-save', onClick: add }, 'Add fact'),
-      !EDIT ? h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; draw(true); } }, 'Done') : null,
+      !EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.fact-add-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Adding facts'), h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; draw(true); } }, 'Done')) : null,
       h('a', { class: 'linkish mp-add-fact-full', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Full edit screen')));
 }
 function tapFact(id, label, value, dataId) {
@@ -352,7 +352,7 @@ function inlineEditor(id, ed) {
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
     if (EDIT) { inp.addEventListener('change', save); box.append(inp); return box; } // saves when you leave the box
     setTimeout(() => inp.focus(), 30);
-    box.append(inp, h('div', { class: 'mp-inline-actions' },
+    box.append(inp, h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
       h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Done')));
     return box;
@@ -364,7 +364,7 @@ function inlineEditor(id, ed) {
   for (const v of cur) if (!opts.some(o => o[0] === v)) opts.push([v, v]); // keep answers no longer in the list
   box.append(bubbles({ options: opts, selected: cur, multi, dataId: 'profile.inline-choice',
     onChange: (v) => { if (multi) { cur = v; if (EDIT) done(ed.set(cur)); } else done(ed.set(v ? [v] : [])); } }));
-  if (multi && !EDIT) box.append(h('div', { class: 'mp-inline-actions' },
+  if (multi && !EDIT) box.append(h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
     h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
     h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: () => done(ed.set(cur)) }, 'Done')));
   return box;

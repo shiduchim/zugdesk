@@ -77,7 +77,7 @@ function sec(title, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDITF : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDITF ? h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDITF = false; redraw(); } }, 'Done')
+      facts && EDITF ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'), h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDITF = false; redraw(); } }, 'Done'))
       : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDITF = true; SEC = null; redraw(); })
       : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
