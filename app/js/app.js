@@ -188,6 +188,10 @@ function applyTheme() {
 // Keep --vv-top = how far the visible area has moved, so edit bars stay at the visible top.
 (function keepBarsOnScreen() {
   const vv = window.visualViewport; if (!vv) return;
-  const set = () => document.documentElement.style.setProperty('--vv-top', Math.max(0, vv.offsetTop) + 'px');
-  vv.addEventListener('scroll', set); vv.addEventListener('resize', set); set();
+  let raf = 0;
+  const set = () => { raf = 0; document.documentElement.style.setProperty('--vv-top', Math.max(0, Math.round(vv.offsetTop)) + 'px'); };
+  const soon = () => { if (!raf) raf = requestAnimationFrame(set); };
+  vv.addEventListener('scroll', soon); vv.addEventListener('resize', soon);
+  window.addEventListener('scroll', soon, { passive: true }); document.addEventListener('focusin', () => setTimeout(set, 350)); document.addEventListener('focusout', () => setTimeout(set, 350));
+  set();
 })();
