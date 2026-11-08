@@ -52,8 +52,8 @@
   --sh-heart-bg:#3D2230;--sh-heart-text:#F08DBA;
   --sh-calendar-bg:#2C2848;--sh-calendar-text:#B7A6F0;
 
-  /* Home — plain notes look like a dim sticky note */
-  --note-plain-bg:#3B3522;  --note-plain-edge:#5C5232;
+  /* Home — plain notes: soft graphite card, lighter than the page */
+  --note-plain-bg:#3C3F43;  --note-plain-edge:#55595F;
   --note-blue-bg:#263650;    --note-blue-edge:#3A5078;
   --note-yellow-bg:#4A401C;  --note-yellow-edge:#6E5F2C;
   --note-peach-bg:#4A3324;   --note-peach-edge:#6E4C36;
