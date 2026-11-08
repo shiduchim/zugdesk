@@ -298,7 +298,7 @@ function textField(label, k, attrs = {}, dataId) {
 function areaField(label, k, placeholder, dataId) {
   const id = 'ap-' + k;
   const t = h('textarea', { class: 'input grow', id, rows: 2, dir: 'auto', placeholder, 'data-id': dataId, onInput: (e) => { d.p[k] = e.target.value; touch(); grow(e.target); } }, d.p[k] || '');
-  setTimeout(() => grow(t), 0);
+  setTimeout(() => grow(t), 0); setTimeout(() => grow(t), 400);
   return h('div', { class: 'field' }, h('label', { for: id }, label), t);
 }
 function grow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 480) + 'px'; }
@@ -695,36 +695,37 @@ function paintMe() {
   const visible = ctx.cats.filter(c => !c.hidden && !ME_SKIP.has(c.key));
   const jumps = [['me-basic', 'Basics'], ...visible.map(c => [c.key, c.key === 'about' ? 'About me' : (c.jump || c.name)]),
     ['me-facts', 'More facts'], ['me-contact', 'Contact'], ['me-refs', 'References'], ['me-sections', 'Sections']];
+  const cancel = async () => {
+    if (d.dirty && !(await confirmDialog({ title: 'Leave without saving?', text: 'Your changes on this page are lost.', ok: 'Leave', danger: true, dataId: 'me-form.leave-dialog' }))) return;
+    drafts.delete('me'); navigate('/profile');
+  };
+  // Focus mode: no app bars; one slim sticky header (back · title · Save) with the jump links under it.
   root.append(
-    h('div', { class: 'page-head' },
-      h('a', { class: 'icon-btn', href: '#/profile', 'aria-label': 'Back to My Profile', 'data-id': 'me-form.back', html: icon('back') }),
-      h('h1', {}, 'Edit my profile')),
-    h('p', { class: 'note intro' }, 'Your own profile — what you send to shadchanim. Fill in what you want; it stays on this phone until you share it.'),
-    h('div', { class: 'field' }, h('label', {}, 'I am a'),
-      h('div', { class: 'typepick', role: 'group', 'aria-label': 'I am a', 'data-id': 'me-form.i-am' },
-        ...KINDS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': d.kind === k ? 'true' : 'false', 'data-id': 'me-form.i-am-' + k, onClick: () => {
-          d.kind = k; touch(); store.setPref('iAm', k); paint({ keepScroll: true });
-        } }, l)))),
-    h('div', { class: 'ap-body', 'data-id': 'me-form.body' },
-      h('div', { class: 'details-top' },
-        h('nav', { class: 'jumpnav', 'aria-label': 'Jump to section', 'data-id': 'me-form.jumpnav' },
-          jumps.map(([k, l]) => h('button', { type: 'button', class: 'jump', 'data-id': 'me-form.jump-' + k, onClick: () => jump(k) }, l)))),
+    h('div', { class: 'me-top', 'data-id': 'me-form.top' },
+      h('div', { class: 'me-top-row' },
+        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Back to My Profile', 'data-id': 'me-form.back', html: icon('back'), onClick: cancel }),
+        h('h1', {}, 'Edit profile'),
+        h('button', { type: 'button', class: 'btn small primary', 'data-id': 'me-form.save-top', onClick: saveMe }, 'Save')),
+      h('nav', { class: 'jumpnav', 'aria-label': 'Jump to section', 'data-id': 'me-form.jumpnav' },
+        jumps.map(([k, l]) => h('button', { type: 'button', class: 'jump', 'data-id': 'me-form.jump-' + k, onClick: () => jump(k) }, l)))),
+    h('div', { class: 'ap-body me-body', 'data-id': 'me-form.body' },
       block({ key: 'me-basic', name: 'Basics' },
+        h('div', { class: 'typepick me-iam', role: 'group', 'aria-label': 'I am a', 'data-id': 'me-form.i-am' },
+          ...KINDS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': d.kind === k ? 'true' : 'false', 'data-id': 'me-form.i-am-' + k, onClick: () => {
+            d.kind = k; touch(); store.setPref('iAm', k); paint({ keepScroll: true });
+          } }, 'I am a ' + l.toLowerCase()))),
         textField('Name', 'name', { autocomplete: 'off', placeholder: 'Full name' }, 'me-form.name'),
         textField('Age', 'age', { inputmode: 'numeric', class: 'input short' }, 'me-form.age'),
         areaField('One-line introduction', 'intro', 'e.g. An architect who loves good conversations…', 'me-form.intro')),
       ...visible.map(c => c.key === 'about' ? meAbout(c) : section(c)),
       meFacts(), meContact(), meRefs(), meSections(),
       newCategory(),
-      h('div', { class: 'form-foot', 'data-id': 'me-form.footer' },
+      h('div', { class: 'me-foot', 'data-id': 'me-form.footer' },
         h('button', { type: 'button', class: 'linkish manage', 'data-id': 'me-form.manage-choices', onClick: async () => {
           if (await managePersonForm()) { [ctx.choices, ctx.cats] = await Promise.all([store.getChoices(), store.getPersonCategories()]); paint({ keepScroll: true }); }
         } }, 'Manage categories & choices'),
         h('span', { class: 'spacer' }),
-        h('button', { type: 'button', class: 'btn', 'data-id': 'me-form.cancel', onClick: async () => {
-          if (d.dirty && !(await confirmDialog({ title: 'Leave without saving?', text: 'Your changes on this page are lost.', ok: 'Leave', danger: true, dataId: 'me-form.leave-dialog' }))) return;
-          drafts.delete('me'); navigate('/profile');
-        } }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn', 'data-id': 'me-form.cancel', onClick: cancel }, 'Cancel'),
         h('button', { type: 'button', class: 'btn primary', 'data-id': 'me-form.save', onClick: saveMe }, 'Save profile'))));
   if (d.jumpTo) { const id = d.jumpTo; d.jumpTo = null; setTimeout(() => jump(id), 60); }
 }
@@ -740,7 +741,6 @@ const mIn = (label, obj, k, dataId, extra = {}) => h('div', { class: 'field' }, 
 const mRemove = (dataId, run) => h('button', { type: 'button', class: 'linkish danger-text', 'data-id': dataId, onClick: () => { run(); touch(); paint({ keepScroll: true }); } }, 'Remove');
 function meFacts() {
   return block({ key: 'me-facts', name: 'More facts' },
-    h('p', { class: 'note' }, 'Anything not asked above — e.g. Height, Family, Learning.'),
     ...d.p.facts.map(f => h('div', { class: 'me-fact', 'data-id': 'me-form.fact' },
       h('input', { class: 'input', dir: 'auto', value: f.label, placeholder: 'What (e.g. Height)', 'aria-label': 'Fact name', 'data-id': 'me-form.fact-label', onInput: (e) => { f.label = e.target.value; touch(); } }),
       h('input', { class: 'input', dir: 'auto', value: f.value, placeholder: 'Answer', 'aria-label': 'Answer', 'data-id': 'me-form.fact-value', onInput: (e) => { f.value = e.target.value; touch(); } }),
@@ -750,7 +750,6 @@ function meFacts() {
 function meContact() {
   const c = d.p.contact;
   return block({ key: 'me-contact', name: 'Contact' },
-    h('p', { class: 'note' }, 'The inquiries contact is shared in your profile. Your own phone and email are only added when you tick them while sharing.'),
     mIn('For inquiries — name', c, 'inquiriesName', 'me-form.inq-name', { placeholder: 'e.g. Mrs. Cohen (mother)' }),
     mIn('For inquiries — phone', c, 'inquiriesPhone', 'me-form.inq-phone', { inputmode: 'tel' }),
     mIn('My phone (you choose)', c, 'phone', 'me-form.my-phone', { inputmode: 'tel' }),
@@ -758,7 +757,6 @@ function meContact() {
 }
 function meRefs() {
   return block({ key: 'me-refs', name: 'References' },
-    h('p', { class: 'note' }, 'You choose each time you share whether a reference is included. Private notes never are.'),
     ...d.p.references.map(r => h('div', { class: 'me-item', 'data-id': 'me-form.reference' },
       mIn('Name', r, 'name', 'me-form.reference-name'), mIn('How they know me', r, 'relation', 'me-form.reference-relation'),
       mIn('Phone', r, 'phone', 'me-form.reference-phone', { inputmode: 'tel' }), mIn('Private note — only me', r, 'privateNote', 'me-form.reference-note'),
@@ -767,7 +765,6 @@ function meRefs() {
 }
 function meSections() {
   return block({ key: 'me-sections', name: 'Your own sections' },
-    h('p', { class: 'note' }, 'Extra paragraphs with your own title, e.g. “My family”.'),
     ...d.p.sections.map(s => h('div', { class: 'me-item', 'data-id': 'me-form.section' },
       mIn('Title', s, 'title', 'me-form.section-title'),
       h('div', { class: 'field' }, h('label', {}, 'Text'), (() => { const t = h('textarea', { class: 'input grow', rows: 3, dir: 'auto', 'data-id': 'me-form.section-text', onInput: (e) => { s.text = e.target.value; touch(); grow(e.target); } }, s.text || ''); setTimeout(() => grow(t), 0); return t; })()),

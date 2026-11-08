@@ -79,7 +79,7 @@ async function boot() {
     if (ch.store === 'prefs' && ch.key === 'navArrangement') renderNav();
   });
 
-  await start($('#content'), (path) => { renderNav(); setTitle(path); });
+  await start($('#content'), (path) => { renderNav(); setTitle(path); document.body.classList.toggle('focus-mode', path.startsWith('/profile/edit')); });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {

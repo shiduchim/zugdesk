@@ -103,3 +103,14 @@
 .me-item{display:flex;flex-direction:column;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--border)}
 .me-item>.linkish,.me-add{align-self:flex-start}
 @media (max-width:420px){.me-fact{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.me-fact .linkish{grid-column:1/-1;justify-self:start}}
+/* Focus mode (#/profile/edit): no app bars, one slim sticky header */
+body.focus-mode .topbar,body.focus-mode .bottom-nav{display:none}
+body.focus-mode main.content{margin-left:auto;padding-top:0;padding-bottom:var(--pad-page)}
+.me-top{position:sticky;top:0;z-index:10;background:var(--bg);border-bottom:1px solid var(--border);padding-top:var(--safe-top)}
+.me-top-row{display:flex;align-items:center;gap:6px;min-height:var(--topbar-height)}
+.me-top-row h1{flex:1;min-width:0;font-size:var(--font-lg)}
+.me-body{padding-top:10px}
+.me-body .ap-sec{scroll-margin-top:calc(var(--topbar-height) + var(--safe-top) + var(--jump-height) + 16px)}
+.me-iam{align-self:flex-start;margin:0}
+.me-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0}
+.me-foot .spacer{flex:1}
