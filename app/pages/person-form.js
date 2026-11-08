@@ -735,8 +735,7 @@ function meAbout(cat) {
   return block(cat,
     areaField('About me', 'about', 'Personality, background, interests…', 'me-form.about'),
     areaField('What I’m looking for', 'looking', 'Describe who you are looking for…', 'me-form.looking'),
-    h('div', { class: 'inline-field' }, h('label', { for: 'ap-maxAge' }, 'Up to what age?'),
-      h('input', { class: 'input tiny', id: 'ap-maxAge', type: 'number', min: 18, max: 120, inputmode: 'numeric', value: d.p.maxAge || '', placeholder: 'Age', 'data-id': 'me-form.max-age', onInput: (e) => { d.p.maxAge = e.target.value; touch(); } })));
+    textField('Up to what age?', 'maxAge', { inputmode: 'numeric', class: 'input short' }, 'me-form.max-age'));
 }
 const mIn = (label, obj, k, dataId, extra = {}) => h('div', { class: 'field' }, h('label', {}, label),
   h('input', { class: 'input', dir: 'auto', value: obj[k] || '', 'data-id': dataId, ...extra, onInput: (e) => { obj[k] = e.target.value; touch(); } }));
