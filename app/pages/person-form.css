@@ -106,7 +106,7 @@
 /* Focus mode (#/profile/edit): no app bars, one slim sticky header */
 body.focus-mode .topbar,body.focus-mode .bottom-nav{display:none}
 body.focus-mode main.content{margin-left:auto;padding-top:0;padding-bottom:var(--pad-page)}
-.me-top{position:sticky;top:0;z-index:10;transform:translateY(var(--vv-top));background:var(--bg);border-bottom:1px solid var(--border);padding-top:var(--safe-top)}
+.me-top{position:sticky;top:0;z-index:10;transform:translateY(var(--vv-top));background:var(--bg);border-bottom:1px solid var(--border);padding-top:calc(var(--safe-top) + var(--gap))}
 .me-top-row{display:flex;align-items:center;gap:6px;min-height:var(--topbar-height)}
 .me-top-row h1{flex:1;min-width:0;font-size:var(--font-lg)}
 .me-body{padding-top:10px}
