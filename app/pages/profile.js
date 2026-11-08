@@ -118,10 +118,10 @@ function profileTab(v) {
       h('dl', { class: 'facts' },
         ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
         ...tapFact('age', 'Age', v.age, 'profile.fact-age'), ...tapFact('city', 'City', v.city, 'profile.fact-city'), ...tapFact('work', 'Work / learning', v.occupation, 'profile.fact-work'),
-        ...v.facts.filter(f => f.value).flatMap(f => tapFact(f.id, f.label, f.value, 'profile.fact')),
-        addFactRow(),
-        v.facts.some(f => !f.value) ? h('div', { class: 'fact', 'data-id': 'profile.fact-more' }, h('dt', {}, 'More facts'),
-          h('dd', { dir: 'auto', class: 'mp-more' }, v.facts.filter(f => !f.value).map(f => h('div', {}, f.label)))) : null)),
+        // one list in order: "name: value" rows and one-line facts (no value) together, newest last
+        ...v.facts.filter(f => f.value || f.label).flatMap(f => f.value ? tapFact(f.id, f.label, f.value, 'profile.fact')
+          : [h('div', { class: 'fact fact-line', 'data-id': 'profile.fact-line' }, h('dd', { dir: 'auto' }, f.label))]),
+        addFactRow())),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
     sec(l.looking, 'mp-looking', 'profile.looking', 'looking', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
     sec('Inquiries and references', 'mp-refs', 'profile.refs', 'refs',
@@ -308,8 +308,8 @@ function editorFor(id) {
 let ADDF = false;
 function addFactRow() {
   if (!ADDF && !EDIT) return h('button', { type: 'button', class: 'linkish mp-more-link', 'data-id': 'profile.fact-add-open', onClick: () => { ADDF = true; draw(true); setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30); } }, 'Add a fact');
-  const lab = h('input', { class: 'input', dir: 'auto', placeholder: 'Fact, e.g. Shul', 'aria-label': 'Fact name', 'data-id': 'profile.fact-add-label' });
-  const val = h('input', { class: 'input', dir: 'auto', placeholder: 'e.g. Beth Midrash Gevoha', 'aria-label': 'Fact', 'data-id': 'profile.fact-add-value',
+  const lab = h('input', { class: 'input', dir: 'auto', placeholder: 'Name, e.g. Shul', 'aria-label': 'Fact name', 'data-id': 'profile.fact-add-label' });
+  const val = h('input', { class: 'input', dir: 'auto', placeholder: 'Fact', 'aria-label': 'Fact', 'data-id': 'profile.fact-add-value',
     onKeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } });
   async function add() {
     const label = lab.value.trim(), value = val.value.trim();
