@@ -87,8 +87,8 @@
 .home-followups .home-sec-head{border-bottom:1px solid var(--fu-edge);padding-bottom:8px}
 .home-history{background:var(--hist-bg);border-color:var(--hist-edge)}
 .home-history .home-sec-head{border-bottom:1px solid var(--hist-edge);padding-bottom:8px}
-.home-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;margin-top:6px;background:var(--surface-2);border-radius:var(--radius-lg)}
-.home-tab{min-height:var(--btn-height);border:0;border-radius:var(--radius);background:transparent;color:var(--muted);font-weight:500;font-size:var(--font-sm);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 6px}
+.home-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;margin-top:6px;background:var(--surface-2);border-radius:var(--radius-lg)}
+.home-tab{min-height:var(--tab-height);border:0;border-radius:var(--radius);background:transparent;color:var(--muted);font-weight:500;font-size:var(--font-sm);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 6px}
 .home-tab .count{font-family:var(--font-mono);font-size:var(--font-xs)}
 .home-tab[aria-selected="true"]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--shadow-sm)}
 .home-tab-followups[aria-selected="true"]{color:var(--fu-title);background:var(--fu-bg)}

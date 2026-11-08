@@ -9,8 +9,8 @@
 .sh-people-link>svg{width:18px;height:18px;color:var(--muted);flex-shrink:0}
 
 /* lane tabs (selected keeps the teal-to-pink treatment from the reference) */
-.sh-tabbar{display:flex;gap:4px;padding:4px;background:var(--sh-tabbar-bg);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px}
-.sh-tab{flex:1;min-width:0;min-height:var(--btn-height);border:0;background:transparent;border-radius:var(--radius);color:var(--muted);font-weight:600;font-size:var(--font-sm);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 6px;white-space:nowrap}
+.sh-tabbar{display:flex;gap:3px;padding:3px;background:var(--sh-tabbar-bg);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:14px}
+.sh-tab{flex:1;min-width:0;min-height:var(--tab-height);border:0;background:transparent;border-radius:var(--radius);color:var(--muted);font-weight:600;font-size:var(--font-sm);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 6px;white-space:nowrap}
 .sh-tab[aria-selected="true"]{background:var(--sh-tab-gradient);color:var(--sh-tab-text);box-shadow:var(--shadow-sm)}
 .sh-num{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;border-radius:var(--radius-pill);background:var(--surface);font-family:var(--font-mono);font-size:var(--font-xs);font-weight:600}
 .sh-listhead{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px;flex-wrap:wrap}
