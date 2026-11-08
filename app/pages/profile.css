@@ -37,7 +37,7 @@
 .mp-cards{display:flex;flex-direction:column;gap:12px}
 .mp-card{border:1px solid var(--mp-card-edge);background:var(--mp-card-bg);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .mp-card-head{display:flex;align-items:center;gap:6px}
-select.mp-lang-pick{width:auto;flex:0 0 auto;min-height:var(--btn-small-height);height:var(--btn-small-height);padding:0 4px;font-family:var(--font-mono);font-size:var(--font-xs);border-radius:var(--radius);background:var(--surface-2);margin-inline-start:auto}
+select.mp-lang-pick{width:auto;flex:0 0 auto;min-height:var(--btn-small-height);height:var(--btn-small-height);padding:0 4px;font-family:var(--font-mono);font-size:var(--font-xs);border-radius:var(--radius);background:var(--surface-2)}
 .mp-card-title{flex:1 1 100px;min-width:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .mp-card-head{flex-wrap:wrap}
 .mp-card-title strong{overflow-wrap:anywhere}
