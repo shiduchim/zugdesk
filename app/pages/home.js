@@ -2,7 +2,7 @@
 // New Note on top; Existing Notes (Pinned / Other) and History on the left, Follow Ups on the
 // right on a computer; one column on a phone: New Note → Notes → Follow Ups → History.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, promptText } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, promptText, swipeTabs } from '../js/ui.js';
 import * as N from './notes-data.js';
 import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from './home-data.js';
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
@@ -20,9 +20,10 @@ let U = { expanded: null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), 
 let drafts = {};
 const els = {};
 
-export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
+export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
 
 export async function render(container, params) {
+  swipeTabs(container, { keys: () => PHONE.matches ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
   root = container;
   root.classList.add('home-page', 'wide');
   U = { expanded: params.noteId || null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };

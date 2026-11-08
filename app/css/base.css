@@ -232,3 +232,9 @@ main.content:has(.dock),main.content:has(.form-foot),main.content:has(.me-foot){
 .dock .grow{flex:1;min-width:0}
 .dock .btn{flex:none}
 @media (max-width:420px){.dock .btn.wide{flex:1}}
+
+/* Shared filter chips (Contacts, Ideas) */
+.chip-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+.chip-row::-webkit-scrollbar{display:none}
+.fchip{flex-shrink:0;min-height:var(--chip-height);padding:0 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:var(--font-sm);color:var(--text)}
+.fchip[aria-pressed="true"]{background:var(--selected-bg);border-color:var(--selected-edge);font-weight:600}

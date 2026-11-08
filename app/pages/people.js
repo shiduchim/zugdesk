@@ -59,8 +59,8 @@ async function draw() {
   root.append(...[
     h('div', { class: 'page-head' }, h('h1', {}, 'Ideas')),
     h('div', { class: 'ct-search' }, ico('search'), search),
-    h('div', { class: 'chips filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
-      filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
+    h('div', { class: 'chip-row filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
+      filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'fchip', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
         onClick: () => { S.filter = k; draw(); } }, l))),
     drafts.length ? h('section', { class: 'section', 'data-id': 'people.drafts' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `Not saved yet · ${drafts.length}`)),
