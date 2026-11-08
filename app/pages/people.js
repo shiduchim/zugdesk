@@ -1,7 +1,7 @@
 // Ideas — every saved person (one record each), originals saved for later,
 // and unsaved Add Person drafts. A saved idea is not a formal shidduch offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, confirmDialog, dock } from '../js/ui.js';
+import { h, icon, toast, confirmDialog, dock, swipeTabs } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
 import { kindLabel, dateOnly, seekingKind } from './people-data.js';
 import { ideaStatus, latestByPerson } from './idea-flow.js';
@@ -10,14 +10,15 @@ const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const S = { q: '', filter: 'active' };   // survives leaving the page
 // Active = new + waiting; Closed (not for me / they said no) is hidden unless chosen (owner request).
 const filters = (seek) => [['active', 'Active'], ['waiting', seek === 'guy' ? 'Waiting for him' : seek === 'girl' ? 'Waiting for her' : 'Waiting'],
-  ['closed', 'Closed'], ['all', 'All'], ...(seek ? [] : [['guy', 'Guys'], ['girl', 'Girls']])];
+  ['shidduch', 'In Shidduchim'], ['closed', 'Closed'], ['all', 'All'], ...(seek ? [] : [['guy', 'Guys'], ['girl', 'Girls']])];
 
 let root = null, gen = 0, unsub = null, timer = 0;
-export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container) {
   root = container;
   root.classList.add('people-page');
+  swipeTabs(root, { keys: () => filters(seekingKind(store.getPrefs())).map(f => f[0]), current: () => S.filter, go: (k) => { S.filter = k; draw(); } });
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs') { clearTimeout(timer); timer = setTimeout(draw, 80); } });
   await draw();
@@ -45,8 +46,8 @@ async function draw() {
     if (words.length && !words.every(w => searchText(p).includes(w))) return false;
     const st = status.get(p.id).key;
     if (S.filter === 'guy' || S.filter === 'girl') return p.kind === S.filter;
-    if (S.filter === 'active') return st === 'new' || st === 'waiting';
-    if (S.filter === 'waiting' || S.filter === 'closed') return st === S.filter;
+    if (S.filter === 'active') return st !== 'closed'; // everyone still live, including a running shidduch
+    if (S.filter === 'waiting' || S.filter === 'shidduch' || S.filter === 'closed') return st === S.filter;
     return true;
   }).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 
