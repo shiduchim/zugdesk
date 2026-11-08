@@ -19,12 +19,13 @@ let U = { expanded: null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), 
 let drafts = {};
 const els = {};
 
-export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
+export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('home-page', 'wide');
   U = { expanded: params.noteId || null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
+  if (params.noteId) section = 'notes';
   try { drafts = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; } catch { drafts = {}; }
   els.search = h('input', { class: 'input home-search', type: 'search', dir: 'auto', placeholder: 'Search notes, people, conversations…', 'aria-label': 'Search everything', 'data-id': 'home.search',
     onInput: (e) => { U.q = e.target.value; drawSearch(); } });
@@ -39,7 +40,8 @@ export async function render(container, params) {
       h('div', { class: 'eyebrow' }, 'Single Mode'),
       h('h1', {}, 'Home'),
       h('p', { class: 'muted' }, 'Write anything. Keep the things that matter close.')),
-    els.search, els.results, els.composer, els.grid));
+    els.search, els.results, els.composer, tabRow(), els.grid));
+  PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key !== 'homeSuggestions') return;
     if (ch.store === 'meta') return;
@@ -58,6 +60,7 @@ async function reload(first = false) {
   keepFocus(() => {
     if (first) drawComposer();
     drawNotes(); drawFollowUps(); drawHistory(); if (U.q) drawSearch();
+    tabCounts(); applySection();
   });
   if (first && U.expanded) setTimeout(() => root?.querySelector(`[data-note="${CSS.escape(U.expanded)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
 }
@@ -286,12 +289,7 @@ function actionsMenu(anchor, key, sync) {
         const c = await N.createMinimalContact(name);
         d.contactIds = [...d.contactIds, c.id]; persist(); sync(); toast(`${store.displayName(c)} added to Contacts and linked`);
       }, { dataId: 'home.actions.create-contact' }),
-      note ? N.menuItem('Delete note', '', async () => {
-        N.closeMenu();
-        if (await confirmDialog({ title: 'Delete this note?', text: 'Its dated entries also disappear from every linked contact and person. Follow Ups stay.', ok: 'Delete note', danger: true, dataId: 'home.delete-note-dialog' })) {
-          await N.deleteNote(note); delete drafts[key]; persist(); U.expanded = null; toast('Note deleted');
-        }
-      }, { cls: 'danger-text', dataId: 'home.actions.delete' }) : null,
+      note ? N.menuItem('Delete note', '', () => { N.closeMenu(); deleteNoteFlow(note, key); }, { cls: 'danger-text', dataId: 'home.actions.delete' }) : null,
       h('div', { class: 'qdivider' }),
       h('div', { class: 'qlabel-row' }, 'Change Color'),
       h('div', { class: 'qswatches', role: 'group', 'aria-label': 'Note colour' }, N.COLORS.map(([c, label]) =>
@@ -302,6 +300,12 @@ function actionsMenu(anchor, key, sync) {
             else if (note && note.color !== c) { await N.setColor(note, c); toast('Colour changed'); }
           } })))].filter(Boolean));
   });
+}
+
+// Delete a note: asks first. Used by the Actions menu and by the Delete button on an open note.
+async function deleteNoteFlow(note, key = 'note:' + note.id) {
+  if (!(await confirmDialog({ title: 'Delete this note?', text: 'Its dated entries also disappear from every linked contact and person. Follow Ups stay.', ok: 'Delete note', danger: true, dataId: 'home.delete-note-dialog' }))) return;
+  await N.deleteNote(note); delete drafts[key]; persist(); if (U.expanded === note.id) U.expanded = null; toast('Note deleted');
 }
 
 function linkFor(anchor, key, sync, query = '') {
@@ -342,11 +346,44 @@ async function save(key) {
 
 function drawComposer() { if (!root) return; els.composer.innerHTML = ''; els.composer.append(composer('new')); }
 
+// Section header band: a small label line, the title and the count — each section looks different
+// at a glance (owner request, Stage 8). The ids anchor the phone jump row.
+function secHead(eyebrow, title, count, id) {
+  return h('div', { class: 'home-sec-head', id, 'data-id': id }, h('div', { class: 'home-sec-eyebrow' }, eyebrow), h('div', { class: 'home-sec-title' }, h('h2', {}, title), h('span', { class: 'count' }, String(count))));
+}
+// Phone: three tabs under New Note show ONE section at a time (Notes / Follow Ups / History), so
+// each has its own screen. On a wide screen the tabs are hidden and all sections show in columns.
+// Tabs inside Home, not navigation destinations (spec/home.md keeps both on Home).
+const PHONE = window.matchMedia('(max-width: 899px)');
+const SECTIONS = [['notes', 'Notes'], ['followups', 'Follow Ups'], ['history', 'History']];
+let section = 'notes';
+function tabRow() {
+  els.tabs = h('div', { class: 'home-tabs', role: 'tablist', 'aria-label': 'Home sections', 'data-id': 'home.tabs' },
+    SECTIONS.map(([k, l]) => h('button', { type: 'button', role: 'tab', class: 'home-tab home-tab-' + k, 'aria-selected': section === k ? 'true' : 'false', 'data-id': 'home.tab-' + k,
+      onClick: () => { section = k; applySection(); window.scrollTo({ top: Math.min(window.scrollY, els.tabs.offsetTop - 8), behavior: 'auto' }); } },
+      l, h('span', { class: 'count', 'data-count': k }, ''))));
+  return els.tabs;
+}
+function applySection() {
+  if (!root) return;
+  const phone = PHONE.matches;
+  els.tabs?.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', b.dataset.id === 'home.tab-' + section ? 'true' : 'false'));
+  els.notes.classList.toggle('hidden', phone && section !== 'notes');
+  els.fus.classList.toggle('hidden', phone && section !== 'followups');
+  els.hist.classList.toggle('hidden', phone && section !== 'history');
+}
+function showSection(k) { section = k; applySection(); }
+function tabCounts() {
+  if (!els.tabs) return;
+  const c = { notes: D.notes.length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
+  els.tabs.querySelectorAll('[data-count]').forEach(el => { el.textContent = String(c[el.dataset.count] ?? ''); });
+}
+
 // ---------- Existing Notes ----------
 function drawNotes() {
   const pinned = D.notes.filter(n => n.pinned), other = D.notes.filter(n => !n.pinned);
   els.notes.innerHTML = '';
-  els.notes.append(h('div', { class: 'home-sec-head' }, h('h2', {}, 'Existing Notes'), h('span', { class: 'count' }, String(D.notes.length))));
+  els.notes.append(secHead('Notes', 'Existing Notes', D.notes.length, 'home.notes-head'));
   if (!D.notes.length) { els.notes.append(h('p', { class: 'note home-empty' }, 'No notes yet. Write one above — a title is optional.')); return; }
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
   if (other.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))), h('div', { class: 'note-list' }, other.map(noteCard)));
@@ -365,7 +402,9 @@ function noteCard(n) {
       h('h3', { dir: 'auto' }, n.title),
       h('p', { class: 'preview', dir: 'auto' }, es[es.length - 1]?.text || ''),
       h('div', { class: 'note-meta' }, h('span', {}, `${store.formatDate(D.lastAt(n))} · ${es.length} dated ${es.length === 1 ? 'entry' : 'entries'}`), linkRow),
-      h('button', { type: 'button', class: 'add-to-note', 'data-id': 'home.note-add', onClick: (e) => { e.stopPropagation(); expand(n.id); } }, 'Add to note'));
+      h('div', { class: 'note-card-foot' },
+        h('button', { type: 'button', class: 'add-to-note', 'data-id': 'home.note-add', onClick: (e) => { e.stopPropagation(); expand(n.id); } }, 'Add to note'),
+        h('button', { type: 'button', class: 'add-to-note danger-text', 'data-id': 'home.note-delete', onClick: (e) => { e.stopPropagation(); deleteNoteFlow(n); } }, 'Delete')));
     return card;
   }
   return h('article', { class: `note-card expanded tone-${n.color || 'plain'}`, 'data-note': n.id, 'data-id': 'home.note-open' },
@@ -377,6 +416,7 @@ function noteCard(n) {
           const t = await promptText({ title: 'Rename note', label: 'Title', value: n.title, ok: 'Save', dataId: 'home.rename-dialog' });
           if (t && t !== n.title) { await store.notes.save({ ...n, title: t }); toast('Renamed'); }
         } }, 'Rename'),
+        h('button', { type: 'button', class: 'pin-text danger-text', 'data-id': 'home.note-delete', onClick: () => deleteNoteFlow(n) }, 'Delete'),
         h('button', { type: 'button', class: 'pin-text', 'data-id': 'home.note-close', onClick: () => { U.expanded = null; drawNotes(); } }, 'Close'))),
     h('div', { class: 'note-meta' }, h('span', {}, `Started ${store.formatDate(n.createdAt)} · ${es.length} dated ${es.length === 1 ? 'entry' : 'entries'}`), linkRow),
     h('div', { class: 'note-entries', 'data-id': 'home.note-entries' }, es.map(e => h('div', { class: 'note-entry' },
@@ -385,7 +425,7 @@ function noteCard(n) {
     composer('note:' + n.id));
 }
 function expand(id) {
-  U.expanded = id; N.closeMenu(); drawNotes();
+  U.expanded = id; N.closeMenu(); showSection('notes'); drawNotes();
   const ta = root?.querySelector(`textarea[data-key="note:${CSS.escape(id)}"]`);
   if (ta) { ta.focus({ preventScroll: true }); ta.closest('.note-card')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
@@ -396,7 +436,7 @@ function drawFollowUps() {
   const open = openFollowUps(D.followUps);
   const shown = U.fuAll ? open : open.slice(0, FU_FIRST);
   els.fus.innerHTML = '';
-  els.fus.append(h('div', { class: 'home-sec-head' }, h('h2', {}, 'Follow Ups'), h('span', { class: 'count' }, String(open.length))));
+  els.fus.append(secHead('To do', 'Follow Ups', open.length, 'home.followups-head'));
   if (!open.length) { els.fus.append(h('p', { class: 'note home-empty' }, 'Nothing waiting. Tap Follow Up while writing a note to add one.')); return; }
   els.fus.append(h('ul', { class: 'fu-lines' }, shown.map(fuRow)));
   if (open.length > FU_FIRST) els.fus.append(h('button', { type: 'button', class: 'section-expand', 'data-id': 'home.followups-more', 'aria-expanded': U.fuAll ? 'true' : 'false',
@@ -437,7 +477,7 @@ function drawHistory() {
   const rows = buildHistory(D, X);
   const shown = rows.slice(0, U.histN);
   els.hist.innerHTML = '';
-  els.hist.append(h('div', { class: 'home-sec-head' }, h('h2', {}, 'History'), h('span', { class: 'count' }, String(rows.length))));
+  els.hist.append(secHead('What happened', 'History', rows.length, 'home.history-head'));
   if (!rows.length) { els.hist.append(h('p', { class: 'note home-empty' }, 'Nothing recorded yet.')); return; }
   els.hist.append(h('ul', { class: 'hist-lines' }, shown.map(histRow)));
   const more = rows.length - shown.length;

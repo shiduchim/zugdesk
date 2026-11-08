@@ -35,13 +35,13 @@ async function draw(id, keepScroll = false) {
   if (token !== gen || !root) return;
   const y = window.scrollY;
   root.innerHTML = '';
-  if (!b) { root.append(h('p', { class: 'empty' }, 'This person is no longer saved.'), h('a', { class: 'btn', href: '#/people' }, 'Back to People & Ideas')); return; }
+  if (!b) { root.append(h('p', { class: 'empty' }, 'This person is no longer saved.'), h('a', { class: 'btn', href: '#/people' }, 'Back to Ideas')); return; }
   B = b;
   const p = b.p;
   const enc = encodeURIComponent(p.id);
   root.append(
     h('div', { class: 'pc-namebar', 'data-id': 'person-card.namebar' },
-      h('a', { class: 'icon-btn', href: '#/people', 'aria-label': 'Back to People & Ideas', 'data-id': 'person-card.back', html: icon('back') }),
+      h('a', { class: 'icon-btn', href: '#/people', 'aria-label': 'Back to Ideas', 'data-id': 'person-card.back', html: icon('back') }),
       h('h1', { dir: 'auto' }, store.personName(p)),
       p.kind ? h('span', { class: 'pc-kind' }, kindLabel(p.kind)) : null,
       h('span', { class: 'spacer' }),

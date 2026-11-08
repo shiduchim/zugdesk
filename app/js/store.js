@@ -6,8 +6,8 @@ import { idb, tx, STORES, DB_VERSION, deleteDatabase } from './db.js';
 import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim, makeDemoNotes, makeDemoProfile } from './seed.js';
 
 export const SCHEMA_VERSION = DB_VERSION;
-export const APP_VERSION = '0.7.0';
-export const STAGE = 7; // last finished stage (shown in Settings → About)
+export const APP_VERSION = '0.8.0';
+export const STAGE = 8; // last finished stage (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }

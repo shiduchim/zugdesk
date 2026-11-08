@@ -10,9 +10,10 @@ import { norm } from './notes-data.js';
 export async function openShare({ contactId = null, source = null } = {}) {
   const P = await loadProfile();
   if (!P.me || !P.me.name) { toast('Fill in My Profile first (at least your name)'); location.hash = '#/profile'; return; }
-  const lang = store.getPrefs().profileLang || 'en';
+  // Language follows the chosen text: a saved version keeps its own; Suggested and Full use the Suggested-card choice.
+  const langOf = () => (S.source === 'suggested' || S.source === 'full') ? (store.getPrefs().profileLang || P.me.lang || 'en') : (P.versions.find(x => x.id === S.source)?.lang || P.me.lang || 'en');
   const contacts = await store.contacts.list();
-  const v = view(P.me, lang);
+  let lang = P.me.lang || 'en', v = view(P.me, lang);
   const S = { source: source || (P.versions.length ? P.versions[0].id : 'suggested'), contactId, phone: false, email: false, refIds: [], fileIds: [], q: '' };
 
   const sources = [['suggested', 'Suggested short'], ['full', 'Full profile'], ...P.versions.map(x => [x.id, x.title || 'Saved version'])];
@@ -28,6 +29,7 @@ export async function openShare({ contactId = null, source = null } = {}) {
 
   const body = h('div', { class: 'share-body' });
   const draw = () => {
+    lang = langOf(); v = view(P.me, lang);
     body.innerHTML = '';
     // 1. what
     body.append(h('div', { class: 'field' }, h('label', {}, 'What to send'),

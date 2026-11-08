@@ -132,7 +132,8 @@ dialog.form-sheet .sheet-head{display:flex;align-items:center;gap:8px;padding:14
 dialog.form-sheet .sheet-head h2{flex:1;margin:0;font-size:var(--font-lg);min-width:0;overflow-wrap:anywhere}
 dialog.form-sheet .sheet-body{padding:14px 16px;overflow:auto;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain}
 dialog.form-sheet .sheet-body p{margin:0}
-dialog.form-sheet .sheet-actions{padding:10px 16px calc(12px + var(--safe-bottom));border-top:1px solid var(--border)}
+dialog.form-sheet .sheet-actions{padding:10px 16px calc(12px + var(--safe-bottom));border-top:1px solid var(--border);flex-wrap:wrap}
+dialog.form-sheet .sheet-actions [data-id$=".close"]{margin-inline-end:auto}
 dialog.form-sheet.tall{height:min(88dvh,760px)}
 dialog.form-sheet.tall .sheet-body{flex:1}
 @media (max-width:600px){

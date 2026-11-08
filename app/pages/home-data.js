@@ -174,7 +174,7 @@ export function buildHistory(D, extra) {
   }
   for (const a of extra.activity) rows.push({ key: 'ac:' + a.id, at: a.at, what: a.what, text: a.text, kind: 'Change', noteId: a.noteId || null, href: a.href || null, hrefLabel: 'Open' });
   for (const s of extra.shares) rows.push({ key: 'sh:' + s.id, at: s.at, what: 'Shared my profile' + (s.recipientName ? ' · ' + s.recipientName : ''), text: `${s.what} — you confirmed you sent it${s.channel ? ' (' + s.channel + ')' : ''}.`, kind: 'Sharing', href: '#/profile/notes', hrefLabel: 'Open sharing activity' });
-  for (const p of D.people) if (p.createdAt) rows.push({ key: 'p:' + p.id, at: p.createdAt, what: 'New suggested person · ' + store.personName(p), text: [p.age, p.city, p.occupation].filter(Boolean).join(' · ') || 'Saved in People & Ideas', kind: 'Person', href: `#/people/${encodeURIComponent(p.id)}`, hrefLabel: 'Open person' });
+  for (const p of D.people) if (p.createdAt) rows.push({ key: 'p:' + p.id, at: p.createdAt, what: 'New suggested person · ' + store.personName(p), text: [p.age, p.city, p.occupation].filter(Boolean).join(' · ') || 'Saved in Ideas', kind: 'Person', href: `#/people/${encodeURIComponent(p.id)}`, hrefLabel: 'Open person' });
   return rows.filter(r => r.at).sort((a, b) => b.at.localeCompare(a.at));
 }
 
