@@ -16,9 +16,9 @@
 .pc-kind{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .icon-btn.bordered{border:1px solid var(--border);background:var(--surface)}
 .pc-actions{display:flex;gap:var(--gap);flex-wrap:wrap;margin:6px 0 10px}
-.pc-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--gap-sm);padding:var(--gap) 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.pc-tabs button{min-height:var(--btn-height);border:0;border-radius:var(--radius);background:transparent;color:var(--muted);font-weight:500}
-.pc-tabs button[aria-selected="true"]{background:var(--tab-active-bg);color:var(--text);font-weight:600}
+.pc-tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.pc-tabs button{flex:none;min-height:var(--tab-height);border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--muted);font-weight:500;font-size:var(--font-sm);padding:0 10px;margin-bottom:-1px}
+.pc-tabs button[aria-selected="true"]{border-bottom-color:var(--text);color:var(--text);font-weight:600}
 .pc-body{display:flex;flex-direction:column}
 
 .pc-summary{display:flex;align-items:flex-start;gap:12px;padding:var(--gap-lg) 0;border-bottom:1px solid var(--border)}

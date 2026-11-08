@@ -18,7 +18,7 @@ let lastDeleted = null;               // { version } for the inline Undo line
 let shareOpen = false;
 const W = { noteId: null, entryId: null, text: '', saveTimer: 0, savedAt: null }; // note being written
 
-export function destroy() { flushNote(); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
+export function destroy() { flushNote(); flushForm(); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
 
 export async function render(container, params) {
   root = container;
@@ -26,7 +26,7 @@ export async function render(container, params) {
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' || ch.store === 'meta') return;
-    if (W.busy) return; // our own autosave: do not redraw under the typing finger
+    if (W.busy || FB) return; // our own autosave: do not redraw under the typing finger
     clearTimeout(timer); timer = setTimeout(() => draw(true), 100);
   });
   await draw();
@@ -61,7 +61,6 @@ function header(v) {
   return h('div', { class: 'mp-head', 'data-id': 'profile.header' },
     h('h1', { dir: 'auto' }, v.name || 'My Profile'),
     h('span', { class: 'spacer' }),
-    h('button', { type: 'button', class: 'icon-btn bordered', 'aria-label': 'Edit name, age, city, work and intro', title: 'Edit', 'data-id': 'profile.edit', html: icon('edit'), onClick: () => identitySheet() }),
     h('button', { type: 'button', class: 'btn primary', 'data-id': 'profile.share', onClick: () => share() }, 'Share'));
 }
 async function share(opts) { if (shareOpen) return; shareOpen = true; try { await openShare(opts); } finally { shareOpen = false; } }
@@ -72,57 +71,114 @@ function sideNav(v, notesCount) {
   return h('nav', { class: 'mp-nav', 'aria-label': 'My Profile sections', 'data-id': 'profile.side-nav' },
     h('div', { class: 'mp-nav-title' }, 'My Profile'),
     h('a', { href: '#/profile', class: 'mp-nav-item', 'aria-current': tab === 'profile' ? 'page' : null }, 'Profile'),
-    link('Facts', 'mp-facts'), link('About me', 'mp-about'), link('What I’m looking for', 'mp-looking'), link('Contact', 'mp-contact'), link('References · Files', 'mp-include'),
+    link('Facts', 'mp-facts'), link('About me', 'mp-about'), link('What I’m looking for', 'mp-looking'), link('Contact', 'mp-contact'), link('References', 'mp-refs'), link('Files', 'mp-files'),
     h('a', { href: '#/profile/short', class: 'mp-nav-item', 'aria-current': tab === 'short' ? 'page' : null }, 'Short versions', h('span', { class: 'mp-count' }, String(P.versions.length + 1))),
     h('a', { href: '#/profile/notes', class: 'mp-nav-item', 'aria-current': tab === 'notes' ? 'page' : null }, 'Notes', h('span', { class: 'mp-count' }, String(notesCount))),
     h('div', { class: 'mp-nav-foot' },
-      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.side-add-section', onClick: () => sectionSheet(null) }, 'Add section…'),
+      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.side-add-section', onClick: addSection }, 'Add section…'),
       h('div', { class: 'stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet')));
 }
 function scrollToSec(id) { document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
 
 // ---------- Profile tab ----------
-const notYet = (what) => h('span', { class: 'muted' }, what || 'Not filled in yet');
-const grey = (v, key) => v.missing.has(key) ? 'mp-untranslated' : null;
-function sec(title, id, dataId, onEdit, ...kids) {
-  return h('section', { class: 'pc-sec', id, 'data-id': dataId },
-    h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      onEdit ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit ' + title.toLowerCase(), 'data-id': dataId + '-edit', html: icon('edit'), onClick: onEdit }) : null),
-    ...kids);
+// Profile tab = one screen you type into, like Add Person › Detailed Info (owner request, tweak mode).
+// Every field saves itself shortly after typing; no popups except Files (uploads).
+const M = { facts: [], contact: {}, references: [], sections: [] }; // working copies of the lists
+const F = {}; let fTimer = 0, FB = false;
+function queue(patch) { Object.assign(F, patch); clearTimeout(fTimer); fTimer = setTimeout(flushForm, 500); }
+async function flushForm() {
+  clearTimeout(fTimer);
+  const patch = { ...F }; for (const k in F) delete F[k];
+  if (!Object.keys(patch).length) return;
+  FB = true;
+  try {
+    P.me = await PD.saveProfile(P.me, lang, patch);
+    const s = root?.querySelector('[data-id="profile.saved-stamp"]'); if (s) s.textContent = 'Saved · updated ' + store.formatDate(P.me.updatedAt);
+  } finally { setTimeout(() => { FB = false; }, 300); }
 }
+const redraw = async () => { await flushForm(); FB = false; draw(true); };
+const fIn = (label, value, dataId, onInput, extra = {}) => field(label, h('input', { class: 'input', dir: 'auto', value: value || '', 'data-id': dataId, ...extra, onInput: (e) => onInput(e.target.value) }));
+function fArea(label, value, dataId, onInput, placeholder = '') {
+  const t = h('textarea', { class: 'input grow', rows: 3, dir: 'auto', placeholder, 'data-id': dataId, onInput: (e) => { onInput(e.target.value); growT(e.target); } });
+  t.value = value || ''; setTimeout(() => growT(t), 0); setTimeout(() => growT(t), 400);
+  return field(label, t);
+}
+function growT(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 480) + 'px'; }
+const blk = (title, id, dataId, ...kids) => h('section', { class: 'ap-sec', id, 'data-sec': id, 'data-id': dataId }, h('h3', { class: 'ap-sec-title' }, title), ...kids);
+const rmBtn = (dataId, run) => h('button', { type: 'button', class: 'linkish danger-text', 'data-id': dataId, onClick: run }, 'Remove');
+
 function profileTab(v) {
   const l = PD.L(lang);
-  const first = !P.me;
-  const c = v.contact;
+  M.facts = v.facts.map(f => ({ ...f })); M.contact = { ...v.contact };
+  M.references = (v.references || []).map(r => ({ ...r })); M.sections = v.sections.map(s => ({ ...s }));
+  const jumps = [['mp-facts', 'Facts'], ['mp-about', 'About me'], ['mp-looking', 'Looking for'], ['mp-contact', 'Contact'], ['mp-refs', 'References'], ['mp-files', 'Files'], ...M.sections.map(s => ['mp-sec-' + s.id, s.title])];
+  const facts = () => queue({ facts: M.facts });
+  const refs = () => queue({ references: M.references.map(r => ({ ...r, phone: store.cleanPhone(r.phone) })) });
+  const secs = () => queue({ sections: M.sections });
   return [
-    first ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Start with the pencil at the top: your name, age, city and a one-line intro. Everything stays on this phone until you choose to share it.') : null,
-    h('div', { class: 'pc-summary', 'data-id': 'profile.summary' },
-      h('div', { class: 'avatar lg' }, P.me?.name ? store.initials({ name: P.me.name }) : 'ME'),
-      h('div', { class: 'pc-summary-text' },
-        h('div', { class: 'pc-summary-line', dir: 'auto' }, PD.summaryLine(v) || notYet('Age · city · work')),
-        h('div', { class: 'muted ' + (grey(v, 'intro') || ''), dir: 'auto' }, v.intro || 'A one-line introduction')),
-      h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit summary', 'data-id': 'profile.summary-edit', html: icon('edit'), onClick: () => identitySheet() })),
-    sec(l.facts, 'mp-facts', 'profile.facts', () => factsSheet(),
-      v.facts.length ? h('dl', { class: 'facts' }, v.facts.map(f => h('div', { class: 'fact', 'data-id': 'profile.fact' }, h('dt', { dir: 'auto', class: grey(v, 'fact:' + f.id) }, f.label), h('dd', { dir: 'auto', class: grey(v, 'fact:' + f.id) }, f.value || notYet())))) : h('p', { class: 'note' }, 'No facts yet. Add the ones you want shadchanim to see.'),
-      U.addFact ? addFactRow() : null,
-      h('button', { type: 'button', class: 'linkish pc-add', 'data-id': 'profile.add-fact', onClick: () => { U.addFact = !U.addFact; draw(true).then(() => root?.querySelector('[data-id="profile.add-fact.label"]')?.focus()); } }, U.addFact ? 'Done adding' : 'Add a fact…')),
-    sec(l.about, 'mp-about', 'profile.about', () => textSheet('about', l.about), h('p', { dir: 'auto', class: 'prewrap ' + (grey(v, 'about') || '') }, v.about || notYet())),
-    sec(l.looking, 'mp-looking', 'profile.looking', () => textSheet('looking', l.looking), h('p', { dir: 'auto', class: 'prewrap ' + (grey(v, 'looking') || '') }, v.looking || notYet())),
-    sec('Contact', 'mp-contact', 'profile.contact', () => contactSheet(),
-      h('dl', { class: 'facts mp-contact' },
-        h('div', { class: 'fact' }, h('dt', {}, l.inquiries), h('dd', { dir: 'auto' }, c.inquiriesName || c.inquiriesPhone ? [c.inquiriesName, c.inquiriesName && c.inquiriesPhone ? h('br') : null, c.inquiriesPhone] : notYet()), h('span', { class: 'priv' }, 'shared')),
-        h('div', { class: 'fact' }, h('dt', {}, l.phone), h('dd', { dir: 'auto' }, c.phone || notYet()), h('span', { class: 'priv' }, 'you choose')),
-        h('div', { class: 'fact' }, h('dt', {}, l.email), h('dd', { dir: 'auto' }, c.email || notYet()), h('span', { class: 'priv' }, 'you choose')))),
-    ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', () => sectionSheet(s),
-      h('p', { dir: 'auto', class: 'prewrap ' + (grey(v, 'section:' + s.id) || '') }, s.text || notYet()),
-      s.share === false ? h('p', { class: 'note' }, 'Kept out of the full profile when sharing.') : null)),
-    h('div', { class: 'pc-sec mp-addsec' }, h('button', { type: 'button', class: 'linkish pc-add', 'data-id': 'profile.add-section', onClick: () => sectionSheet(null) }, 'Add section…')),
-    h('section', { class: 'pc-sec', id: 'mp-include', 'data-id': 'profile.include' },
-      h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow' }, 'Also yours to include')),
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.references', onClick: () => referencesSheet() }, ico('contacts'), h('span', { class: 'grow' }, 'References'), h('span', { class: 'priv' }, `${(v.references || []).length} · you choose`), ico('chevron')),
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Files'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)} · you choose`), ico('chevron'))),
-    h('div', { class: 'stamp pc-stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet'),
+    !P.me ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Just start typing; everything saves by itself and stays on this phone until you share it.') : null,
+    h('nav', { class: 'jumpnav mp-jumps', 'aria-label': 'Jump to section', 'data-id': 'profile.jumpnav' },
+      jumps.map(([k, t]) => h('button', { type: 'button', class: 'jump', 'data-id': 'profile.jump-' + k.replace('mp-', ''), onClick: () => scrollToSec(k) }, t))),
+    blk(l.facts, 'mp-facts', 'profile.facts',
+      fIn('Name', v.name, 'profile.name', (x) => queue({ name: x.trim() }), { autocomplete: 'off' }),
+      h('div', { class: 'mp-two' },
+        fIn('Age', v.age, 'profile.age', (x) => queue({ age: x.trim() }), { inputmode: 'numeric' }),
+        fIn('City', v.city, 'profile.city', (x) => queue({ city: x.trim() }))),
+      fIn('Work / learning', v.occupation, 'profile.work', (x) => queue({ occupation: x.trim() })),
+      fArea('One-line introduction', v.intro, 'profile.intro', (x) => queue({ intro: x.trim() })),
+      ...M.facts.map(f => h('div', { class: 'mp-fact-row', 'data-id': 'profile.fact' },
+        h('input', { class: 'input', dir: 'auto', value: f.label, placeholder: 'What (e.g. Height)', 'aria-label': 'Fact name', 'data-id': 'profile.fact.label', onInput: (e) => { f.label = e.target.value; facts(); } }),
+        h('input', { class: 'input', dir: 'auto', value: f.value, placeholder: 'Answer', 'aria-label': 'Answer', 'data-id': 'profile.fact.value', onInput: (e) => { f.value = e.target.value; facts(); } }),
+        rmBtn('profile.fact.remove', () => { M.facts = M.facts.filter(x => x !== f); facts(); redraw(); }))),
+      h('button', { type: 'button', class: 'btn small mp-add', 'data-id': 'profile.add-fact', onClick: async () => {
+        M.facts.push({ id: store.newId('f'), label: '', value: '' }); facts(); await redraw();
+        const all = root?.querySelectorAll('[data-id="profile.fact.label"]'); all?.[all.length - 1]?.focus();
+      } }, 'Add a fact')),
+    blk(l.about, 'mp-about', 'profile.about', fArea(l.about, v.about, 'profile.about-text', (x) => queue({ about: x.trim() }), 'Personality, background, interests…')),
+    blk(l.looking, 'mp-looking', 'profile.looking', fArea(l.looking, v.looking, 'profile.looking-text', (x) => queue({ looking: x.trim() }), 'Describe what you are looking for…')),
+    blk('Contact', 'mp-contact', 'profile.contact',
+      h('p', { class: 'note' }, 'The inquiries contact is shared in your profile. Your own phone and email are only added when you tick them while sharing.'),
+      fIn('For inquiries — name', M.contact.inquiriesName, 'profile.inq-name', (x) => { M.contact.inquiriesName = x.trim(); queue({ contact: M.contact }); }, { placeholder: 'e.g. Mrs. Cohen (mother)' }),
+      fIn('For inquiries — phone', M.contact.inquiriesPhone, 'profile.inq-phone', (x) => { M.contact.inquiriesPhone = store.cleanPhone(x); queue({ contact: M.contact }); }, { inputmode: 'tel' }),
+      h('div', { class: 'mp-two' },
+        fIn('My phone (you choose)', M.contact.phone, 'profile.my-phone', (x) => { M.contact.phone = store.cleanPhone(x); queue({ contact: M.contact }); }, { inputmode: 'tel' }),
+        fIn('My email (you choose)', M.contact.email, 'profile.my-email', (x) => { M.contact.email = x.trim(); queue({ contact: M.contact }); }, { type: 'email', inputmode: 'email' }))),
+    blk('References', 'mp-refs', 'profile.references',
+      h('p', { class: 'note' }, 'You choose each time you share whether a reference is included. Private notes never are.'),
+      ...M.references.map(r => h('div', { class: 'mp-ref', 'data-id': 'profile.reference' },
+        h('div', { class: 'mp-two' },
+          fIn('Name', r.name, 'profile.reference.name', (x) => { r.name = x; refs(); }),
+          fIn('How they know me', r.relation, 'profile.reference.relation', (x) => { r.relation = x; refs(); })),
+        h('div', { class: 'mp-two' },
+          fIn('Phone', r.phone, 'profile.reference.phone', (x) => { r.phone = x; refs(); }, { inputmode: 'tel' }),
+          fIn('Private note — only me', r.privateNote, 'profile.reference.note', (x) => { r.privateNote = x; refs(); })),
+        rmBtn('profile.reference.remove', () => { M.references = M.references.filter(x => x !== r); refs(); redraw(); }))),
+      h('button', { type: 'button', class: 'btn small mp-add', 'data-id': 'profile.references.add', onClick: async () => {
+        M.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); refs(); await redraw();
+        const all = root?.querySelectorAll('[data-id="profile.reference.name"]'); all?.[all.length - 1]?.focus();
+      } }, 'Add a reference')),
+    blk('Files', 'mp-files', 'profile.files-sec',
+      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Photos and résumé'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)} · you choose`), ico('chevron'))),
+    ...M.sections.map(s => blk(s.title || 'Section', 'mp-sec-' + s.id, 'profile.section',
+      fIn('Title', s.title, 'profile.section.title', (x) => { s.title = x; secs(); }),
+      fArea('Text', s.text, 'profile.section.text', (x) => { s.text = x; secs(); }),
+      h('label', { class: 'share-tick' }, h('input', { type: 'checkbox', checked: s.share !== false || null, 'data-id': 'profile.section.share', onChange: (e) => { s.share = e.target.checked; secs(); } }), h('span', {}, 'Include in the full profile when sharing')),
+      rmBtn('profile.section.remove', async () => {
+        if (!(await confirmDialog({ title: 'Delete this section?', text: `“${s.title}” is removed from your profile.`, ok: 'Delete', danger: true, dataId: 'profile.section-delete-dialog' }))) return;
+        M.sections = M.sections.filter(x => x !== s); secs(); redraw();
+      }))),
+    h('div', { class: 'mp-form-foot' },
+      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.add-section', onClick: addSection }, 'Add section…'),
+      h('span', { class: 'stamp', 'data-id': 'profile.saved-stamp' }, P.me?.updatedAt ? 'Saves by itself · updated ' + store.formatDate(P.me.updatedAt) : 'Saves by itself as you type')),
   ];
+}
+async function addSection() {
+  if (tab !== 'profile') setTab('profile');
+  const t = await promptText({ title: 'Add section', label: 'Title', ok: 'Add', dataId: 'profile.section-name' });
+  if (!t) return;
+  const id = store.newId('s');
+  M.sections.push({ id, title: t.trim(), text: '', share: true }); queue({ sections: M.sections }); await redraw();
+  setTimeout(() => { scrollToSec('mp-sec-' + id); root?.querySelector(`#mp-sec-${CSS.escape(id)} textarea`)?.focus(); }, 100);
 }
 
 const save = async (patch, msg = 'Saved') => { P.me = await PD.saveProfile(P.me, lang, patch); toast(msg); };
@@ -130,104 +186,6 @@ const field = (label, input) => h('div', { class: 'field' }, h('label', {}, labe
 const inp = (value, dataId, extra = {}) => h('input', { class: 'input', dir: 'auto', value: value || '', 'data-id': dataId, ...extra });
 const area = (value, dataId, rows = 6) => { const t = h('textarea', { class: 'input', dir: 'auto', rows, 'data-id': dataId }); t.value = value || ''; return t; };
 
-async function identitySheet() {
-  const v = PD.view(P.me, lang);
-  const name = inp(v.name, 'profile.identity.name'), age = inp(v.age, 'profile.identity.age', { inputmode: 'numeric' }), city = inp(v.city, 'profile.identity.city'),
-    work = inp(v.occupation, 'profile.identity.work'), intro = area(v.intro, 'profile.identity.intro', 3);
-  await sheet({ title: 'Name and summary', dataId: 'profile.identity', body: [field('Name', name), field('Age', age), field('City', city), field('Work', work), field('One-line introduction', intro)],
-    actions: [{ id: 'save', label: 'Save', primary: true, run: async () => {
-      if (!name.value.trim() && !P.me) { toast('Start with your name'); return false; }
-      await save({ name: name.value.trim(), age: age.value.trim(), city: city.value.trim(), occupation: work.value.trim(), intro: intro.value.trim() });
-    } }] });
-}
-async function textSheet(key, title) {
-  const v = PD.view(P.me, lang), t = area(v[key], 'profile.text-sheet.text', 8);
-  await sheet({ title, dataId: 'profile.text-sheet', className: 'tall', body: [t], actions: [{ id: 'save', label: 'Save', primary: true, run: () => save({ [key]: t.value.trim() }) }] });
-}
-// Add facts right on the page, one after another (owner request, Stage 8): no popup,
-// the row stays open after each Add so several can be typed in a row.
-const U = { addFact: false };
-function addFactRow() {
-  const label = inp(U.factLabel || '', 'profile.add-fact.label', { placeholder: 'What (e.g. Height)', 'aria-label': 'What' });
-  const value = inp(U.factValue || '', 'profile.add-fact.value', { placeholder: 'Answer', 'aria-label': 'Answer' });
-  label.addEventListener('input', () => { U.factLabel = label.value; });
-  value.addEventListener('input', () => { U.factValue = value.value; });
-  const add = async () => {
-    if (!label.value.trim()) { toast('Write what the fact is'); label.focus(); return; }
-    const v = PD.view(P.me, lang);
-    U.factLabel = ''; U.factValue = '';
-    await save({ facts: [...v.facts, { id: store.newId('f'), label: label.value.trim(), value: value.value.trim() }] }, 'Fact added — add another or tap Done');
-    setTimeout(() => root?.querySelector('[data-id="profile.add-fact.label"]')?.focus(), 150);
-  };
-  const onKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); if (e.target === label && !value.value) value.focus(); else add(); } };
-  label.addEventListener('keydown', onKey); value.addEventListener('keydown', onKey);
-  return h('div', { class: 'mp-fact-add', 'data-id': 'profile.add-fact-row' }, label, value,
-    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.add-fact.save', onClick: add }, 'Add'));
-}
-async function factsSheet() {
-  const v = PD.view(P.me, lang);
-  let rows = v.facts.map(f => ({ ...f }));
-  const list = h('div', { class: 'mp-fact-edit' });
-  const drawRows = () => {
-    list.innerHTML = '';
-    if (!rows.length) list.append(h('p', { class: 'note' }, 'No facts. Use Add a fact.'));
-    rows.forEach((f, i) => list.append(h('div', { class: 'mp-fact-row', 'data-id': 'profile.facts-sheet.row' },
-      h('input', { class: 'input', dir: 'auto', value: f.label, 'aria-label': 'Fact name', onInput: (e) => { f.label = e.target.value; } }),
-      h('input', { class: 'input', dir: 'auto', value: f.value, 'aria-label': 'Answer', onInput: (e) => { f.value = e.target.value; } }),
-      h('div', { class: 'mp-fact-tools' },
-        h('button', { type: 'button', class: 'btn small', disabled: i === 0 || null, onClick: () => { [rows[i - 1], rows[i]] = [rows[i], rows[i - 1]]; drawRows(); } }, 'Up'),
-        h('button', { type: 'button', class: 'btn small', disabled: i === rows.length - 1 || null, onClick: () => { [rows[i + 1], rows[i]] = [rows[i], rows[i + 1]]; drawRows(); } }, 'Down'),
-        h('button', { type: 'button', class: 'btn small danger', onClick: () => { rows = rows.filter(x => x !== f); drawRows(); } }, 'Remove')))));
-    list.append(h('button', { type: 'button', class: 'linkish pc-add', 'data-id': 'profile.facts-sheet.add', onClick: () => { rows.push({ id: store.newId('f'), label: '', value: '' }); drawRows(); list.querySelector('.mp-fact-row:last-of-type input')?.focus(); } }, 'Add a fact…'));
-  };
-  drawRows();
-  await sheet({ title: 'Facts', dataId: 'profile.facts-sheet', className: 'tall', body: [list], actions: [{ id: 'save', label: 'Save', primary: true, run: () => save({ facts: rows.filter(f => f.label.trim()).map(f => ({ ...f, label: f.label.trim(), value: f.value.trim() })) }) }] });
-}
-async function contactSheet() {
-  const c = PD.view(P.me, lang).contact;
-  const iName = inp(c.inquiriesName, 'profile.contact-sheet.inq-name', { placeholder: 'e.g. Mrs. Ben-Ami (mother)' }), iPhone = inp(c.inquiriesPhone, 'profile.contact-sheet.inq-phone', { inputmode: 'tel' });
-  const phone = inp(c.phone, 'profile.contact-sheet.phone', { inputmode: 'tel' }), email = inp(c.email, 'profile.contact-sheet.email', { type: 'email', inputmode: 'email' });
-  await sheet({ title: 'Contact', dataId: 'profile.contact-sheet', body: [
-    h('p', { class: 'note' }, 'The inquiries contact is shared in your profile. Your own phone and email are only added when you tick them while sharing.'),
-    field('For inquiries — name', iName), field('For inquiries — phone', iPhone), field('My phone (you choose)', phone), field('My email (you choose)', email)],
-    actions: [{ id: 'save', label: 'Save', primary: true, run: () => save({ contact: { inquiriesName: iName.value.trim(), inquiriesPhone: store.cleanPhone(iPhone.value), phone: store.cleanPhone(phone.value), email: email.value.trim() } }) }] });
-}
-async function sectionSheet(s) {
-  const title = inp(s?.title || '', 'profile.section-sheet.title'), text = area(s?.text || '', 'profile.section-sheet.text', 6);
-  let shareIt = s ? s.share !== false : true;
-  const tick = h('label', { class: 'share-tick' }, h('input', { type: 'checkbox', checked: shareIt || null, onChange: (e) => { shareIt = e.target.checked; } }), h('span', {}, 'Include in the full profile when sharing'));
-  const v = PD.view(P.me, lang);
-  const acts = [{ id: 'save', label: s ? 'Save' : 'Add section', primary: true, run: async () => {
-    if (!title.value.trim()) { toast('Give the section a title'); return false; }
-    const rec = { id: s?.id || store.newId('s'), title: title.value.trim(), text: text.value.trim(), share: shareIt };
-    await save({ sections: s ? v.sections.map(x => x.id === s.id ? rec : x) : [...v.sections, rec] }, s ? 'Saved' : 'Section added');
-  } }];
-  if (s) acts.unshift({ id: 'delete', label: 'Delete', danger: true, run: async () => {
-    if (!(await confirmDialog({ title: 'Delete this section?', text: `“${s.title}” is removed from your profile.`, ok: 'Delete', danger: true, dataId: 'profile.section-delete-dialog' }))) return false;
-    await save({ sections: v.sections.filter(x => x.id !== s.id) }, 'Section deleted');
-  } });
-  setTimeout(() => (s ? text : title).focus(), 50);
-  await sheet({ title: s ? 'Edit section' : 'Add section', dataId: 'profile.section-sheet', body: [field('Title', title), field('Text', text), tick], actions: acts });
-}
-async function referencesSheet() {
-  const refs = (P.me?.references || []).map(r => ({ ...r }));
-  const list = h('div', { class: 'mp-ref-list' });
-  const drawRefs = () => {
-    list.innerHTML = '';
-    if (!refs.length) list.append(h('p', { class: 'note' }, 'No references yet.'));
-    refs.forEach((r) => list.append(h('div', { class: 'mp-ref', 'data-id': 'profile.reference' },
-      field('Name', h('input', { class: 'input', dir: 'auto', value: r.name, onInput: (e) => { r.name = e.target.value; } })),
-      field('How they know me', h('input', { class: 'input', dir: 'auto', value: r.relation || '', onInput: (e) => { r.relation = e.target.value; } })),
-      field('Phone', h('input', { class: 'input', dir: 'auto', inputmode: 'tel', value: r.phone || '', onInput: (e) => { r.phone = e.target.value; } })),
-      field('Private note — only me, never shared', h('input', { class: 'input', dir: 'auto', value: r.privateNote || '', onInput: (e) => { r.privateNote = e.target.value; } })),
-      h('button', { type: 'button', class: 'linkish danger-text', onClick: () => { refs.splice(refs.indexOf(r), 1); drawRefs(); } }, 'Remove this reference'))));
-    list.append(h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.references.add', onClick: () => { refs.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); drawRefs(); } }, 'Add a reference'));
-  };
-  drawRefs();
-  await sheet({ title: 'References', dataId: 'profile.references-sheet', className: 'tall', body: [
-    h('p', { class: 'note' }, 'You choose each time you share whether a reference is included. Their private notes never are.'), list],
-    actions: [{ id: 'save', label: 'Save', primary: true, run: () => save({ references: refs.filter(r => r.name.trim()).map(r => ({ ...r, name: r.name.trim(), phone: store.cleanPhone(r.phone) })) }) }] });
-}
 async function filesSheet() {
   const list = h('div', { class: 'mp-files' });
   const picker = h('input', { type: 'file', multiple: true, class: 'hidden', accept: 'image/*,application/pdf', 'data-id': 'profile.files.input' });

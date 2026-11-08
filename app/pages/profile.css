@@ -96,3 +96,15 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
   .mp-contact .fact{grid-template-columns:96px minmax(0,1fr) auto}
   .mp-fact-row{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Profile tab as one form (tweak mode) */
+.mp-body>.ap-sec{margin-top:10px}
+.mp-jumps{position:sticky;top:calc(var(--topbar-height) + var(--safe-top));z-index:5;background:var(--bg);padding:4px 0;border-bottom:1px solid var(--border)}
+.mp-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.mp-body .mp-fact-row{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;align-items:center;padding-bottom:0;border-bottom:0}
+.mp-ref{display:flex;flex-direction:column;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.mp-ref .linkish,.mp-body .ap-sec>.linkish{align-self:flex-start}
+.mp-add{align-self:flex-start}
+.mp-form-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);flex-wrap:wrap;padding:14px 0}
+.mp-body .ap-sec{scroll-margin-top:calc(var(--topbar-height) + var(--safe-top) + 50px)}
+@media (max-width:420px){.mp-two{grid-template-columns:minmax(0,1fr)}.mp-body .mp-fact-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.mp-body .mp-fact-row .linkish{grid-column:1/-1}}
