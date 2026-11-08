@@ -404,7 +404,7 @@ function suggestedFor(p) {
   const lines = [p.name || ''];
   const sum = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
   if (sum) lines.push('• ' + sum);
-  for (const v of [A.pLevel, A.pBackground, txt(p.languages), A.pStatus]) if (txt(v)) lines.push('• ' + txt(v));
+  for (const [k, v] of [['Religious level', A.pLevel], ['Religious background', A.pBackground], ['Languages', p.languages], ['Status', A.pStatus]]) if (txt(v)) lines.push(`• ${k}: ${txt(v)}`);
   if (p.about) lines.push('', p.about.split(/(?<=[.!?])\s/)[0]);
   if (p.looking) lines.push('', 'Looking for: ' + p.looking.split(/(?<=[.!?])\s/)[0]);
   return lines.join('\n').trim();

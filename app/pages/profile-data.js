@@ -107,7 +107,7 @@ export function suggestedText(me, lang) {
   const facts = ids.map(id => v.facts.find(f => f.id === id)).filter(f => f && (f.value || f.label));
   const lines = [v.name || ''];
   if (summaryLine(v)) lines.push('• ' + summaryLine(v));
-  for (const f of facts) lines.push('• ' + (f.value || f.label));
+  for (const f of facts) lines.push('• ' + (f.value ? `${f.label}: ${f.value}` : f.label));
   if (v.intro) lines.push('', v.intro);
   if (v.looking) lines.push('', `${l.lookingShort}: ${firstSentence(v.looking)}`);
   const inq = [v.contact.inquiriesName, v.contact.inquiriesPhone].filter(Boolean).join(', ');
