@@ -79,11 +79,13 @@ function profileTab(b) {
   const custom = Object.entries(A).filter(([k, v]) => !LISTS[k] && (Array.isArray(v) ? v.length : v));
   const religiousOther = p.religiousOther?.trim();
   const cards = p.contactCards || [];
+  const own = cards.filter(c => c.role === 'person' && c.number).map(c => c.number);
   return [
     h('div', { class: 'pc-summary', 'data-id': 'person-card.summary' },
       h('div', { class: 'avatar lg' }, store.initials(p)),
       h('div', { class: 'pc-summary-text' },
         h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || 'Age, city and occupation not recorded'),
+        own.length ? h('div', { class: 'pc-summary-line pc-own-phone', 'data-id': 'person-card.phone' }, own.map((n, i) => [i ? ' · ' : '', h('a', { href: 'tel:' + n.replace(/[^0-9]/g, ''), class: 'mono' }, n)])) : null,
         p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
       h('a', { class: 'icon-btn', href: `#/people/${enc}/edit`, 'aria-label': 'Edit basic info', 'data-id': 'person-card.summary-edit', html: icon('edit') })),
     sec('Facts', 'person-card.facts', edit('personal'),

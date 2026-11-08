@@ -57,3 +57,6 @@
 .pc-sec dl.facts{margin:0}
 .pc-sec>.btn{align-self:flex-start}
 .people-page .avatar svg{width:18px;height:18px}
+
+.pc-own-phone{font-size:var(--font-sm);font-weight:400;color:var(--muted)}
+.pc-own-phone a{color:inherit}
