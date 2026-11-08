@@ -18,7 +18,7 @@ export const SORTS = [
   ['city', 'City'], ['language', 'Language'], ['community', 'Community served'],
 ];
 export const ROLE_TABS = [['all', 'All'], ['shadchan', 'Shadchanim'], ['reference', 'References'], ['other', 'Other']];
-export const ACTIVITY = [['all', 'All'], ['waiting', 'Waiting'], ['follow-up', 'Follow-up'], ['pinned', 'Pinned']];
+export const ACTIVITY = [['all', 'All'], ['waiting', 'Waiting'], ['follow-up', 'Follow-up'], ['active', 'Active'], ['pinned', 'Pinned']];
 export const STATUS_LABEL = { none: '', waiting: 'Waiting', 'follow-up': 'Follow-up', active: 'Active' };
 export const LAYOUTS = [
   ['a', 'A — Outlook summary at top', 'Names upper left, quick facts upper right, full-width activity below.'],
@@ -96,6 +96,7 @@ export function matches(c) {
   if (S.role === 'other' && (roles.includes('shadchan') || roles.includes('reference'))) return false;
   if (S.activity === 'waiting' && c.status !== 'waiting') return false;
   if (S.activity === 'follow-up' && !(c.status === 'follow-up' || x.open.length)) return false;
+  if (S.activity === 'active' && c.status !== 'active') return false;
   if (S.activity === 'pinned' && !c.pinned) return false;
   if (S.cities.length && !S.cities.includes(c.city)) return false;
   if (S.languages.length && !(c.languages || []).some(l => S.languages.includes(l))) return false;

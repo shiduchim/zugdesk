@@ -21,8 +21,8 @@ export function h(tag, attrs = {}, ...children) {
 const paths = {
   home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/>',
   contacts: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.2.2 3.8 1.6 4.3 4.3"/>',
-  people: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>',
-  shidduchim: '<path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h7"/><circle cx="18" cy="16" r="3"/>',
+  people: '<path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h7"/><circle cx="18" cy="16" r="3"/>',   // Ideas: a list
+  shidduchim: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>', // Shidduchim: a heart
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/>',
   settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   back: '<path d="M15 5l-7 7 7 7"/>',
@@ -96,14 +96,14 @@ export function sheet({ title, dataId, body, actions = [], className = '' }) {
   return new Promise((resolve) => {
     let done = false;
     const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
+    // Close sits at the bottom next to Save, where a thumb can reach it (owner request, Stage 8).
+    const closeBtn = h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.close', onClick: () => finish(null) }, 'Close');
     const dlg = h('dialog', { class: 'sheet form-sheet ' + className, 'data-id': dataId },
-      h('div', { class: 'sheet-head' },
-        h('h2', {}, title),
-        h('button', { class: 'btn small', type: 'button', 'data-id': dataId + '.close', onClick: () => finish(null) }, 'Close')),
+      h('div', { class: 'sheet-head' }, h('h2', {}, title)),
       h('div', { class: 'sheet-body' }, body),
-      actions.length ? h('div', { class: 'btn-row sheet-actions' }, actions.map(a =>
+      h('div', { class: 'btn-row sheet-actions' }, closeBtn, actions.map(a =>
         h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger' : ''), type: 'button', 'data-id': dataId + '.' + a.id,
-          onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label))) : null);
+          onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label))));
     dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
     dlg.addEventListener('close', () => finish(null));
     document.body.append(dlg);

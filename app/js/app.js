@@ -14,7 +14,7 @@ const NAV = {
   four: [
     { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
     { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
-    { path: '/people', label: 'People', icon: 'people', id: 'nav.people' },
+    { path: '/people', label: 'Ideas', icon: 'people', id: 'nav.people' },
     { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
     { path: '/profile', label: 'Profile', icon: 'profile', id: 'nav.profile' },
   ],
@@ -50,7 +50,7 @@ function renderNav() {
   const inner = $('#nav .inner');
   inner.innerHTML = '';
   let path = currentPath();
-  // Three-destination layout: People & Ideas lives inside Shidduchim.
+  // Three-destination layout: Ideas lives inside Shidduchim.
   if (prefs.navArrangement !== 'four' && (path === '/people' || path.startsWith('/people/'))) path = '/shidduchim';
   for (const it of items) {
     const active = path === it.path || path.startsWith(it.path + '/');
@@ -60,7 +60,7 @@ function renderNav() {
 }
 
 function setTitle(path) {
-  const names = { '/home': 'Home', '/contacts': 'Contacts', '/people': 'People & Ideas', '/shidduchim': 'Shidduchim', '/profile': 'My Profile', '/settings': 'Settings' };
+  const names = { '/home': 'Home', '/contacts': 'Contacts', '/people': 'Ideas', '/shidduchim': 'Shidduchim', '/profile': 'My Profile', '/settings': 'Settings' };
   const key = '/' + path.split('/')[1];
   $('#topbar-title').textContent = names[key] || '';
   document.title = (names[key] ? names[key] + ' · ' : '') + 'ZugDesk';

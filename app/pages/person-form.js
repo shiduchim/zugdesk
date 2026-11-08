@@ -15,7 +15,7 @@ const drafts = new Map();   // address key → draft
 let root = null, gen = 0, d = null, ctx = null;
 
 export function destroy() { root = null; gen++; }
-// People & Ideas lists unsaved drafts so nothing typed is ever lost.
+// Ideas lists unsaved drafts so nothing typed is ever lost.
 export function openDrafts() {
   return [...drafts.values()].filter(x => x.dirty).map(x => ({ key: x.key, href: x.href, name: x.p.name || (x.sourceText || '').trim().split('\n')[0] || 'Untitled', editing: !!x.personId }));
 }
@@ -29,7 +29,7 @@ export async function render(container, params = {}, path = '') {
   const key = editing ? 'edit:' + params.id : params.sourceId ? 'from:' + params.sourceId : params.contactId ? 'by:' + params.contactId : 'new';
   if (!drafts.has(key)) {
     const fresh = await makeDraft({ key, editing, params, path });
-    if (!fresh) { root.append(h('p', { class: 'empty' }, 'This person or original no longer exists.'), h('a', { class: 'btn', href: '#/people' }, 'Back to People & Ideas')); return; }
+    if (!fresh) { root.append(h('p', { class: 'empty' }, 'This person or original no longer exists.'), h('a', { class: 'btn', href: '#/people' }, 'Back to Ideas')); return; }
     drafts.set(key, fresh);
   }
   d = drafts.get(key);
@@ -581,7 +581,7 @@ async function saveForLater() {
   const src = await store.sources.save({ personId: null, text: d.sourceText, sender: d.sender.trim(), senderContactId: d.senderContactId, receivedAt: store.now(), kind: d.kind });
   for (const f of d.files) await store.attachments.save({ ...f, personId: null, contactId: null, sourceId: src.id });
   drafts.delete(d.key);
-  toast('Saved for later — find it in People & Ideas');
+  toast('Saved for later — find it in Ideas');
   navigate('/people');
 }
 
@@ -611,7 +611,7 @@ async function save({ then }) {
     const dup = ctx.people.find(x => (rec.name && norm(x.name) === norm(rec.name)) ||
       (own && (x.contactCards || []).some(c => c.role === 'person' && store.phoneDigits(c.number) === store.phoneDigits(own.number) && store.phoneDigits(own.number).length >= 7)));
     if (dup) {
-      const res = await sheet({ title: 'Already in People & Ideas?', dataId: 'person.duplicate',
+      const res = await sheet({ title: 'Already in Ideas?', dataId: 'person.duplicate',
         body: [h('p', { dir: 'auto' }, `${dup.name || 'Someone'}${dup.age ? ', ' + dup.age : ''}${dup.city ? ' · ' + dup.city : ''} may be the same person.`),
           h('p', { class: 'note' }, 'Adding this as an updated version keeps one person with all originals. Nothing is merged automatically: only empty fields are filled in.')],
         actions: [{ id: 'open', label: 'Open existing' }, { id: 'version', label: 'Add as updated version' }, { id: 'new', label: 'Save as new person', primary: true }] });

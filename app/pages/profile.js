@@ -24,7 +24,6 @@ export async function render(container, params) {
   root = container;
   root.classList.add('profile-page', 'wide');
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
-  lang = store.getPrefs().profileLang || 'en';
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' || ch.store === 'meta') return;
     if (W.busy) return; // our own autosave: do not redraw under the typing finger
@@ -38,6 +37,7 @@ async function draw(keep = false) {
   const [p, nd] = await Promise.all([PD.loadProfile(), N.loadNotes()]);
   if (token !== gen || !root) return;
   P = p; ND = nd;
+  lang = P.me?.lang || 'en'; // the profile is written in one language; each short version chooses its own
   const y = window.scrollY;
   const active = document.activeElement?.dataset?.id === 'profile.note-composer' ? document.activeElement : null;
   if (active && tab === 'notes') { refreshNotesList(); return; } // keep the composer as it is
@@ -60,23 +60,11 @@ function setTab(k) { navigate(k === 'profile' ? '/profile' : '/profile/' + k, { 
 function header(v) {
   return h('div', { class: 'mp-head', 'data-id': 'profile.header' },
     h('h1', { dir: 'auto' }, v.name || 'My Profile'),
-    h('button', { type: 'button', class: 'mp-lang', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'data-id': 'profile.lang', title: 'Profile language', onClick: (e) => langMenu(e.currentTarget) }, PD.langCode(lang), h('span', { class: 'mp-caret', 'aria-hidden': 'true' }, '▾')),
     h('span', { class: 'spacer' }),
     h('button', { type: 'button', class: 'icon-btn bordered', 'aria-label': 'Edit name, age, city, work and intro', title: 'Edit', 'data-id': 'profile.edit', html: icon('edit'), onClick: () => identitySheet() }),
     h('button', { type: 'button', class: 'btn primary', 'data-id': 'profile.share', onClick: () => share() }, 'Share'));
 }
 async function share(opts) { if (shareOpen) return; shareOpen = true; try { await openShare(opts); } finally { shareOpen = false; } }
-
-function langMenu(anchor) {
-  N.openMenu(anchor, 'profile.lang-menu', (panel) => {
-    panel.append(h('div', { class: 'qtitle' }, 'Profile language'),
-      ...PD.LANGS.map(([k, label]) => N.menuItem(label, k === (P.me?.lang || 'en') ? 'main' : 'you translate', () => {
-        N.closeMenu(); lang = k; store.setPref('profileLang', k); draw();
-        toast(`Showing ${label}`);
-      }, { tick: k === lang, dataId: 'profile.lang-' + k })),
-      h('p', { class: 'qempty' }, 'Each language keeps its own text. Nothing is translated automatically. More languages can come later.'));
-  });
-}
 
 function sideNav(v, notesCount) {
   const go = (id) => (e) => { e.preventDefault(); if (tab !== 'profile') { setTab('profile'); setTimeout(() => scrollToSec(id), 250); } else scrollToSec(id); };
@@ -108,7 +96,6 @@ function profileTab(v) {
   const c = v.contact;
   return [
     first ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Start with the pencil at the top: your name, age, city and a one-line intro. Everything stays on this phone until you choose to share it.') : null,
-    lang !== (P.me?.lang || 'en') ? h('div', { class: 'callout', 'data-id': 'profile.lang-note' }, `${PD.langName(lang)} version. Grey text is still in ${PD.langName(P.me?.lang || 'en')} — tap a pencil to write it in ${PD.langName(lang)}.`) : null,
     h('div', { class: 'pc-summary', 'data-id': 'profile.summary' },
       h('div', { class: 'avatar lg' }, P.me?.name ? store.initials({ name: P.me.name }) : 'ME'),
       h('div', { class: 'pc-summary-text' },
@@ -117,7 +104,8 @@ function profileTab(v) {
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit summary', 'data-id': 'profile.summary-edit', html: icon('edit'), onClick: () => identitySheet() })),
     sec(l.facts, 'mp-facts', 'profile.facts', () => factsSheet(),
       v.facts.length ? h('dl', { class: 'facts' }, v.facts.map(f => h('div', { class: 'fact', 'data-id': 'profile.fact' }, h('dt', { dir: 'auto', class: grey(v, 'fact:' + f.id) }, f.label), h('dd', { dir: 'auto', class: grey(v, 'fact:' + f.id) }, f.value || notYet())))) : h('p', { class: 'note' }, 'No facts yet. Add the ones you want shadchanim to see.'),
-      h('button', { type: 'button', class: 'linkish pc-add', 'data-id': 'profile.add-fact', onClick: () => addFactSheet() }, 'Add a fact…')),
+      U.addFact ? addFactRow() : null,
+      h('button', { type: 'button', class: 'linkish pc-add', 'data-id': 'profile.add-fact', onClick: () => { U.addFact = !U.addFact; draw(true).then(() => root?.querySelector('[data-id="profile.add-fact.label"]')?.focus()); } }, U.addFact ? 'Done adding' : 'Add a fact…')),
     sec(l.about, 'mp-about', 'profile.about', () => textSheet('about', l.about), h('p', { dir: 'auto', class: 'prewrap ' + (grey(v, 'about') || '') }, v.about || notYet())),
     sec(l.looking, 'mp-looking', 'profile.looking', () => textSheet('looking', l.looking), h('p', { dir: 'auto', class: 'prewrap ' + (grey(v, 'looking') || '') }, v.looking || notYet())),
     sec('Contact', 'mp-contact', 'profile.contact', () => contactSheet(),
@@ -156,14 +144,25 @@ async function textSheet(key, title) {
   const v = PD.view(P.me, lang), t = area(v[key], 'profile.text-sheet.text', 8);
   await sheet({ title, dataId: 'profile.text-sheet', className: 'tall', body: [t], actions: [{ id: 'save', label: 'Save', primary: true, run: () => save({ [key]: t.value.trim() }) }] });
 }
-async function addFactSheet() {
-  const label = inp('', 'profile.add-fact.label', { placeholder: 'e.g. Height' }), value = inp('', 'profile.add-fact.value');
-  setTimeout(() => label.focus(), 50);
-  await sheet({ title: 'Add a fact', dataId: 'profile.add-fact', body: [field('What', label), field('Answer', value)], actions: [{ id: 'save', label: 'Add', primary: true, run: async () => {
-    if (!label.value.trim()) { toast('Write what the fact is'); return false; }
+// Add facts right on the page, one after another (owner request, Stage 8): no popup,
+// the row stays open after each Add so several can be typed in a row.
+const U = { addFact: false };
+function addFactRow() {
+  const label = inp(U.factLabel || '', 'profile.add-fact.label', { placeholder: 'What (e.g. Height)', 'aria-label': 'What' });
+  const value = inp(U.factValue || '', 'profile.add-fact.value', { placeholder: 'Answer', 'aria-label': 'Answer' });
+  label.addEventListener('input', () => { U.factLabel = label.value; });
+  value.addEventListener('input', () => { U.factValue = value.value; });
+  const add = async () => {
+    if (!label.value.trim()) { toast('Write what the fact is'); label.focus(); return; }
     const v = PD.view(P.me, lang);
-    await save({ facts: [...v.facts, { id: store.newId('f'), label: label.value.trim(), value: value.value.trim() }] }, 'Fact added');
-  } }] });
+    U.factLabel = ''; U.factValue = '';
+    await save({ facts: [...v.facts, { id: store.newId('f'), label: label.value.trim(), value: value.value.trim() }] }, 'Fact added — add another or tap Done');
+    setTimeout(() => root?.querySelector('[data-id="profile.add-fact.label"]')?.focus(), 150);
+  };
+  const onKey = (e) => { if (e.key === 'Enter') { e.preventDefault(); if (e.target === label && !value.value) value.focus(); else add(); } };
+  label.addEventListener('keydown', onKey); value.addEventListener('keydown', onKey);
+  return h('div', { class: 'mp-fact-add', 'data-id': 'profile.add-fact-row' }, label, value,
+    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.add-fact.save', onClick: add }, 'Add'));
 }
 async function factsSheet() {
   const v = PD.view(P.me, lang);
@@ -256,13 +255,23 @@ async function filesSheet() {
 }
 
 // ---------- Short versions ----------
+// Language choice on each short version (owner request, Stage 8): the Suggested text follows the
+// profileLang preference; a saved version keeps its own `lang`. Nothing is translated automatically.
+function langPick(value, dataId, onChange) {
+  return h('select', { class: 'input mp-lang-pick', 'aria-label': 'Language of this version', 'data-id': dataId, onChange: (e) => onChange(e.target.value) },
+    PD.LANGS.map(([k, , code]) => h('option', { value: k, selected: k === value || null }, code)));
+}
 function shortTab(v) {
-  const sugg = PD.suggestedText(P.me, lang);
-  const cards = [card({ title: 'Suggested', sub: 'auto · always up to date', text: sugg, dataId: 'profile.short-suggested', menu: (a) => N.openMenu(a, 'profile.short-menu', (panel) => panel.append(
-    N.menuItem('Save as a new version', 'keeps this text', async () => { N.closeMenu(); const t = await promptText({ title: 'Save as a new version', label: 'Name (e.g. who it is for)', ok: 'Save', dataId: 'profile.version-name' }); if (t) { await store.profileVersions.save({ title: t, lang, text: sugg, savedAt: store.now() }); toast('Saved'); } }, { dataId: 'profile.short-menu.save' }),
+  const sLang = store.getPrefs().profileLang || lang;
+  const sugg = PD.suggestedText(P.me, sLang);
+  const cards = [card({ title: 'Suggested', sub: 'auto · always up to date', text: sugg, dataId: 'profile.short-suggested', lang: sLang,
+    langPick: langPick(sLang, 'profile.short-suggested.lang', (k) => { store.setPref('profileLang', k); draw(true); toast(`Suggested shown in ${PD.langName(k)}`); }),
+    menu: (a) => N.openMenu(a, 'profile.short-menu', (panel) => panel.append(
+    N.menuItem('Save as a new version', 'keeps this text', async () => { N.closeMenu(); const t = await promptText({ title: 'Save as a new version', label: 'Name (e.g. who it is for)', ok: 'Save', dataId: 'profile.version-name' }); if (t) { await store.profileVersions.save({ title: t, lang: sLang, text: sugg, savedAt: store.now() }); toast('Saved'); } }, { dataId: 'profile.short-menu.save' }),
     N.menuItem('Share this text', '', () => { N.closeMenu(); share({ source: 'suggested' }); }, { dataId: 'profile.short-menu.share' }),
     N.menuItem('Choose what goes in it', '', () => { N.closeMenu(); shortSettings(); }, { dataId: 'profile.short-menu.settings' }))) })];
-  for (const x of P.versions) cards.push(card({ title: x.title || 'Saved version', sub: `saved ${store.formatDate(x.savedAt || x.createdAt)}${x.lang && x.lang !== 'en' ? ' · ' + PD.langName(x.lang) : ''}`, text: x.text, dataId: 'profile.short-version', edit: () => versionSheet(x),
+  for (const x of P.versions) cards.push(card({ title: x.title || 'Saved version', sub: `saved ${store.formatDate(x.savedAt || x.createdAt)}`, text: x.text, dataId: 'profile.short-version', edit: () => versionSheet(x), lang: x.lang || 'en',
+    langPick: langPick(x.lang || 'en', 'profile.short-version.lang', async (k) => { await store.profileVersions.save({ ...x, lang: k }); toast(`Marked as ${PD.langName(k)}`); }),
     menu: (a) => N.openMenu(a, 'profile.version-menu', (panel) => panel.append(
       N.menuItem('Share this version', '', () => { N.closeMenu(); share({ source: x.id }); }, { dataId: 'profile.version-menu.share' }),
       N.menuItem('Duplicate', '', async () => { N.closeMenu(); await store.profileVersions.save({ title: (x.title || 'Version') + ' copy', lang: x.lang, text: x.text, savedAt: store.now() }); toast('Duplicated'); }, { dataId: 'profile.version-menu.duplicate' }),
@@ -278,17 +287,18 @@ function shortTab(v) {
     h('button', { type: 'button', class: 'btn', 'data-id': 'profile.short-new', onClick: async () => {
       const t = await promptText({ title: 'New short version', label: 'Name (e.g. who it is for)', ok: 'Create', dataId: 'profile.version-name' });
       if (!t) return;
-      const x = await store.profileVersions.save({ title: t, lang, text: sugg, savedAt: store.now() });
+      const x = await store.profileVersions.save({ title: t, lang: sLang, text: sugg, savedAt: store.now() });
       versionSheet(x);
     } }, 'New short version'),
     h('p', { class: 'stamp mp-foot' }, 'these are the texts people receive · copy any box'),
   ];
 }
 async function undoDelete() { if (!lastDeleted) return; const x = lastDeleted; lastDeleted = null; await store.profileVersions.save(x); toast('Restored'); }
-function card({ title, sub, text, dataId, edit, menu }) {
-  return h('article', { class: 'mp-card', 'data-id': dataId },
+function card({ title, sub, text, dataId, edit, menu, lang: cardLang = 'en', langPick: pick = null }) {
+  return h('article', { class: 'mp-card', 'data-id': dataId, dir: PD.isRtl(cardLang) ? 'rtl' : null },
     h('div', { class: 'mp-card-head' },
       h('div', { class: 'mp-card-title' }, h('strong', { dir: 'auto' }, title), h('span', { class: 'stamp' }, sub)),
+      pick,
       h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '.copy', onClick: async () => { if (await copy(text)) toast('Copied. Copying is not sending — use Share to log a send.'); } }, 'Copy'),
       edit ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit ' + title, 'data-id': dataId + '.edit', html: icon('edit'), onClick: edit }) : null,
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'More for ' + title, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'data-id': dataId + '.more', html: icon('more'), onClick: (e) => menu(e.currentTarget) })),
@@ -364,6 +374,10 @@ async function refreshNotesList(list) {
         h('div', { class: 'mp-note-links' }, h('span', { 'aria-hidden': 'true' }, '↳ '),
           links.map((l, i) => [i ? ' · ' : '', h('a', { href: l.href, dir: 'auto' }, l.label)]),
           ' · ', h('a', { href: `#/home/note/${encodeURIComponent(n.id)}`, 'data-id': 'profile.note-home' }, 'Home'),
+          ' · ', h('button', { type: 'button', class: 'linkish inline danger-text', 'data-id': 'profile.note-delete', onClick: async () => {
+            if (!(await confirmDialog({ title: 'Delete this note?', text: 'It also disappears from Home and from anyone it is linked to.', ok: 'Delete note', danger: true, dataId: 'profile.note-delete-dialog' }))) return;
+            await N.deleteNote(n); toast('Note deleted'); refreshNotesList();
+          } }, 'delete'),
           ' · ', h('button', { type: 'button', class: 'linkish inline', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'data-id': 'profile.note-add-people', onClick: (e) => {
             const sel = { contactIds: [...(n.contactIds || [])], personIds: [...(n.personIds || [])] };
             N.linkMenu(e.currentTarget, 'profile.note-link-menu', ND, sel, async (s) => { await N.setLinks(n, s.contactIds, s.personIds); n.contactIds = s.contactIds; n.personIds = s.personIds; });

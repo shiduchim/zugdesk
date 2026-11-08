@@ -52,7 +52,7 @@ async function draw(keepScroll = false) {
       h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduchim.make-match', onClick: makeMatch }, 'Make Match')),
     prefs.navArrangement !== 'four' ? h('a', { class: 'row-link sh-people-link', href: '#/people', 'data-id': 'shidduchim.people-link' },
       h('div', { class: 'avatar', html: icon('people') }),
-      h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `People & Ideas · ${all.people.length}`),
+      h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `Ideas · ${all.people.length}`),
         h('div', { class: 'row-sub' }, 'Everyone suggested to you. Saving someone is not a formal offer.')),
       ico('chevron')) : null,
     h('div', { class: 'sh-tabbar', role: 'tablist', 'aria-label': 'Shidduchim lanes', 'data-id': 'shidduchim.lanes' },
@@ -66,7 +66,7 @@ async function draw(keepScroll = false) {
     h('div', { class: 'sh-matches', 'data-id': 'shidduchim.list' },
       list.length ? list.map(m => mode === 'compact' ? compactCard(m) : expandedCard(m))
         : h('div', { class: 'sh-blank', 'data-id': 'shidduchim.empty' }, h('h3', {}, 'Nothing here yet'),
-          h('p', {}, all.list.length ? 'Shidduchim appear here as their status changes.' : 'A formal offer starts from a person: People & Ideas → open the person → Offers → Start a formal offer.'))));
+          h('p', {}, all.list.length ? 'Shidduchim appear here as their status changes.' : 'A formal offer starts from a person: Ideas → open the person → Offers → Start a formal offer.'))));
   if (keepScroll) window.scrollTo(0, y);
 }
 
@@ -115,7 +115,7 @@ function statusRow(m, mode) {
 function cardSummary(m, mode) {
   const t = m.cur.t, st = m.lane;
   return h('div', { class: 'sh-card-top' },
-    h('div', { class: 'sh-heart' + (st === 'ended' ? ' ended' : ''), 'aria-hidden': 'true', html: icon('people') }),
+    h('div', { class: 'sh-heart' + (st === 'ended' ? ' ended' : ''), 'aria-hidden': 'true', html: icon('shidduchim') }),
     h('div', { class: 'sh-card-main' },
       h('div', { class: 'sh-card-names' },
         h('div', { class: 'sh-names', dir: 'auto' }, 'Me ', h('span', { class: 'sh-dash' }, '–'), ' ', sh.personName(m)),
@@ -229,7 +229,7 @@ export async function endDialog(m, { side = null, afterEnd = null } = {}) {
 async function makeMatch() {
   const res = await sheet({ title: 'Make Match', dataId: 'make-match-sheet',
     body: [h('p', {}, 'The Make Match screen has not been designed yet. This button is here so its place can be reviewed.'),
-      h('p', { class: 'note' }, 'To start a formal offer now: open the person in People & Ideas, then Offers → Start a formal offer. Saving a person or recording interest never starts one on its own.')],
-    actions: [{ id: 'people', label: 'Go to People & Ideas', primary: true }] });
+      h('p', { class: 'note' }, 'To start a formal offer now: open the person in Ideas, then Offers → Start a formal offer. Saving a person or recording interest never starts one on its own.')],
+    actions: [{ id: 'people', label: 'Go to Ideas', primary: true }] });
   if (res === 'people') navigate('/people');
 }

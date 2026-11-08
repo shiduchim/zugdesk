@@ -1,4 +1,4 @@
-// People & Ideas — every saved person (one record each), originals saved for later,
+// Ideas — every saved person (one record each), originals saved for later,
 // and unsaved Add Person drafts. A saved idea is not a formal shidduch offer.
 import * as store from '../js/store.js';
 import { h, icon, toast, confirmDialog } from '../js/ui.js';
@@ -53,7 +53,7 @@ async function draw() {
 
   root.innerHTML = '';
   root.append(...[
-    h('div', { class: 'page-head' }, h('h1', {}, 'People & Ideas'),
+    h('div', { class: 'page-head' }, h('h1', {}, 'Ideas'),
       h('a', { class: 'btn primary', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
     h('p', { class: 'note intro' }, 'Everyone suggested to you, one record each. Saving someone here is not a formal offer.'),
     h('div', { class: 'ct-search' }, ico('search'), search),

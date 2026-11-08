@@ -40,8 +40,8 @@ export async function render(root) {
     section('Navigation', 'settings.nav',
       h('p', { class: 'note' }, 'Still being compared. Changing this moves nothing in your data.'),
       h('div', { class: 'radio-list', 'data-id': 'settings.nav-choice' },
-        radio('nav', 'three', 'Three destinations', 'Home · Contacts · Shidduchim (People & Ideas lives inside Shidduchim) · My Profile', prefs.navArrangement, (v) => store.setPref('navArrangement', v)),
-        radio('nav', 'four', 'Four destinations', 'Home · Contacts · People & Ideas · Shidduchim · Profile', prefs.navArrangement, (v) => store.setPref('navArrangement', v)))),
+        radio('nav', 'three', 'Three destinations', 'Home · Contacts · Shidduchim (Ideas lives inside Shidduchim) · My Profile', prefs.navArrangement, (v) => store.setPref('navArrangement', v)),
+        radio('nav', 'four', 'Four destinations', 'Home · Contacts · Ideas · Shidduchim · Profile', prefs.navArrangement, (v) => store.setPref('navArrangement', v)))),
 
     section('Contacts view', 'settings.contacts-layout',
       h('p', { class: 'note' }, `Phone view now: ${(LAYOUTS.find(l => l[0] === prefs.contactsLayout) || LAYOUTS[0])[1]}. Also changeable from the View button on Contacts. On a computer, Contacts always uses the three-area view.`),
