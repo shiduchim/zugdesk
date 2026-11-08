@@ -155,7 +155,7 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-add-fact-full{margin-left:auto;font-size:var(--font-sm)}
 /* While editing: Cancel / Save / Done in a bar fixed to the very top of the screen (owner request) */
 .mp-form-bar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0;
-  padding:calc(var(--safe-top) + 8px) var(--pad-page) 8px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow)}
+  padding:calc(var(--safe-top) + 8px) var(--pad-page) 8px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow);transform:translateY(var(--vv-top))}
 .mp-form-bar-label{margin-right:auto;font-size:var(--font-xs);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
 .mp-form-bar .btn.small{min-height:var(--btn-height);padding:0 18px}
 body:has(.mp-form-bar){scroll-padding-top:calc(var(--safe-top) + 76px)}

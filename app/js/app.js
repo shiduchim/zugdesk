@@ -183,3 +183,11 @@ function applyTheme() {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || meta.content;
 }
+
+// Phones (mainly iPhone): while the keyboard is open the page can slide under "pinned" bars.
+// Keep --vv-top = how far the visible area has moved, so edit bars stay at the visible top.
+(function keepBarsOnScreen() {
+  const vv = window.visualViewport; if (!vv) return;
+  const set = () => document.documentElement.style.setProperty('--vv-top', Math.max(0, vv.offsetTop) + 'px');
+  vv.addEventListener('scroll', set); vv.addEventListener('resize', set); set();
+})();
