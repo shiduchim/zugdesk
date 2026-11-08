@@ -416,10 +416,11 @@ function secForm(key, dataId) {
     collect = () => ({ sections: v.sections.map(x => x.id === sid ? { ...x, title: t(title.value) || x.title, text: text.value.trim(), share: shareBox.checked } : x) });
   }
   const close = () => { SEC = null; draw(true); };
-  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body,
-    h('div', { class: 'mp-inline-actions' },
+  const form = h('div', { class: 'mp-form', 'data-id': id },
+    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': id + '.bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
       h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => { P.me = await PD.saveProfile(P.me, lang, collect()); toast('Saved'); close(); } }, 'Save')));
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => { P.me = await PD.saveProfile(P.me, lang, collect()); toast('Saved'); close(); } }, 'Save')),
+    ...body);
   setTimeout(() => form.querySelector('input,textarea')?.focus({ preventScroll: true }), 30);
   return form;
 }

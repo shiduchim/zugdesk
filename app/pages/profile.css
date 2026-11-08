@@ -127,7 +127,7 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .profile-page .pc-sec .facts .fact,.person-card-page .pc-sec .facts .fact{padding:4px 0}
 .profile-page .pc-sec-head,.person-card-page .pc-sec-head{min-height:var(--btn-small-height)}
 .profile-page .mp-head,.person-card-page .mp-head{margin-bottom:2px}
-.mp-more-link{display:block;padding:6px 0;font-size:var(--font-sm)}
+.mp-more-link{display:block;padding:6px 0;font-size:var(--font-sm);text-align:start;align-self:flex-start}
 .profile-page .mp-editing,.person-card-page .mp-editing{background:var(--surface-2);margin:0 calc(var(--pad-page) * -1);padding-left:var(--pad-page);padding-right:var(--pad-page)}
 .profile-page .pc-sec .facts .fact.mp-edit-row,.person-card-page .pc-sec .facts .fact.mp-edit-row{grid-template-columns:var(--fact-key) minmax(0,1fr);align-items:center;padding:3px 0;border-bottom:1px solid var(--border)}
 .mp-edit-row:last-of-type{border-bottom:0}
@@ -153,3 +153,6 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-add-fact-row .input{background:var(--surface)}
 .mp-add-fact-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .mp-add-fact-full{margin-left:auto;font-size:var(--font-sm)}
+/* Edit boxes: Cancel / Save pinned to the top while scrolling (owner request) */
+.mp-form-bar{position:sticky;top:calc(var(--topbar-height) + var(--safe-top));z-index:8;background:var(--bg);align-items:center;padding:6px 0;margin-bottom:2px;border-bottom:1px solid var(--border)}
+.mp-form-bar-label{margin-right:auto;font-size:var(--font-xs);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}

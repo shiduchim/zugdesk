@@ -554,14 +554,15 @@ function secForm(key, dataId) {
     collect = () => ({ know, yearsKnown: t(years.value), howKnow: how.value.trim() });
   }
   const close = () => { SEC = null; redraw(); };
-  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body,
-    h('div', { class: 'mp-inline-actions' },
+  const form = h('div', { class: 'mp-form', 'data-id': id },
+    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': id + '.bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
       h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
       h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => {
         const patch = collect();
         if (key === 'summary' && !patch.name && !(patch.contactCards || []).some(c => c.role === 'person' && c.number)) { toast('Write a name or their own phone number first'); return; }
         await savePerson(patch); close();
-      } }, 'Save')));
+      } }, 'Save')),
+    ...body);
   setTimeout(() => form.querySelector('input,textarea,select')?.focus({ preventScroll: true }), 30);
   return form;
 }
