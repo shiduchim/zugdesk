@@ -124,3 +124,5 @@ body.focus-mode [data-id="person.body-type"] .bubble{width:100%;justify-content:
 .me-body .field{gap:3px}
 .me-body .field label{font-size:var(--font-sm)}
 @media (max-width:340px){.me-two{grid-template-columns:minmax(0,1fr)}}
+.me-foot .manage{flex-basis:100%;text-align:start;padding-left:0}
+.me-foot .btn{flex:none}
