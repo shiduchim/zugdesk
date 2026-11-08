@@ -5,7 +5,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
-import { KINDS, LISTS, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE, listType, listsOf, extract, managePersonForm, addChoice, dateOnly } from './people-data.js';
+import { seekingKind, KINDS, LISTS, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE, listType, listsOf, extract, managePersonForm, addChoice, dateOnly } from './people-data.js';
 
 const MAX_FILE = 5 * 1024 * 1024;
 const TABS = [['paste', 'Paste'], ['basic', 'Basic Info'], ['details', 'Detailed Info']];
@@ -44,7 +44,7 @@ export async function render(container, params = {}, path = '') {
 async function makeDraft({ key, editing, params, path }) {
   const prefs = store.getPrefs();
   const base = {
-    key, href: '#' + path, personId: null, fromSourceId: null, tab: 'paste', kind: prefs.personKind || 'guy', dirty: false,
+    key, href: '#' + path, personId: null, fromSourceId: null, tab: 'paste', kind: seekingKind(prefs) || prefs.personKind || 'guy', dirty: false,
     sourceText: '', sender: '', senderContactId: null, files: [],
     existingSources: [], existingAtts: [], newAtts: [], removedAttIds: [],
     p: { name: '', age: '', city: '', occupation: '', languages: [], about: '', looking: '', maxAge: '', contactCards: [],
@@ -96,7 +96,7 @@ function paint({ keepScroll = false } = {}) {
       h('h1', { dir: 'auto' }, title)),
     h('p', { class: 'note intro' }, d.personId ? 'Changes save into the same person. Originals stay exactly as received.' : 'Start with what you have. Fill in the rest later.'),
     h('div', { class: 'typepick', role: 'group', 'aria-label': 'Who is this?', 'data-id': 'person.kind' },
-      ...KINDS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': d.kind === k ? 'true' : 'false', 'data-id': 'person.kind-' + k, onClick: () => {
+      ...KINDS.filter(([k]) => d.personId || !seekingKind(store.getPrefs()) || k === seekingKind(store.getPrefs())).map(([k, l]) => h('button', { type: 'button', 'aria-pressed': d.kind === k ? 'true' : 'false', 'data-id': 'person.kind-' + k, onClick: () => {
         d.kind = k; touch(); store.setPref('personKind', k); paint({ keepScroll: true });
       } }, l)),
       d.personId ? null : h('a', { href: '#/contacts/new', 'data-id': 'person.kind-shadchan' }, 'Shadchan')),

@@ -108,3 +108,4 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-form-foot{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);flex-wrap:wrap;padding:14px 0}
 .mp-body .ap-sec{scroll-margin-top:calc(var(--topbar-height) + var(--safe-top) + 50px)}
 @media (max-width:420px){.mp-two{grid-template-columns:minmax(0,1fr)}.mp-body .mp-fact-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.mp-body .mp-fact-row .linkish{grid-column:1/-1}}
+.mp-iam{margin-bottom:0;align-self:flex-start}

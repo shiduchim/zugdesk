@@ -74,6 +74,7 @@ const PREF_DEFAULTS = {
   contactsLayout: 'a',       // phone view: a | split | rail | tabs | list | inbox (spec/contacts.md CT-13)
   contactsSort: 'recent',    // recent | oldest | name | city | language | community
   contactsSplit: 260,
+  iAm: '',                  // My Profile: 'guy' | 'girl' — Ideas then shows only the other
   personKind: 'guy',         // Add Person: last chosen Guy / Girl        // upper pane height (px) in the top/bottom split view
   shidduchimView: 'compact', // Shidduchim list: compact | expanded
   homeSuggestions: true,     // Home: Smart Suggestions dot (blue = on)
