@@ -48,15 +48,17 @@ const $ = (s) => document.querySelector(s);
 
 function renderNav() {
   const prefs = store.getPrefs();
-  const items = NAV[prefs.navArrangement] || NAV.three;
+  const slim = prefs.shellStyle === 'slim';
+  // Slim icon bar: every section one tap away, Settings included, icons only (owner request).
+  const items = slim ? [...NAV.four, { path: '/settings', label: 'Settings', icon: 'settings', id: 'nav.settings' }] : (NAV[prefs.navArrangement] || NAV.three);
   const inner = $('#nav .inner');
   inner.innerHTML = '';
   let path = currentPath();
   // Three-destination layout: Ideas lives inside Shidduchim.
-  if (prefs.navArrangement !== 'four' && (path === '/people' || path.startsWith('/people/'))) path = '/shidduchim';
+  if (!slim && prefs.navArrangement !== 'four' && (path === '/people' || path.startsWith('/people/'))) path = '/shidduchim';
   for (const it of items) {
     const active = path === it.path || path.startsWith(it.path + '/');
-    inner.append(h('a', { href: '#' + it.path, 'data-id': it.id, 'aria-current': active ? 'page' : null },
+    inner.append(h('a', { href: '#' + it.path, 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': slim ? it.label : null, title: slim ? it.label : null },
       h('span', { class: 'ico', html: icon(it.icon) }).firstChild, h('span', {}, it.label)));
   }
 }
@@ -72,8 +74,11 @@ const DRAWER = [
   { path: '/settings', label: 'Settings', icon: 'settings', id: 'drawer.settings' },
 ];
 const claude = () => store.getPrefs().shellStyle === 'claude';
+const hides = () => ['claude', 'slim'].includes(store.getPrefs().shellStyle); // bars slide away while scrolling down
 function applyShell() {
   document.body.classList.toggle('shell-claude', claude());
+  document.body.classList.toggle('shell-slim', store.getPrefs().shellStyle === 'slim');
+  renderNav();
   document.body.classList.remove('bar-hidden');
   if (!claude()) closeDrawer();
 }
@@ -122,7 +127,7 @@ function wireShell() {
     requestAnimationFrame(() => {
       ticking = false;
       const y = window.scrollY, dy = y - lastY;
-      if (!claude() || document.body.classList.contains('drawer-open')) { lastY = y; return; }
+      if (!hides() || document.body.classList.contains('drawer-open')) { lastY = y; return; }
       if (y < 40 || dy < -6) document.body.classList.remove('bar-hidden');
       else if (dy > 6) document.body.classList.add('bar-hidden');
       if (Math.abs(dy) > 6) lastY = y;

@@ -41,6 +41,7 @@ export async function render(root) {
       h('p', { class: 'note' }, 'Try both on your phone. Nothing in your data changes.'),
       h('div', { class: 'radio-list', 'data-id': 'settings.shell-choice' },
         radio('shell', 'tabs', 'Bottom menu', 'Top bar with the app name, and a menu bar at the bottom', prefs.shellStyle || 'tabs', (v) => store.setPref('shellStyle', v)),
+        radio('shell', 'slim', 'Slim icon bar', 'No top bar. One thin row of icons at the bottom: every section is one tap away. It slides away while you scroll down and comes back when you scroll up.', prefs.shellStyle || 'tabs', (v) => store.setPref('shellStyle', v)),
         radio('shell', 'claude', 'Claude style', 'Menu icon at the top left, no bottom bar. The top bar hides while you scroll down and comes back when you scroll up. Swipe in from the left edge to open the menu.', prefs.shellStyle || 'tabs', (v) => store.setPref('shellStyle', v)))),
 
     section('Navigation', 'settings.nav',

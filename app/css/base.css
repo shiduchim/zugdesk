@@ -182,3 +182,17 @@ body.drawer-open .drawer-backdrop{opacity:1}
 .drawer-item svg{width:var(--icon);height:var(--icon);color:var(--muted)}
 .drawer-item[aria-current="page"]{background:var(--selected-bg);font-weight:600}
 .drawer-item[data-id="drawer.settings"]{margin-top:auto}
+
+/* ---- Slim icon bar (Settings → Screen layout, being tested) ----
+   No top bar. One thin row of section icons at the bottom (thumb reach), no words;
+   it slides down out of the way while scrolling down and returns on scroll up. */
+body.shell-slim{--topbar-height:0px;--nav-height:var(--slim-nav)}
+body.shell-slim .topbar{display:none}
+body.shell-slim main.content{padding-top:calc(var(--safe-top) + var(--gap))}
+body.shell-slim .bottom-nav{transition:transform .2s ease}
+body.shell-slim .bottom-nav a{padding:0;gap:0}
+body.shell-slim .bottom-nav a span:not(.ico){display:none}
+body.shell-slim .bottom-nav a[aria-current="page"]{color:var(--text)}
+body.shell-slim .bottom-nav a[aria-current="page"] svg{stroke-width:2.6}
+body.shell-slim .bottom-nav a[aria-current="page"]::after{content:"";width:18px;height:2px;margin-top:4px;border-radius:var(--radius);background:var(--text)}
+body.shell-slim.bar-hidden .bottom-nav{transform:translateY(100%)}
