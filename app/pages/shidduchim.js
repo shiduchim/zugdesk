@@ -2,7 +2,7 @@
 // follow source/ZivugMatch_Shidduchim_Floating_Answer_Choices_v7 EXPANDED.html, drawn in
 // the Claude look. Compact cards show arrow-free answer bubbles that open a floating panel;
 // Expanded cards add one-tap Stage / answer choices, Add update and Open details.
-// Make Match is not designed yet (SH-05): the button says so and points to the approved way in.
+// Make Match is removed in single mode (owner request): it belongs to a future shadchan mode.
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles } from '../js/ui.js';
 import { navigate } from '../js/router.js';
@@ -48,12 +48,10 @@ async function draw(keepScroll = false) {
   root.innerHTML = '';
   root.append(
     h('div', { class: 'page-head sh-head', 'data-id': 'shidduchim.head' },
-      h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'), h('p', { class: 'note' }, 'Every shidduch, from first offer to what happens next.')),
-      h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduchim.make-match', onClick: makeMatch }, 'Make Match')),
+      h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'), h('p', { class: 'note' }, 'Every shidduch, from first offer to what happens next.'))),
     prefs.navArrangement !== 'four' ? h('a', { class: 'row-link sh-people-link', href: '#/people', 'data-id': 'shidduchim.people-link' },
-      h('div', { class: 'avatar', html: icon('people') }),
-      h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `Ideas · ${all.people.length}`),
-        h('div', { class: 'row-sub' }, 'Everyone suggested to you. Saving someone is not a formal offer.')),
+      h('div', { class: 'avatar', html: icon('idea') }),
+      h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `Ideas · ${all.people.length}`)),
       ico('chevron')) : null,
     h('div', { class: 'sh-tabbar', role: 'tablist', 'aria-label': 'Shidduchim lanes', 'data-id': 'shidduchim.lanes' },
       sh.LANES.map(([k, l]) => h('button', { type: 'button', role: 'tab', class: 'sh-tab', 'aria-selected': S.lane === k ? 'true' : 'false', 'data-id': 'shidduchim.lane-' + k,
@@ -225,11 +223,3 @@ export async function endDialog(m, { side = null, afterEnd = null } = {}) {
   return res === 'end';
 }
 
-// SH-05: Make Match is not designed. Say so, and show the approved way to start an offer.
-async function makeMatch() {
-  const res = await sheet({ title: 'Make Match', dataId: 'make-match-sheet',
-    body: [h('p', {}, 'The Make Match screen has not been designed yet. This button is here so its place can be reviewed.'),
-      h('p', { class: 'note' }, 'To start a formal offer now: open the person in Ideas, then Offers → Start a formal offer. Saving a person or recording interest never starts one on its own.')],
-    actions: [{ id: 'people', label: 'Go to Ideas', primary: true }] });
-  if (res === 'people') navigate('/people');
-}

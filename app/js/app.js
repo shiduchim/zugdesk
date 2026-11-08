@@ -14,9 +14,9 @@ const NAV = {
   four: [
     { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
     { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
-    { path: '/people', label: 'Ideas', icon: 'people', id: 'nav.people' },
+    { path: '/people', label: 'Ideas', icon: 'idea', id: 'nav.people' },
     { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
-    { path: '/profile', label: 'Profile', icon: 'profile', id: 'nav.profile' },
+    { path: '/profile', label: 'My Profile', icon: 'profile', id: 'nav.profile' },
   ],
 };
 

@@ -58,7 +58,6 @@ async function draw() {
   root.append(...[
     h('div', { class: 'page-head' }, h('h1', {}, 'Ideas'),
       h('a', { class: 'btn primary', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
-    h('p', { class: 'note intro' }, 'Everyone suggested to you, one record each. Saving someone here is not a formal offer.'),
     h('div', { class: 'ct-search' }, ico('search'), search),
     h('div', { class: 'chips filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
       FILTERS.filter(([k]) => !seek || (k !== 'guy' && k !== 'girl')).map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
