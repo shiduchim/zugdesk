@@ -79,6 +79,7 @@ const hides = () => ['claude', 'slim'].includes(store.getPrefs().shellStyle); //
 function applyShell() {
   document.body.classList.toggle('shell-claude', claude());
   document.body.classList.toggle('shell-slim', store.getPrefs().shellStyle === 'slim');
+  document.body.classList.toggle('shell-tabs', !['slim', 'claude'].includes(store.getPrefs().shellStyle)); // phone: no top bar (owner request)
   renderNav();
   document.body.classList.remove('bar-hidden');
   if (!claude()) closeDrawer();

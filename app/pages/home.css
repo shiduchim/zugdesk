@@ -203,7 +203,6 @@
 }
 
 .home-head{position:relative}
-.home-settings{position:absolute;top:-6px;right:-10px}
 
 /* My notes / All switch (home.notes-filter) */
 .notes-filter{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
@@ -212,4 +211,10 @@
 
 /* Phone: the tab already names the section, so hide the repeated heading (owner request) */
 @media (max-width:899px){.home-notes>.home-sec-head,.home-followups>.home-sec-head,.home-history>.home-sec-head{display:none}}
-.home-head .home-settings{position:static;align-self:flex-end}
+
+/* Tab row + Settings gear on one line (home.settings) */
+.home-tabline{display:flex;align-items:center;gap:4px}
+.home-tabline .home-tabs{flex:1;margin-top:0}
+.home-settings{flex:none;color:var(--muted)}
+@media (min-width:900px){body:not(.shell-slim) .home-settings{display:none}.home-tabline{justify-content:flex-end}}
+.home-tabline .home-tab{white-space:nowrap;gap:4px;padding:0 4px}

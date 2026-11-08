@@ -238,3 +238,11 @@ main.content:has(.dock),main.content:has(.form-foot),main.content:has(.me-foot){
 .chip-row::-webkit-scrollbar{display:none}
 .fchip{flex-shrink:0;min-height:var(--chip-height);padding:0 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:var(--font-sm);color:var(--text)}
 .fchip[aria-pressed="true"]{background:var(--selected-bg);border-color:var(--selected-edge);font-weight:600}
+
+/* Default bottom-menu style on a phone: no top bar, saves screen space (owner request).
+   Settings is the gear at the end of the Home tab row. */
+@media (max-width:899px){
+  body.shell-tabs{--topbar-height:0px}
+  body.shell-tabs .topbar{display:none}
+  body.shell-tabs main.content{padding-top:calc(var(--safe-top) + var(--gap))}
+}

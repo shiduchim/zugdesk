@@ -9,8 +9,8 @@ import { ideaStatus, latestByPerson } from './idea-flow.js';
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const S = { q: '', filter: 'active' };   // survives leaving the page
 // Active = new + waiting; Closed (not for me / they said no) is hidden unless chosen (owner request).
-const filters = (seek) => [['active', 'Active'], ['waiting', seek === 'guy' ? 'Waiting for him' : seek === 'girl' ? 'Waiting for her' : 'Waiting'],
-  ['shidduch', 'In Shidduchim'], ['closed', 'Closed'], ['all', 'All'], ...(seek ? [] : [['guy', 'Guys'], ['girl', 'Girls']])];
+// Three tabs only (owner request): Active = interested or in a shidduch, Open = nobody decided yet, Closed.
+const filters = () => [['active', 'Active'], ['open', 'Open'], ['closed', 'Closed']];
 
 let root = null, gen = 0, unsub = null, timer = 0;
 export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
@@ -45,9 +45,9 @@ async function draw() {
     if (seek && p.kind && p.kind !== seek) return false;
     if (words.length && !words.every(w => searchText(p).includes(w))) return false;
     const st = status.get(p.id).key;
-    if (S.filter === 'guy' || S.filter === 'girl') return p.kind === S.filter;
-    if (S.filter === 'active') return st !== 'closed'; // everyone still live, including a running shidduch
-    if (S.filter === 'waiting' || S.filter === 'shidduch' || S.filter === 'closed') return st === S.filter;
+    if (S.filter === 'active') return st === 'waiting' || st === 'shidduch';
+    if (S.filter === 'open') return st === 'new';
+    if (S.filter === 'closed') return st === 'closed';
     return true;
   }).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 
@@ -87,8 +87,8 @@ async function draw() {
     h('section', { class: 'section', 'data-id': 'people.list' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `People · ${list.length}${list.length !== people.length ? ' of ' + people.length : ''}`)),
       list.length ? list.map(p => personRow(p, status.get(p.id), byId))
-        : h('div', { class: 'empty' }, people.length ? 'Nobody matches. ' : 'No people saved yet. ',
-            people.length ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; S.filter = 'all'; draw(); } }, 'Show everyone')
+        : h('div', { class: 'empty' }, people.length ? (S.q ? 'Nobody matches. ' : `Nobody here right now.`) : 'No people saved yet. ',
+            people.length ? (S.q ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; draw(); } }, 'Clear search') : null)
               : h('a', { href: '#/people/new' }, 'Add the first person'))),
     dock('people.dock', h('a', { class: 'btn primary wide', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
   ].filter(Boolean));
