@@ -116,6 +116,8 @@
   /* Stage 4 — People & Ideas card (source/Shadchanim Offers.html = My Profile look) */
   --card-col:640px;                 /* narrow reading column */
   --fact-key:128px;
+  --phone-color:var(--ok);      /* phone numbers: green with a phone icon */
+  --email-color:var(--link);    /* emails: blue with a mail icon */
   --avatar-lg:48px;
 }
 :root{

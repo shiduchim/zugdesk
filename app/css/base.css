@@ -150,3 +150,10 @@ dialog.form-sheet.tall .sheet-body{flex:1}
   main.content.wide{max-width:none;margin-right:0}
   .toast{bottom:24px}
 }
+
+/* Phone and email links look different at a glance (owner request): colour + icon. */
+.tel-link,.mail-link{display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-size:var(--font-sm);font-weight:500;min-height:28px;max-width:100%;overflow-wrap:anywhere}
+.tel-link{color:var(--phone-color);font-family:var(--font-mono)}
+.mail-link{color:var(--email-color)}
+.tel-link svg,.mail-link svg{width:14px;height:14px;flex:none}
+.reach{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:0}

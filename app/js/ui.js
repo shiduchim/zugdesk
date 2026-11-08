@@ -52,6 +52,9 @@ export function icon(name, size) {
   const s = size ? `width="${size}" height="${size}"` : '';
   return `<svg ${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || ''}</svg>`;
 }
+// Phone / email links: same look everywhere (green phone, blue mail).
+export function telLink(n, dataId) { return h('a', { class: 'tel-link', href: 'tel:' + String(n).replace(/[^0-9]/g, ''), dir: 'ltr', 'data-id': dataId || null, html: icon('phone') }, String(n)); }
+export function mailLink(e, dataId) { return h('a', { class: 'mail-link', href: 'mailto:' + e, dir: 'ltr', 'data-id': dataId || null, html: icon('mail') }, e); }
 export function iconEl(name) { const span = h('span', { class: 'ico', html: icon(name) }); return span.firstChild; }
 
 let toastTimer;

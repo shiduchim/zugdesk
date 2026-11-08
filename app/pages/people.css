@@ -58,6 +58,4 @@
 .pc-sec>.btn{align-self:flex-start}
 .people-page .avatar svg{width:18px;height:18px}
 
-.pc-own-phone{font-size:var(--font-sm);font-weight:400;color:var(--muted)}
-.pc-own-phone a{color:inherit}
 .pc-body>.mp-card{margin-top:10px}.pc-body>[data-id="person-card.short-new"]{margin-top:12px;align-self:flex-start}

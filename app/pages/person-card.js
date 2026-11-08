@@ -2,9 +2,9 @@
 // My Profile (source/Shadchanim Offers.html). Reads the one shared person record; editing
 // opens the Add Person form. Interest never creates, ends or reopens a formal offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, confirmDialog } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink } from '../js/ui.js';
 import { navigate } from '../js/router.js';
-import { loadPerson, pron, kindLabel, dateOnly, LISTS } from './people-data.js';
+import { loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 
@@ -19,21 +19,23 @@ const atFrom = (d, prev) => (!d ? store.now() : prev && prev.slice(0, 10) === d 
 
 let root = null, gen = 0, unsub = null, timer = 0, B = null, tab = 'profile';
 const drafts = {}; // personId → unsent note text
-export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { EDITF = false; SEC = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('person-card-page');
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub && unsub();
-  unsub = store.subscribe((ch) => { if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
+  unsub = store.subscribe((ch) => { if (EDITF || SEC) return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
   await draw(params.id);
 }
 
 async function draw(id, keepScroll = false) {
   const token = ++gen;
-  const b = await loadPerson(id);
+  const [b, ch] = await Promise.all([loadPerson(id), store.getChoices()]);
   if (token !== gen || !root) return;
+  CH = ch;
+  if (B && B.p.id !== id) { EDITF = false; SEC = null; }
   const y = window.scrollY;
   root.innerHTML = '';
   if (!b) { root.append(h('p', { class: 'empty' }, 'This person is no longer saved.'), h('a', { class: 'btn', href: '#/people' }, 'Back to Ideas')); return; }
@@ -61,11 +63,20 @@ function setTab(k) {
   navigate(path, { replace: true });
 }
 
-function sec(title, dataId, editHref, ...kids) {
-  return h('section', { class: 'pc-sec', 'data-id': dataId },
+// Every pencil edits its section right here (owner request, tweak mode). Facts save as you go
+// (one Done); the other sections are a small Cancel / Save form. The top pencil opens the full form.
+let CH = {}, EDITF = false, SEC = null;
+const pencil = (label, dataId, onClick) => h('button', { type: 'button', class: 'icon-btn', 'aria-label': label, 'data-id': dataId, html: icon('edit'), onClick });
+const redraw = () => draw(B.p.id, true);
+const openSec = (key) => { SEC = key; EDITF = false; redraw(); };
+function sec(title, dataId, key, ...kids) {
+  const facts = key === 'facts', editing = facts ? EDITF : key && SEC === key;
+  return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      editHref ? h('a', { class: 'icon-btn', href: editHref, 'aria-label': 'Edit ' + title.toLowerCase(), 'data-id': dataId + '-edit', html: icon('edit') }) : null),
-    ...kids);
+      facts && EDITF ? h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDITF = false; redraw(); } }, 'Done')
+      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDITF = true; SEC = null; redraw(); })
+      : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
+    ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
 // Empty answers are left out of the profile screen (owner request): no "Not recorded" rows.
 const isEmpty = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
@@ -79,47 +90,35 @@ function profileTab(b) {
   const edit = (s) => `#/people/${enc}/edit/${s}`;
   const summary = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
   const first = srcs[0];
-  const custom = Object.entries(A).filter(([k, v]) => !LISTS[k] && (Array.isArray(v) ? v.length : v));
-  const religiousOther = p.religiousOther?.trim();
   const cards = p.contactCards || [];
-  const own = cards.filter(c => c.role === 'person' && c.number).map(c => c.number);
+  const ownCards = cards.filter(c => c.role === 'person' && (c.number || c.email));
+  const others = cards.filter(c => c.role !== 'person');
   return [
+    SEC === 'summary' ? h('div', { class: 'pc-summary mp-editing', 'data-id': 'person-card.summary' }, secForm('summary', 'person-card.summary')) :
     h('div', { class: 'pc-summary', 'data-id': 'person-card.summary' },
       h('div', { class: 'avatar lg' }, store.initials(p)),
       h('div', { class: 'pc-summary-text' },
         h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || ''),
-        own.length ? h('div', { class: 'pc-summary-line pc-own-phone', 'data-id': 'person-card.phone' }, own.map((n, i) => [i ? ' · ' : '', h('a', { href: 'tel:' + n.replace(/[^0-9]/g, ''), class: 'mono' }, n)])) : null,
+        // Their own phone and email live only here, under the name (owner request).
+        ownCards.length ? h('div', { class: 'reach', 'data-id': 'person-card.phone' }, ownCards.map(c => [c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null])) : null,
         p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
-      h('a', { class: 'icon-btn', href: `#/people/${enc}/edit/basic`, 'aria-label': 'Edit basic info', 'data-id': 'person-card.summary-edit', html: icon('edit') })),
-    sec('Facts', 'person-card.facts', edit('personal'),
+      pencil('Edit basic info here', 'person-card.summary-edit', () => openSec('summary'))),
+    sec('Facts', 'person-card.facts', 'facts',
       h('dl', { class: 'facts' },
-        fact('Age', p.age, 'person-card.fact-age'),
-        fact('City', p.city, 'person-card.fact-city'),
-        fact('Occupation', p.occupation, 'person-card.fact-occupation'),
-        fact('Languages', p.languages, 'person-card.fact-languages'),
-        fact('Status', A.pStatus, 'person-card.fact-status'),
-        fact('Religious level', A.pLevel, 'person-card.fact-level'),
-        fact('Tzniut', A.pTzniut, 'person-card.fact-tzniut'),
-        fact('Religious background', A.pBackground, 'person-card.fact-background'),
-        (A.pReligious || []).length ? fact('Religious', A.pReligious, 'person-card.fact-religious') : null,
-        religiousOther ? fact('Other religious details', religiousOther, 'person-card.fact-religious-other') : null,
-        fact('Character & lifestyle', A.pTraits, 'person-card.fact-traits'),
-        fact('Body type', A.pBody, 'person-card.fact-body'),
-        p.maxAge ? fact('Looking up to age', p.maxAge, 'person-card.fact-max-age') : null,
-        ...custom.map(([k, v]) => fact((p.answerLabels || {})[k] || k, v, 'person-card.fact-custom')),
-        fact('Profile source', first ? [first.sender || 'Sender not recorded', dateOnly(first.receivedAt || first.createdAt)].join(' · ') : (p.sender || ''), 'person-card.fact-source')),
+        ...factList(p).map(f => EDITF && f.ed ? editRow(f) : fact(f.label, f.value, f.dataId)),
+        EDITF ? null : fact('Profile source', first ? [first.sender || 'Sender not recorded', dateOnly(first.receivedAt || first.createdAt)].join(' · ') : (p.sender || ''), 'person-card.fact-source')),
       h('a', { class: 'pc-add', href: edit('about'), 'data-id': 'person-card.add-fact' }, 'Add a fact…')),
-    !p.about ? null : sec(`About ${firstName(p)}`, 'person-card.about', edit('about'),
+    !p.about ? null : sec(`About ${firstName(p)}`, 'person-card.about', 'about',
       h('p', { class: 'prewrap', dir: 'auto' }, p.about)),
-    !p.looking ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', edit('about'),
+    !p.looking ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', 'looking',
       h('p', { class: 'prewrap', dir: 'auto' }, p.looking)),
-    !(cards.length || p.sender) ? null : sec('Contacts and source', 'person-card.contacts', edit('contacts'),
-      cards.length || p.sender ? h('dl', { class: 'facts' },
-        ...cards.map(c => contactFact(c, b)),
+    !(others.length || p.sender) ? null : sec('Contacts and source', 'person-card.contacts', 'contacts',
+      others.length || p.sender ? h('dl', { class: 'facts' },
+        ...others.map(c => contactFact(c, b)),
         p.sender ? h('div', { class: 'fact' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(p.sender, p.senderContactId, b)), h('span', { class: 'priv' }, 'private')) : null)
         : h('p', {}, NR()),
       h('p', { class: 'note' }, 'A number given for a mother, father, reference or shadchan is never shown as their own number.')),
-    !((p.know || []).length || p.yearsKnown || p.howKnow) ? null : sec(`How I know ${P.him}`, 'person-card.known', edit('known'),
+    !((p.know || []).length || p.yearsKnown || p.howKnow) ? null : sec(`How I know ${P.him}`, 'person-card.known', 'known',
       (p.know || []).length || p.yearsKnown || p.howKnow ? h('dl', { class: 'facts' },
         fact('Contact', p.know, 'person-card.fact-know'),
         p.yearsKnown ? fact('Years known', p.yearsKnown) : null,
@@ -145,8 +144,7 @@ function contactFact(c, b) {
     h('dt', {}, own ? 'Own number' : store.phoneRoleLabel(c.role)),
     h('dd', { dir: 'auto' },
       h('div', {}, name ? linkedName(name, c.contactId, b) : h('span', { class: 'muted' }, c.role === 'unknown' ? 'Not sure whose number' : 'Name not recorded')),
-      h('div', { class: 'mono small' }, c.number ? h('a', { href: 'tel:' + c.number.replace(/[^\d]/g, '') }, c.number) : 'Phone not recorded'),
-      c.email ? h('div', { class: 'small' }, h('a', { href: 'mailto:' + c.email }, c.email)) : null),
+      c.number || c.email ? h('div', { class: 'reach' }, c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null) : h('div', { class: 'small' }, 'Phone not recorded')),
     h('span', { class: 'priv' }, 'private'));
 }
 
@@ -448,4 +446,118 @@ async function shortSheet(p, x) {
       await store.people.save({ ...p, shortVersions: list.some(y => y.id === x.id) ? list.map(y => y.id === x.id ? rec : y) : [...list, rec] });
       toast('Saved');
     } }] });
+}
+
+// ---------- Facts: edit in place ----------
+function factList(p) {
+  const A = p.answers || {};
+  const t = (label, field, dataId) => ({ label, value: p[field], dataId, ed: { type: 'text', get: () => p[field], set: (x) => ({ [field]: x }) } });
+  const c = (label, key, dataId) => ({ label, value: key === 'languages' ? p.languages : A[key], dataId, ed: { type: 'choice', key } });
+  const custom = Object.entries(A).filter(([k, v]) => !LISTS[k] && (Array.isArray(v) ? v.length : v)).map(([k]) => c((p.answerLabels || {})[k] || k, k, 'person-card.fact-custom'));
+  return [t('Age', 'age', 'person-card.fact-age'), t('City', 'city', 'person-card.fact-city'), t('Occupation', 'occupation', 'person-card.fact-occupation'),
+    c('Languages', 'languages', 'person-card.fact-languages'), c('Status', 'pStatus', 'person-card.fact-status'), c('Religious level', 'pLevel', 'person-card.fact-level'),
+    c('Tzniut', 'pTzniut', 'person-card.fact-tzniut'), c('Religious background', 'pBackground', 'person-card.fact-background'),
+    c('Religious', 'pReligious', 'person-card.fact-religious'), t('Other religious details', 'religiousOther', 'person-card.fact-religious-other'),
+    c('Character & lifestyle', 'pTraits', 'person-card.fact-traits'), c('Body type', 'pBody', 'person-card.fact-body'),
+    t('Looking up to age', 'maxAge', 'person-card.fact-max-age'), ...custom];
+}
+async function savePerson(patch, quiet) {
+  const p = { ...B.p, ...patch };
+  if (patch.contactCards) p.contactIds = [...new Set([...p.contactCards.map(c => c.contactId), p.senderContactId].filter(Boolean))];
+  B.p = await store.people.save(p);
+  toast('Saved', quiet ? 1200 : 2600);
+}
+function editRow(f) {
+  const p = B.p, box = h('div', { class: 'mp-inline' });
+  if (f.ed.type === 'text') {
+    const inp = h('input', { class: 'input', dir: 'auto', value: f.ed.get() || '', 'aria-label': f.label, 'data-id': 'person-card.inline-text' });
+    inp.addEventListener('change', () => savePerson(f.ed.set(inp.value.trim()), true));
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+    box.append(inp);
+  } else {
+    const key = f.ed.key, A = p.answers || {};
+    const type = key === 'languages' ? 'multi' : listType(key), multi = type !== 'single';
+    const girl = p.kind === 'girl', only = GIRLS_ONLY[key] || [];
+    const opts = (CH[key] || []).filter(o => !o.hidden && (girl || !only.includes(o.v))).map(o => [o.v, o.v]);
+    let cur = [].concat((key === 'languages' ? p.languages : A[key]) ?? []).filter(Boolean);
+    for (const v of cur) if (!opts.some(o => o[0] === v)) opts.push([v, v]); // keep answers no longer in the list
+    const put = (val) => savePerson(key === 'languages' ? { languages: val } : { answers: { ...(B.p.answers || {}), [key]: multi ? val : (val[0] || '') } }, true);
+    const wrap = h('div', {});
+    const paint = () => { wrap.innerHTML = ''; wrap.append(bubbles({ options: opts, selected: cur, multi, dataId: 'person-card.inline-choice', onChange: (v) => {
+      let next = multi ? v : (v ? [v] : []);
+      for (const group of EXCLUSIVE[key] || []) { const added = next.find(x => group.includes(x) && !cur.includes(x)); if (added) next = next.filter(x => !group.includes(x) || x === added); }
+      const changed = next.length !== v.length; cur = next; put(next); if (changed) paint();
+    } })); };
+    paint(); box.append(wrap);
+  }
+  return h('div', { class: 'fact mp-edit-row', 'data-id': f.dataId }, h('dt', { dir: 'auto' }, f.label), h('dd', {}, box));
+}
+
+// ---------- Section forms ----------
+function secForm(key, dataId) {
+  const p = B.p, id = dataId + '-form', t = (x) => (x || '').trim();
+  const row = (label, el) => h('label', { class: 'mp-frow' }, h('span', { class: 'mp-flabel' }, label), el);
+  const tin = (val, name, extra = {}) => h('input', { class: 'input', dir: 'auto', value: val || '', 'data-id': id + '.' + name, ...extra });
+  const tarea = (val, name, rows = 5) => { const a = h('textarea', { class: 'input mp-farea', dir: 'auto', rows, 'data-id': id + '.' + name }); a.value = val || ''; return a; };
+  const cards = (p.contactCards || []).map(c => ({ ...c }));
+  let body = [], collect;
+  if (key === 'summary') {
+    const own = cards.find(c => c.role === 'person');
+    const f = { name: tin(p.name, 'name'), age: tin(p.age, 'age', { inputmode: 'numeric' }), city: tin(p.city, 'city'), occupation: tin(p.occupation, 'occupation'),
+      phone: tin(own?.number, 'phone', { type: 'tel' }), email: tin(own?.email, 'email', { type: 'email' }) };
+    body = [row('Name', f.name), h('div', { class: 'mp-fgrid' }, row('Age', f.age), row('City', f.city)), row('Occupation', f.occupation),
+      h('div', { class: 'mp-fgrid' }, row('Their phone', f.phone), row('Their email', f.email))];
+    collect = () => {
+      const number = store.cleanPhone(t(f.phone.value)), email = t(f.email.value);
+      let next = cards;
+      if (own) next = cards.map(c => c === own ? { ...c, number, email } : c).filter(c => c.role !== 'person' || c.number || c.email || c.name || c.contactId);
+      else if (number || email) next = [{ id: store.newId('k'), role: 'person', name: '', number, email, contactId: null }, ...cards];
+      return { name: t(f.name.value).replace(/\s+/g, ' '), age: t(f.age.value), city: t(f.city.value), occupation: t(f.occupation.value), contactCards: next };
+    };
+  } else if (key === 'about' || key === 'looking') {
+    const a = tarea(p[key], key, 6); body = [a]; collect = () => ({ [key]: a.value.trim() });
+  } else if (key === 'contacts') {
+    const list = h('div', { class: 'mp-frefs' });
+    const others = cards.filter(c => c.role !== 'person');
+    const roles = store.PHONE_ROLES.filter(r => r[0] !== 'person');
+    const paint = () => {
+      list.innerHTML = '';
+      others.forEach((c, i) => {
+        const role = h('select', { class: 'input', 'aria-label': 'Whose number', 'data-id': id + '.role', onChange: (e) => { c.role = e.target.value; } },
+          roles.map(([v, l]) => h('option', { value: v, selected: v === c.role || null }, l)));
+        list.append(h('div', { class: 'mp-fref', 'data-id': id + '.contact' },
+          h('div', { class: 'mp-fgrid' }, role, tin(c.name, 'name', { placeholder: 'Name', 'aria-label': 'Name', onInput: (e) => { c.name = e.target.value; } })),
+          h('div', { class: 'mp-fgrid' }, tin(c.number, 'number', { type: 'tel', placeholder: 'Phone', 'aria-label': 'Phone', onInput: (e) => { c.number = e.target.value; } }),
+            tin(c.email, 'email', { type: 'email', placeholder: 'Email', 'aria-label': 'Email', onInput: (e) => { c.email = e.target.value; } })),
+          h('button', { type: 'button', class: 'linkish danger-text', 'data-id': id + '.remove', onClick: () => { others.splice(i, 1); paint(); } }, 'Remove')));
+      });
+    };
+    paint();
+    body = [list, h('button', { type: 'button', class: 'btn small', 'data-id': id + '.add', onClick: () => { others.push({ id: store.newId('k'), role: 'shadchan', name: '', number: '', email: '', contactId: null }); paint(); list.querySelector('.mp-fref:last-child input')?.focus(); } }, 'Add a number'),
+      h('p', { class: 'note' }, 'Their own phone and email are changed with the pencil next to the name.')];
+    collect = () => ({ contactCards: [...cards.filter(c => c.role === 'person'),
+      ...others.filter(c => t(c.number) || t(c.name) || t(c.email) || c.contactId).map(c => ({ ...c, name: t(c.name), number: store.cleanPhone(t(c.number)), email: t(c.email) }))] });
+  } else if (key === 'known') {
+    let know = [...(p.know || [])];
+    const wrap = h('div', {});
+    const paint = () => { wrap.innerHTML = ''; wrap.append(bubbles({ options: [...KNOW_CONTACT, ...KNOW_FLAGS].map(v => [v, v]), selected: know, multi: true, dataId: id + '.know', onChange: (v) => {
+      const added = v.find(x => KNOW_CONTACT.includes(x) && !know.includes(x)); // only one of Never spoke / Talked / Met
+      know = added ? v.filter(x => !KNOW_CONTACT.includes(x) || x === added) : v; if (added) paint();
+    } })); };
+    paint();
+    const years = tin(p.yearsKnown, 'years', { type: 'number', min: 0, max: 99, inputmode: 'numeric' }), how = tarea(p.howKnow, 'how', 3);
+    body = [wrap, row('Years known', years), row('How do you know them?', how)];
+    collect = () => ({ know, yearsKnown: t(years.value), howKnow: how.value.trim() });
+  }
+  const close = () => { SEC = null; redraw(); };
+  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body,
+    h('div', { class: 'mp-inline-actions' },
+      h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => {
+        const patch = collect();
+        if (key === 'summary' && !patch.name && !(patch.contactCards || []).some(c => c.role === 'person' && c.number)) { toast('Write a name or their own phone number first'); return; }
+        await savePerson(patch); close();
+      } }, 'Save')));
+  setTimeout(() => form.querySelector('input,textarea,select')?.focus({ preventScroll: true }), 30);
+  return form;
 }

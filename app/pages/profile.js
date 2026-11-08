@@ -2,7 +2,7 @@
 // my profile short tab.html, Claude look). One owner record; the tabs are views of it.
 // Private notes live in the shared notes store (me: true) and never enter outgoing text.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, promptText, bubbles } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, promptText, bubbles, telLink, mailLink } from '../js/ui.js';
 import { listType, GIRLS_ONLY } from './people-data.js';
 import { navigate } from '../js/router.js';
 import * as PD from './profile-data.js';
@@ -113,7 +113,7 @@ function profileTab(v) {
       h('div', { class: 'avatar lg' }, P.me?.name ? store.initials({ name: P.me.name }) : 'ME'),
       h('div', { class: 'pc-summary-text' },
         h('div', { class: 'pc-summary-line', dir: 'auto' }, PD.summaryLine(v) || notYet('Age · city · work')),
-        (c.phone || c.email) ? h('div', { class: 'pc-summary-line mp-reach', dir: 'auto', 'data-id': 'profile.reach' }, [c.phone, c.email].filter(Boolean).join(' · ')) : null,
+        (c.phone || c.email) ? h('div', { class: 'reach', 'data-id': 'profile.reach' }, c.phone ? telLink(c.phone, 'profile.phone') : null, c.email ? mailLink(c.email, 'profile.email') : null) : null,
         h('div', { class: 'muted', dir: 'auto' }, v.intro || 'A one-line introduction')),
       pencil('Edit summary here', 'profile.summary-edit', () => openSec('summary'))),
     sec(l.facts, 'mp-facts', 'profile.facts', 'facts',
@@ -128,9 +128,9 @@ function profileTab(v) {
     sec(l.looking, 'mp-looking', 'profile.looking', 'looking', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
     sec('Inquiries and references', 'mp-refs', 'profile.refs', 'refs',
       h('div', { class: 'mp-sub' }, 'Inquiries'),
-      h('dl', { class: 'facts' }, fact('Call', c.inquiriesName || c.inquiriesPhone ? [c.inquiriesName, c.inquiriesName && c.inquiriesPhone ? ' · ' : '', c.inquiriesPhone].join('') : '', 'profile.fact-inquiries')),
+      h('dl', { class: 'facts' }, fact('Call', c.inquiriesName || c.inquiriesPhone ? h('span', { class: 'reach' }, c.inquiriesName ? h('span', { dir: 'auto' }, c.inquiriesName) : null, c.inquiriesPhone ? telLink(c.inquiriesPhone) : null) : '', 'profile.fact-inquiries')),
       h('div', { class: 'mp-sub' }, 'References'),
-      (v.references || []).length ? h('dl', { class: 'facts' }, v.references.map(r => fact(r.name, [r.relation, r.phone].filter(Boolean).join(' · '), 'profile.reference')))
+      (v.references || []).length ? h('dl', { class: 'facts' }, v.references.map(r => fact(r.name, r.relation || r.phone ? h('span', { class: 'reach' }, r.relation ? h('span', { dir: 'auto' }, r.relation) : null, r.phone ? telLink(r.phone) : null) : '', 'profile.reference')))
         : h('p', {}, notYet('No references yet'))),
     ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', 'sec:' + s.id,
       h('p', { dir: 'auto', class: 'prewrap' }, s.text || notYet()),
