@@ -148,3 +148,8 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 
 /* Share lives in the dock on phones; the top button stays on wide screens */
 @media (max-width:1023px){.mp-share-top{display:none}}
+.mp-add-fact{display:flex;flex-direction:column;gap:6px;padding:8px 0 4px}
+.mp-add-fact-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:6px}
+.mp-add-fact-row .input{background:var(--surface)}
+.mp-add-fact-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mp-add-fact-full{margin-left:auto;font-size:var(--font-sm)}

@@ -119,7 +119,7 @@ function profileTab(v) {
         ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
         ...tapFact('age', 'Age', v.age, 'profile.fact-age'), ...tapFact('city', 'City', v.city, 'profile.fact-city'), ...tapFact('work', 'Work / learning', v.occupation, 'profile.fact-work'),
         ...v.facts.filter(f => f.value).flatMap(f => tapFact(f.id, f.label, f.value, 'profile.fact')),
-        EDIT ? h('a', { class: 'linkish mp-more-link', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Add more facts in the full edit screen') : null,
+        addFactRow(),
         v.facts.some(f => !f.value) ? h('div', { class: 'fact', 'data-id': 'profile.fact-more' }, h('dt', {}, 'More facts'),
           h('dd', { dir: 'auto', class: 'mp-more' }, v.facts.filter(f => !f.value).map(f => h('div', {}, f.label)))) : null)),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
@@ -303,6 +303,28 @@ function editorFor(id) {
   const f = (me.facts || []).find(x => x.id === id);
   if (f) return text(() => f.value, (x) => ({ facts: me.facts.map(y => y.id === id ? { ...y, value: x } : y) }));
   return null;
+}
+// Quick "Add a fact": one line (name + value) right in the Facts list, no full edit screen.
+let ADDF = false;
+function addFactRow() {
+  if (!ADDF && !EDIT) return h('button', { type: 'button', class: 'linkish mp-more-link', 'data-id': 'profile.fact-add-open', onClick: () => { ADDF = true; draw(true); setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30); } }, 'Add a fact');
+  const lab = h('input', { class: 'input', dir: 'auto', placeholder: 'Fact, e.g. Shul', 'aria-label': 'Fact name', 'data-id': 'profile.fact-add-label' });
+  const val = h('input', { class: 'input', dir: 'auto', placeholder: 'e.g. Beth Midrash Gevoha', 'aria-label': 'Fact', 'data-id': 'profile.fact-add-value',
+    onKeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } });
+  async function add() {
+    const label = lab.value.trim(), value = val.value.trim();
+    if (!label && !value) { lab.focus(); return; }
+    const f = { id: store.newId('fact'), label: label || value, value: label ? value : '' };
+    P.me = await PD.saveProfile(P.me, lang, { facts: [...(P.me.facts || []), f] });
+    toast('Fact added', 1200); draw(true);
+    setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30);
+  }
+  return h('div', { class: 'mp-add-fact', 'data-id': 'profile.fact-add' },
+    h('div', { class: 'mp-add-fact-row' }, lab, val),
+    h('div', { class: 'mp-add-fact-foot' },
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-save', onClick: add }, 'Add fact'),
+      !EDIT ? h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; draw(true); } }, 'Done') : null,
+      h('a', { class: 'linkish mp-add-fact-full', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Full edit screen')));
 }
 function tapFact(id, label, value, dataId) {
   if (!value) return [];
