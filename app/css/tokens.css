@@ -174,7 +174,7 @@
   --fu-bg:#F6F8FC;  --fu-edge:#DCE4F1;  --fu-title:#35588F;  --fu-sub:#6E7F99;  --fu-line:#E3E9F3;
   --fu-dot:24px;    --fu-dot-edge:#B9C8DE;  --fu-dot-done-bg:var(--ok-bg);  --fu-dot-done-edge:var(--ok);  --fu-dot-done-text:var(--ok);
   --hist-date-width:64px;
-  --hist-bg:#F7F5EF;  --hist-edge:#E4E0D5;      /* History panel: quieter, warm grey */
+  --hist-bg:#F5F9F2;  --hist-edge:#D6E4CC;  --hist-title:#4A6B3A;  /* History panel: soft green, different from Notes and Follow Ups */
   --home-sec-rule:#E4E0D5;  --home-sec-gap:28px;   /* rule above each Home section + space between them */
   --hl-known:#DCE6F7;  --hl-new:#EAE1F5;  --hl-time:#F8EBC8;  --hl-status:#F9DED4;
   --chip-accepted-bg:var(--ok-bg);  --chip-accepted-text:var(--ok);  --chip-accepted-edge:#BFDCC6;

@@ -75,8 +75,7 @@
 .home-followups{grid-area:followups;min-width:0}
 .home-history{grid-area:history;min-width:0}
 @media (min-width:900px){
-  .home-grid{grid-template-columns:minmax(0,1fr) var(--home-aside);grid-template-areas:"notes followups" "history followups";align-items:start;column-gap:22px}
-  .home-followups{position:sticky;top:calc(var(--topbar-height) + 12px)}
+  .home-grid{grid-template-columns:minmax(0,1fr) var(--home-aside);grid-template-areas:"notes followups" "notes history";align-items:start;column-gap:22px}
 }
 .home-sec-head{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;padding-top:10px;border-top:3px solid var(--home-sec-rule);scroll-margin-top:calc(var(--topbar-height) + 8px)}
 .home-sec-eyebrow{font-family:var(--font-mono);font-size:var(--font-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -86,6 +85,8 @@
 .home-followups .home-sec-eyebrow{color:var(--fu-title)}
 .home-followups .home-sec-head{border-bottom:1px solid var(--fu-edge);padding-bottom:8px}
 .home-history{background:var(--hist-bg);border-color:var(--hist-edge)}
+.home-notes .home-sec-eyebrow{display:none}
+.home-history .home-sec-eyebrow,.home-history h2{color:var(--hist-title)}
 .home-history .home-sec-head{border-bottom:1px solid var(--hist-edge);padding-bottom:8px}
 .home-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;margin-top:6px;background:var(--surface-2);border-radius:var(--radius-lg)}
 .home-tab{min-height:var(--tab-height);border:0;border-radius:var(--radius);background:transparent;color:var(--muted);font-weight:500;font-size:var(--font-sm);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 6px}

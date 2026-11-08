@@ -397,7 +397,7 @@ function drawNotes() {
       h('button', { type: 'button', class: 'notes-filter-btn', 'aria-pressed': !!U.allNotes === v ? 'true' : 'false', 'data-id': id, onClick: () => { U.allNotes = v; drawNotes(); tabCounts(); } }, l))));
   if (!list.length) { els.notes.append(h('p', { class: 'note home-empty' }, D.notes.length ? 'No notes of your own yet. Notes about a person are on their Notes tab.' : 'No notes yet. Write one above — a title is optional.')); return; }
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
-  if (other.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))), h('div', { class: 'note-list' }, other.map(noteCard)));
+  if (other.length) els.notes.append(pinned.length ? h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))) : '', h('div', { class: 'note-list' }, other.map(noteCard)));
 }
 
 function noteCard(n) {
