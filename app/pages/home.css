@@ -87,11 +87,10 @@
 .home-history{background:var(--hist-bg);border-color:var(--hist-edge)}
 .home-notes .home-sec-eyebrow{display:none}
 .home-history .home-sec-eyebrow,.home-history h2{color:var(--hist-title)}
-.home-history{font-family:var(--font-mono);color:var(--hist-text)}
+.home-history{color:var(--hist-text)}
 .home-history .home-sec-eyebrow{color:var(--hist-muted)}
-.home-history .home-sec-eyebrow::before{content:"> "}
 .home-history .count,.home-history .hist-date,.home-history .hist-main p,.home-history .hist-chevron{color:var(--hist-muted)}
-.home-history .hist-row{border-top:1px dashed var(--hist-edge)}
+.home-history .hist-row{border-top:1px solid var(--hist-edge)}
 .home-history .hist-main strong{color:var(--hist-text)}
 .home-history .hist-chevron:hover,.home-history .hist-chevron.on{background:var(--hist-hover);color:var(--hist-title)}
 .home-history .hist-detail{background:var(--hist-hover)}
