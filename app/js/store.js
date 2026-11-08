@@ -319,7 +319,7 @@ export function lastRecorded(c, latestEventAt) {
 export const CHOICE_DEFAULTS = {
   ages: ['30 and under'],
   communities: ['Chabad', 'Haredi', 'Litvish', 'Bukharian', 'Sephardi', 'Breslev', 'Dati Leumi', 'Modern Orthodox', 'Yeshivish'],
-  languages: ['English', 'Hebrew', 'Yiddish', 'French', 'Russian', 'Spanish'],
+  languages: ['English', 'Hebrew', 'Russian', 'Yiddish'],
   roles: ['shadchan', 'reference', 'friend', 'family', 'helper'],
 };
 export const CHOICE_NAMES = { ages: 'Ages they work with', communities: 'Religious groups', languages: 'Languages', roles: 'Roles' };
