@@ -127,7 +127,7 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .profile-page .pc-sec .facts .fact,.person-card-page .pc-sec .facts .fact{padding:4px 0}
 .profile-page .pc-sec-head,.person-card-page .pc-sec-head{min-height:var(--btn-small-height)}
 .profile-page .mp-head,.person-card-page .mp-head{margin-bottom:2px}
-.mp-more-link{display:block;padding:6px 0;font-size:var(--font-sm)}
+.mp-more-link{display:block;padding:6px 0;font-size:var(--font-sm);text-align:start;align-self:flex-start}
 .profile-page .mp-editing,.person-card-page .mp-editing{background:var(--surface-2);margin:0 calc(var(--pad-page) * -1);padding-left:var(--pad-page);padding-right:var(--pad-page)}
 .profile-page .pc-sec .facts .fact.mp-edit-row,.person-card-page .pc-sec .facts .fact.mp-edit-row{grid-template-columns:var(--fact-key) minmax(0,1fr);align-items:center;padding:3px 0;border-bottom:1px solid var(--border)}
 .mp-edit-row:last-of-type{border-bottom:0}
@@ -148,3 +148,20 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 
 /* Share lives in the dock on phones; the top button stays on wide screens */
 @media (max-width:1023px){.mp-share-top{display:none}}
+.mp-add-fact{display:flex;flex-direction:column;gap:6px;padding:8px 0 4px}
+.mp-add-fact-row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:6px}
+.mp-add-fact-row .input{background:var(--surface)}
+.mp-add-fact-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mp-add-fact-full{margin-left:auto;font-size:var(--font-sm)}
+/* While editing: Cancel / Save / Done in a bar fixed to the very top of the screen (owner request) */
+.mp-form-bar{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;align-items:center;justify-content:flex-end;gap:8px;margin:0;
+  padding:calc(var(--safe-top) + 4px) var(--pad-page) 4px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow);transform:translateY(var(--vv-top))}
+.mp-form-bar-label{margin-right:auto;font-size:var(--font-xs);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.mp-form-bar .btn.small{min-height:var(--edit-bar-btn);padding:0 14px}
+body:has(.mp-form-bar){scroll-padding-top:calc(var(--safe-top) + 76px)}
+.mp-custom-edit{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:4px 0 8px}
+.mp-custom-edit .mp-add-fact-row{width:100%}
+.mp-add-fact-row.with-del{grid-template-columns:minmax(0,2fr) minmax(0,3fr) auto;align-items:center}
+
+.mp-fact-inplace{display:flex;align-items:center;gap:8px}
+.mp-fact-inplace .input{flex:1;min-width:0;background:var(--surface)}

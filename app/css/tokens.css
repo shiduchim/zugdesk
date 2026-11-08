@@ -60,6 +60,8 @@
   --content-max:720px;
   --safe-bottom:env(safe-area-inset-bottom,0px);
   --safe-top:env(safe-area-inset-top,0px);
+  --vv-top:0px;                 /* set by app.js: keyboard-open shift on phones */
+  --edit-bar-btn:32px;          /* Cancel / Save / Done in the top Editing bar */
 }
 :root{
   /* Stage 2 — Contacts + shared controls */
@@ -110,6 +112,10 @@
   --original-font:var(--font-mono);
   --original-size:12.5px;
   --tab-active-bg:var(--selected-bg);
+  --tab-on-bg:var(--surface);      /* selected tab in a tab bar */
+  --tab-on-text:var(--text);
+  --tab-on-edge:transparent;
+  --fu-tab-bg:var(--fu-bg);
   --orig-pane-width:40%;            /* Basic Info: original on the left */
   --orig-pane-max:32dvh;            /* narrow phones: original stacked on top, this tall */
   --jump-height:32px;
@@ -174,7 +180,7 @@
   --fu-bg:#F6F8FC;  --fu-edge:#DCE4F1;  --fu-title:#35588F;  --fu-sub:#6E7F99;  --fu-line:#E3E9F3;
   --fu-dot:24px;    --fu-dot-edge:#B9C8DE;  --fu-dot-done-bg:var(--ok-bg);  --fu-dot-done-edge:var(--ok);  --fu-dot-done-text:var(--ok);
   --hist-date-width:64px;
-  --hist-bg:#F7F5EF;  --hist-edge:#E4E0D5;      /* History panel: quieter, warm grey */
+  --hist-bg:#ADADAD;  --hist-edge:#8F8F8F;  --hist-title:#111111;  --hist-text:#111111;  --hist-muted:#3A3A3A;  --hist-hover:#9C9C9C;  /* History panel: grey, different from Notes and Follow Ups */
   --home-sec-rule:#E4E0D5;  --home-sec-gap:28px;   /* rule above each Home section + space between them */
   --hl-known:#DCE6F7;  --hl-new:#EAE1F5;  --hl-time:#F8EBC8;  --hl-status:#F9DED4;
   --chip-accepted-bg:var(--ok-bg);  --chip-accepted-text:var(--ok);  --chip-accepted-edge:#BFDCC6;
@@ -183,6 +189,8 @@
   --dot-size:9px;  --dot-tap:32px;
   --qmenu-width:290px;  --qmenu-max:min(420px,calc(100dvh - 24px));  --swatch:32px;
   --ed-min:96px;
+  --ed-title-font:18px;            /* note title while writing */
+  --ed-font:16px;                  /* note writing text (cursor grows with it) */
 }
 :root{
   /* Stage 7 — My Profile (source/My Profile.html + my profile short tab.html, Claude look) */

@@ -711,8 +711,8 @@ function paintMe() {
   root.append(
     h('div', { class: 'me-top', 'data-id': 'me-form.top' },
       h('div', { class: 'me-top-row' },
-        h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Back to My Profile', 'data-id': 'me-form.back', html: icon('back'), onClick: cancel }),
         h('h1', {}, 'Edit profile'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': 'me-form.cancel', onClick: cancel }, 'Cancel'),
         h('button', { type: 'button', class: 'btn small primary', 'data-id': 'me-form.save-top', onClick: saveMe }, 'Save')),
       h('nav', { class: 'jumpnav', 'aria-label': 'Jump to section', 'data-id': 'me-form.jumpnav' },
         jumps.map(([k, l]) => h('button', { type: 'button', class: 'jump', 'data-id': 'me-form.jump-' + k, onClick: () => jump(k) }, l)))),
@@ -730,13 +730,12 @@ function paintMe() {
       ...visible.map(c => c.key === 'about' ? meAbout(c) : section(c)),
       meFacts(), meRefs(), meFiles(), meSections(),
       newCategory(),
-      h('div', { class: 'me-foot', 'data-id': 'me-form.footer' },
+      // Cancel / Save live only in the top bar (owner request: one spot).
+      h('div', { class: 'me-foot plain', 'data-id': 'me-form.footer' },
         h('button', { type: 'button', class: 'linkish manage', 'data-id': 'me-form.manage-choices', onClick: async () => {
           if (await managePersonForm()) { [ctx.choices, ctx.cats] = await Promise.all([store.getChoices(), store.getPersonCategories()]); paint({ keepScroll: true }); }
         } }, 'Manage categories & choices'),
-        h('span', { class: 'spacer' }),
-        h('button', { type: 'button', class: 'btn', 'data-id': 'me-form.cancel', onClick: cancel }, 'Cancel'),
-        h('button', { type: 'button', class: 'btn primary', 'data-id': 'me-form.save', onClick: saveMe }, 'Save profile'))));
+      )));
   if (d.jumpTo) { const id = d.jumpTo; d.jumpTo = null; setTimeout(() => jump(id), 60); }
 }
 function meAbout(cat) {

@@ -15,6 +15,11 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
 <link rel="stylesheet" href="./css/tokens.css">
+<link rel="stylesheet" href="./css/theme-dark.css">
+<script>/* Dark mode before first paint (Settings → Appearance) */
+(function(){try{var t=(JSON.parse(localStorage.getItem('zugdesk.prefs')||'{}').theme)||'light';
+if(t==='auto')t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+document.documentElement.dataset.theme=t;if(t==='dark')document.querySelector('meta[name="theme-color"]').content='#1C1B1A';}catch(e){}})();</script>
 <link rel="stylesheet" href="./css/base.css">
 <link rel="stylesheet" href="./pages/home.css">
 <link rel="stylesheet" href="./pages/contacts.css">

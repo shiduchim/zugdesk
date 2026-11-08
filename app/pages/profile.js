@@ -94,8 +94,10 @@ function sec(title, id, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDIT : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), id, 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDIT ? h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDIT = false; OPEN = null; draw(true); } }, 'Done')
-      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; draw(true); })
+      facts && EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: () => cancelFacts() }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDIT = false; OPEN = null; SNAP = null; setTimeout(() => draw(true), 120); } }, 'Save'))
+      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; SNAP = structuredClone(P.me || null); draw(true); })
       : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
@@ -118,10 +120,12 @@ function profileTab(v) {
       h('dl', { class: 'facts' },
         ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
         ...tapFact('age', 'Age', v.age, 'profile.fact-age'), ...tapFact('city', 'City', v.city, 'profile.fact-city'), ...tapFact('work', 'Work / learning', v.occupation, 'profile.fact-work'),
-        ...v.facts.filter(f => f.value).flatMap(f => tapFact(f.id, f.label, f.value, 'profile.fact')),
-        EDIT ? h('a', { class: 'linkish mp-more-link', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Add more facts in the full edit screen') : null,
-        v.facts.some(f => !f.value) ? h('div', { class: 'fact', 'data-id': 'profile.fact-more' }, h('dt', {}, 'More facts'),
-          h('dd', { dir: 'auto', class: 'mp-more' }, v.facts.filter(f => !f.value).map(f => h('div', {}, f.label)))) : null)),
+        // one list in order: "name: value" rows and one-line facts (no value) together, newest last
+        // "name: value" facts first, then the one-line facts together under "Other facts" (text in the second column)
+        ...v.facts.filter(f => f.value).flatMap(f => isCustom(f.id) ? customFact(f) : tapFact(f.id, f.label, f.value, 'profile.fact')),
+        ...v.facts.filter(f => !f.value && f.label).flatMap((f, i) => isCustom(f.id) ? customFact(f, i === 0 ? 'Other facts' : '')
+          : [h('div', { class: 'fact', 'data-id': 'profile.fact-line' }, h('dt', {}, i === 0 ? 'Other facts' : ''), h('dd', { dir: 'auto' }, f.label))]),
+        addFactRow())),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
     sec(l.looking, 'mp-looking', 'profile.looking', 'looking', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
     sec('Inquiries and references', 'mp-refs', 'profile.refs', 'refs',
@@ -304,6 +308,80 @@ function editorFor(id) {
   if (f) return text(() => f.value, (x) => ({ facts: me.facts.map(y => y.id === id ? { ...y, value: x } : y) }));
   return null;
 }
+// Quick "Add a fact": one line (name + value) right in the Facts list, no full edit screen.
+let ADDF = false, SNAP = null; // SNAP: profile as it was when Editing / Adding facts began (Cancel puts it back)
+async function cancelFacts() {
+  document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); // let a half-typed field finish first
+  EDIT = false; ADDF = false; OPEN = null;
+  if (SNAP) { P.me = await store.profile.save(SNAP); toast('Changes undone'); }
+  SNAP = null; draw(true);
+}
+function addFactRow() {
+  if (!ADDF && !EDIT) return h('button', { type: 'button', class: 'linkish mp-more-link', 'data-id': 'profile.fact-add-open', onClick: () => { ADDF = true; SNAP = structuredClone(P.me || null); draw(true); setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30); } }, 'Add a fact');
+  const lab = h('input', { class: 'input', dir: 'auto', placeholder: 'Name, e.g. Shul', 'aria-label': 'Fact name', 'data-id': 'profile.fact-add-label' });
+  const val = h('input', { class: 'input', dir: 'auto', placeholder: 'Fact', 'aria-label': 'Fact', 'data-id': 'profile.fact-add-value',
+    onKeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } });
+  async function add() {
+    const label = lab.value.trim(), value = val.value.trim();
+    if (!label && !value) { lab.focus(); return; }
+    const f = { id: store.newId('fact'), label: label || value, value: label ? value : '' };
+    P.me = await PD.saveProfile(P.me, lang, { facts: [...(P.me.facts || []), f] });
+    toast('Fact added', 1200); draw(true);
+    setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30);
+  }
+  return h('div', { class: 'mp-add-fact', 'data-id': 'profile.fact-add' },
+    h('div', { class: 'mp-add-fact-row' }, lab, val),
+    h('div', { class: 'mp-add-fact-foot' },
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-save', onClick: add }, 'Add fact'),
+      !EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.fact-add-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Adding facts'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.fact-add-cancel', onClick: () => cancelFacts() }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; SNAP = null; draw(true); } }, 'Save')) : null,
+      h('a', { class: 'linkish mp-add-fact-full', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Full edit screen')));
+}
+// Facts the owner added (Add a fact): tap to change the name / text, or delete it.
+const isCustom = (id) => (P.me?.facts || []).some(f => f.id === id);
+function customFact(f, otherTitle = '') {
+  const open = OPEN === f.id || EDIT;
+  const show = f.value ? [h('dt', { dir: 'auto' }, f.label), h('dd', { dir: 'auto' }, f.value)] : [h('dt', {}, otherTitle), h('dd', { dir: 'auto' }, f.label)];
+  const row = h('div', { class: 'fact mp-tap' + (open ? ' open' : ''), 'data-id': 'profile.fact-custom', role: 'button', tabindex: 0,
+    'aria-expanded': String(open), onClick: EDIT ? null : () => { OPEN = OPEN === f.id ? null : f.id; draw(true); } }, ...show);
+  if (!open) return [row];
+  const lab = h('input', { class: 'input', dir: 'auto', value: f.value ? f.label : '', placeholder: 'Name (optional)', 'aria-label': 'Fact name', 'data-id': 'profile.fact-custom-label' });
+  const val = h('input', { class: 'input', dir: 'auto', value: f.value ? f.value : f.label, placeholder: 'Fact', 'aria-label': 'Fact', 'data-id': 'profile.fact-custom-value' });
+  const patchFor = () => {
+    const l = lab.value.trim(), x = val.value.trim();
+    if (!l && !x) return null;
+    const nf = { ...f, label: l || x, value: l ? x : '' };
+    return { facts: (P.me.facts || []).map(y => y.id === f.id ? nf : y) };
+  };
+  const saveNow = async (quiet) => { const pt = patchFor(); if (!pt) return; P.me = await PD.saveProfile(P.me, lang, pt); if (!quiet) toast('Saved'); };
+  const del = async () => {
+    if (!(await confirmDialog({ title: 'Delete this fact?', text: f.value ? `${f.label}: ${f.value}` : f.label, ok: 'Delete', danger: true, dataId: 'profile.fact-delete-dialog' }))) return;
+    P.me = await PD.saveProfile(P.me, lang, { facts: (P.me.facts || []).filter(y => y.id !== f.id) });
+    if (OPEN === f.id) OPEN = null; toast('Fact deleted'); draw(true);
+  };
+  const delBtn = h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'profile.fact-delete', onClick: del }, 'Delete');
+  const box = h('div', { class: 'mp-inline mp-custom-edit', 'data-id': 'profile.fact-custom-editor' }, h('div', { class: 'mp-add-fact-row' }, lab, val));
+  if (EDIT) { // editing all facts: saves as you leave a box; Cancel in the top bar undoes
+    lab.addEventListener('change', () => saveNow(true)); val.addEventListener('change', () => saveNow(true));
+    box.firstChild.classList.add('with-del'); box.firstChild.append(delBtn); return [h('div', { class: 'fact mp-edit-row fact-line', 'data-id': 'profile.fact-custom' }, h('dd', {}, box))];
+  }
+  // Tapped one fact: type right in its place (the text only), Delete beside it.
+  const txt = h('input', { class: 'input', dir: 'auto', value: f.value || f.label, 'aria-label': 'Fact', 'data-id': 'profile.fact-custom-value' });
+  const save = async () => {
+    const x = txt.value.trim();
+    if (x) { const nf = f.value ? { ...f, value: x } : { ...f, label: x }; P.me = await PD.saveProfile(P.me, lang, { facts: (P.me.facts || []).map(y => y.id === f.id ? nf : y) }); toast('Saved'); }
+    OPEN = null; draw(true);
+  };
+  txt.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  setTimeout(() => { txt.focus(); txt.setSelectionRange(txt.value.length, txt.value.length); }, 30);
+  return [h('div', { class: 'fact mp-edit-row', 'data-id': 'profile.fact-custom' },
+    h('dt', { dir: 'auto' }, f.value ? f.label : otherTitle),
+    h('dd', {}, h('div', { class: 'mp-fact-inplace' }, txt, delBtn)),
+    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => { OPEN = null; draw(true); } }, 'Cancel'),
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')))];
+}
 function tapFact(id, label, value, dataId) {
   if (!value) return [];
   const ed = editorFor(id), open = OPEN === id || (EDIT && !!ed);
@@ -330,9 +408,9 @@ function inlineEditor(id, ed) {
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
     if (EDIT) { inp.addEventListener('change', save); box.append(inp); return box; } // saves when you leave the box
     setTimeout(() => inp.focus(), 30);
-    box.append(inp, h('div', { class: 'mp-inline-actions' },
+    box.append(inp, h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Done')));
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')));
     return box;
   }
   const type = listType(ed.key), multi = type !== 'single';
@@ -342,9 +420,9 @@ function inlineEditor(id, ed) {
   for (const v of cur) if (!opts.some(o => o[0] === v)) opts.push([v, v]); // keep answers no longer in the list
   box.append(bubbles({ options: opts, selected: cur, multi, dataId: 'profile.inline-choice',
     onChange: (v) => { if (multi) { cur = v; if (EDIT) done(ed.set(cur)); } else done(ed.set(v ? [v] : [])); } }));
-  if (multi && !EDIT) box.append(h('div', { class: 'mp-inline-actions' },
+  if (multi && !EDIT) box.append(h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
     h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
-    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: () => done(ed.set(cur)) }, 'Done')));
+    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: () => done(ed.set(cur)) }, 'Save')));
   return box;
 }
 
@@ -394,10 +472,11 @@ function secForm(key, dataId) {
     collect = () => ({ sections: v.sections.map(x => x.id === sid ? { ...x, title: t(title.value) || x.title, text: text.value.trim(), share: shareBox.checked } : x) });
   }
   const close = () => { SEC = null; draw(true); };
-  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body,
-    h('div', { class: 'mp-inline-actions' },
+  const form = h('div', { class: 'mp-form', 'data-id': id },
+    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': id + '.bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
       h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => { P.me = await PD.saveProfile(P.me, lang, collect()); toast('Saved'); close(); } }, 'Save')));
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => { P.me = await PD.saveProfile(P.me, lang, collect()); toast('Saved'); close(); } }, 'Save')),
+    ...body);
   setTimeout(() => form.querySelector('input,textarea')?.focus({ preventScroll: true }), 30);
   return form;
 }

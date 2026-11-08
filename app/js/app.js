@@ -150,10 +150,12 @@ async function boot() {
   catch (e) { console.error(e); toast('Could not open local storage. Try another browser or exit private mode.', 6000); }
 
   setLabels(store.getPrefs().showLabels);
+  applyTheme(); matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
   store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key === 'showLabels') setLabels(ch.value);
     if (ch.store === 'prefs' && ch.key === 'navArrangement') renderNav();
     if (ch.store === 'prefs' && ch.key === 'shellStyle') applyShell();
+    if (ch.store === 'prefs' && ch.key === 'theme') applyTheme();
   });
   applyShell(); wireShell(); watchDates();
 
@@ -172,3 +174,24 @@ async function boot() {
 }
 
 boot();
+
+// Dark mode (Settings → Appearance): the colours live in css/theme-dark.css.
+function applyTheme() {
+  let t = store.getPrefs().theme || 'light';
+  if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  document.documentElement.dataset.theme = t;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || meta.content;
+}
+
+// Phones (mainly iPhone): while the keyboard is open the page can slide under "pinned" bars.
+// Keep --vv-top = how far the visible area has moved, so edit bars stay at the visible top.
+(function keepBarsOnScreen() {
+  const vv = window.visualViewport; if (!vv) return;
+  let raf = 0;
+  const set = () => { raf = 0; document.documentElement.style.setProperty('--vv-top', Math.max(0, Math.round(vv.offsetTop)) + 'px'); };
+  const soon = () => { if (!raf) raf = requestAnimationFrame(set); };
+  vv.addEventListener('scroll', soon); vv.addEventListener('resize', soon);
+  window.addEventListener('scroll', soon, { passive: true }); document.addEventListener('focusin', () => setTimeout(set, 350)); document.addEventListener('focusout', () => setTimeout(set, 350));
+  set();
+})();

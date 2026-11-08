@@ -78,6 +78,14 @@ export async function deleteNote(note) {
   await store.notes.remove(note.id);
 }
 
+// Delete many notes at once (Home → "Delete all notes"). Same rules as one note.
+export async function deleteNotes(notes) {
+  const ids = new Set(notes.map(n => n.id));
+  for (const e of await store.events.list()) if (ids.has(e.noteId)) await store.events.remove(e.id);
+  for (const f of await store.followUps.list()) if (ids.has(f.noteId)) await store.followUps.save({ ...f, noteId: null });
+  for (const id of ids) await store.notes.remove(id);
+}
+
 async function namesFor(contactIds, personIds) {
   const out = [];
   for (const id of contactIds) { const c = await store.contacts.get(id); if (c) out.push(store.displayName(c)); }

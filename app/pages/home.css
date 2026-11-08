@@ -25,11 +25,11 @@
 .ed-head h2{display:flex;align-items:center;gap:8px;font-size:var(--font-lg)}
 .ed-head h2 svg{width:17px;height:17px;color:var(--link)}
 .ed-head .spacer{flex:1}
-.ed-title{border:0;background:transparent;padding:2px 0;font-weight:600;font-size:var(--font-base);color:var(--text);min-height:32px;width:100%}
+.ed-title{border:0;background:transparent;padding:2px 0;font-weight:600;font-size:var(--ed-title-font);color:var(--text);min-height:32px;width:100%}
 .ed-title::placeholder{color:var(--muted);font-weight:500}
-.ed-title:focus{outline:none;border-bottom:1px solid var(--border)}
-.ed-wrap{position:relative;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
-.ed-box{font:inherit;font-size:var(--font-base);line-height:1.6;padding:10px 12px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;letter-spacing:normal}
+.ed-title:focus{outline:none}
+.ed-wrap{position:relative;border:0;border-radius:var(--radius);background:transparent}
+.ed-box{font:inherit;font-size:var(--ed-font);line-height:1.6;padding:10px 12px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;letter-spacing:normal}
 .ed-mirror{position:absolute;inset:0;color:transparent;pointer-events:none;overflow:hidden;border:1px solid transparent}
 .ed-mirror mark{color:transparent;border-radius:var(--radius-sm)}
 .ed-mirror .hl-known{background:var(--hl-known)}
@@ -37,7 +37,7 @@
 .ed-mirror .hl-time{background:var(--hl-time)}
 .ed-mirror .hl-status{background:var(--hl-status)}
 .ed-text{position:relative;display:block;width:100%;min-height:var(--ed-min);resize:none;overflow:hidden;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text)}
-.ed-text:focus{outline:2px solid var(--focus);outline-offset:1px}
+.ed-text:focus{outline:none}
 .ed-target{font-size:var(--font-sm);color:var(--muted)}
 .ed-target:empty{display:none}
 .ed-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -75,8 +75,7 @@
 .home-followups{grid-area:followups;min-width:0}
 .home-history{grid-area:history;min-width:0}
 @media (min-width:900px){
-  .home-grid{grid-template-columns:minmax(0,1fr) var(--home-aside);grid-template-areas:"notes followups" "history followups";align-items:start;column-gap:22px}
-  .home-followups{position:sticky;top:calc(var(--topbar-height) + 12px)}
+  .home-grid{grid-template-columns:minmax(0,1fr) var(--home-aside);grid-template-areas:"notes followups" "notes history";align-items:start;column-gap:22px}
 }
 .home-sec-head{display:flex;flex-direction:column;gap:2px;margin-bottom:10px;padding-top:10px;border-top:3px solid var(--home-sec-rule);scroll-margin-top:calc(var(--topbar-height) + 8px)}
 .home-sec-eyebrow{font-family:var(--font-mono);font-size:var(--font-xs);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -86,12 +85,22 @@
 .home-followups .home-sec-eyebrow{color:var(--fu-title)}
 .home-followups .home-sec-head{border-bottom:1px solid var(--fu-edge);padding-bottom:8px}
 .home-history{background:var(--hist-bg);border-color:var(--hist-edge)}
+.home-notes .home-sec-eyebrow{display:none}
+.home-history .home-sec-eyebrow,.home-history h2{color:var(--hist-title)}
+.home-history{color:var(--hist-text)}
+.home-history .home-sec-eyebrow{color:var(--hist-muted)}
+.home-history .count,.home-history .hist-date,.home-history .hist-main p,.home-history .hist-chevron{color:var(--hist-muted)}
+.home-history .hist-row{border-top:1px solid var(--hist-edge)}
+.home-history .hist-main strong{color:var(--hist-text)}
+.home-history .hist-chevron:hover,.home-history .hist-chevron.on{background:var(--hist-hover);color:var(--hist-title)}
+.home-history .hist-detail{background:var(--hist-hover)}
+.home-history .linkish,.home-history a{color:var(--hist-title)}
 .home-history .home-sec-head{border-bottom:1px solid var(--hist-edge);padding-bottom:8px}
 .home-tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:3px;margin-top:6px;background:var(--surface-2);border-radius:var(--radius-lg)}
 .home-tab{min-height:var(--tab-height);border:0;border-radius:var(--radius);background:transparent;color:var(--muted);font-weight:500;font-size:var(--font-sm);display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 6px}
 .home-tab .count{font-family:var(--font-mono);font-size:var(--font-xs)}
-.home-tab[aria-selected="true"]{background:var(--surface);color:var(--text);font-weight:600;box-shadow:var(--shadow-sm)}
-.home-tab-followups[aria-selected="true"]{color:var(--fu-title);background:var(--fu-bg)}
+.home-tab[aria-selected="true"]{background:var(--tab-on-bg);color:var(--tab-on-text);font-weight:600;box-shadow:var(--shadow-sm),inset 0 0 0 1px var(--tab-on-edge)}
+.home-tab-followups[aria-selected="true"]{color:var(--fu-title);background:var(--fu-tab-bg)}
 @media (min-width:900px){.home-tabs{display:none}}
 @media (max-width:899px){
   .home-grid{display:block}
@@ -218,3 +227,23 @@
 .home-settings{flex:none;color:var(--muted)}
 @media (min-width:900px){body:not(.shell-slim) .home-settings{display:none}.home-tabline{justify-content:flex-end}}
 .home-tabline .home-tab{white-space:nowrap;gap:4px;padding:0 4px}
+
+/* ---- History: compact, two rows per entry, like a command prompt ----
+   row 1: date time · what happened · arrow   row 2: the text, up to 2 lines */
+.home-panel.home-history{font-family:var(--font-mono);padding:8px 10px;background:var(--hist-bg);border-color:var(--hist-edge)}
+.home-history .home-sec-eyebrow{display:none}
+.home-history .home-sec-head{margin-bottom:4px;padding-bottom:4px}
+.home-history h2{font-size:var(--font-base)}
+.home-history .hist-line{grid-template-columns:auto minmax(0,1fr) auto;column-gap:8px;row-gap:0;padding:3px 0;line-height:1.3;align-items:baseline}
+.home-history .hist-date{grid-column:1;grid-row:1;font-size:var(--font-xs);white-space:nowrap}
+.home-history .hist-main{display:contents}
+.home-history .hist-main strong{grid-column:2;grid-row:1;font-size:var(--font-xs);min-width:0;overflow-wrap:anywhere}
+.home-history .hist-main p{grid-column:1 / 3;grid-row:2;font-size:var(--font-xs);min-width:0;overflow-wrap:anywhere}
+.home-history .hist-main p.clamp1{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}
+.home-history .hist-main p:empty{display:none}
+.home-history .hist-chevron{grid-column:3;grid-row:1 / 3;align-self:center;width:22px;height:22px}
+.home-history .hist-chevron svg{width:12px;height:12px}
+.home-history .hist-detail{margin:0 0 4px;padding:4px 6px}
+.home-composer-slot.hidden{display:none}
+.notes-delete-all{display:flex;justify-content:center;margin:18px 0 6px}
+.notes-delete-all .linkish{font-size:var(--font-sm);color:var(--danger)}

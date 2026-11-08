@@ -18,7 +18,7 @@
 .sh-listhead-text h2{margin-bottom:2px}
 .sh-view-switch{display:flex;gap:3px;border:1px solid var(--border);background:var(--surface-2);border-radius:var(--radius);padding:3px;flex:none}
 .sh-view-switch button{border:0;background:transparent;border-radius:var(--radius-md);min-height:var(--btn-small-height);padding:0 12px;color:var(--muted);font-size:var(--font-sm);font-weight:600}
-.sh-view-switch button[aria-pressed="true"]{color:var(--text);background:var(--surface);box-shadow:var(--shadow-sm)}
+.sh-view-switch button[aria-pressed="true"]{color:var(--tab-on-text);background:var(--tab-on-bg);box-shadow:var(--shadow-sm)}
 
 /* cards */
 .sh-matches{display:flex;flex-direction:column;gap:12px}
@@ -113,7 +113,7 @@
 .sh-pastname{font-size:var(--font-xs);color:var(--muted);font-weight:600}
 .sh-detailtabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:10px}
 .sh-detailtab{flex:1;display:inline-flex;align-items:center;justify-content:center;min-height:var(--btn-height);border-radius:var(--radius);text-decoration:none;color:var(--muted);font-weight:500}
-.sh-detailtab[aria-selected="true"]{background:var(--tab-active-bg);color:var(--text);font-weight:600}
+.sh-detailtab[aria-selected="true"]{background:var(--tab-on-bg);color:var(--tab-on-text);font-weight:600}
 .sh-detailbody{display:flex;flex-direction:column;gap:12px}
 .sh-overview-title h2{margin-bottom:2px}
 .sh-overview-title p{color:var(--muted)}

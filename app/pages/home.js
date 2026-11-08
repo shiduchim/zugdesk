@@ -371,6 +371,7 @@ function applySection() {
   if (!root) return;
   const phone = PHONE.matches;
   els.tabs?.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', b.dataset.id === 'home.tab-' + section ? 'true' : 'false'));
+  els.composer.classList.toggle('hidden', phone && section !== 'notes');
   els.notes.classList.toggle('hidden', phone && section !== 'notes');
   els.fus.classList.toggle('hidden', phone && section !== 'followups');
   els.hist.classList.toggle('hidden', phone && section !== 'history');
@@ -397,7 +398,18 @@ function drawNotes() {
       h('button', { type: 'button', class: 'notes-filter-btn', 'aria-pressed': !!U.allNotes === v ? 'true' : 'false', 'data-id': id, onClick: () => { U.allNotes = v; drawNotes(); tabCounts(); } }, l))));
   if (!list.length) { els.notes.append(h('p', { class: 'note home-empty' }, D.notes.length ? 'No notes of your own yet. Notes about a person are on their Notes tab.' : 'No notes yet. Write one above — a title is optional.')); return; }
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
-  if (other.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))), h('div', { class: 'note-list' }, other.map(noteCard)));
+  if (other.length) els.notes.append(pinned.length ? h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))) : '', h('div', { class: 'note-list' }, other.map(noteCard)));
+  els.notes.append(h('div', { class: 'notes-delete-all' },
+    h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'home.notes-delete-all', onClick: () => deleteAllFlow(list) }, `Delete all ${list.length} notes`)));
+}
+// Deletes exactly the notes shown (My notes, or All). Pinned ones too. Follow Ups stay.
+async function deleteAllFlow(list) {
+  if (!list.length) return;
+  const which = U.allNotes ? 'all your notes, including the ones about people' : 'all your own notes (notes about people stay)';
+  if (!(await confirmDialog({ title: `Delete ${list.length} notes?`, text: `This deletes ${which}, pinned ones too, and their dated entries. Follow Ups stay. It cannot be undone — to keep a copy first, use Settings → Export backup.`, ok: `Delete ${list.length} notes`, danger: true, dataId: 'home.delete-all-dialog' }))) return;
+  await N.deleteNotes(list);
+  for (const n of list) delete drafts['note:' + n.id];
+  persist(); U.expanded = null; toast(`${list.length} notes deleted`);
 }
 
 function noteCard(n) {
@@ -503,7 +515,7 @@ function histRow(r) {
   const detailId = 'hist-' + r.key.replace(/[^a-zA-Z0-9_-]/g, '-');
   return h('li', { class: 'hist-row' + (open ? ' open' : ''), 'data-id': 'home.history-row' },
     h('div', { class: 'hist-line' },
-      h('span', { class: 'hist-date' }, store.formatDate(r.at), h('br'), d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })),
+      h('span', { class: 'hist-date' }, store.formatDate(r.at), ' ', d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })),
       h('div', { class: 'hist-main' }, h('strong', { dir: 'auto' }, r.what), h('p', { dir: 'auto', class: open ? 'prewrap' : 'clamp1' }, r.text)),
       h('button', { type: 'button', class: 'hist-chevron' + (open ? ' on' : ''), 'aria-expanded': open ? 'true' : 'false', 'aria-controls': detailId,
         'aria-label': (open ? 'Collapse' : 'Expand') + ' history entry: ' + r.what, 'data-id': 'home.history-chevron', html: icon('chevron'),
