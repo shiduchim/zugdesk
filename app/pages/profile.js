@@ -122,8 +122,7 @@ function profileTab(v) {
     ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', 'me-sections',
       h('p', { dir: 'auto', class: 'prewrap' }, s.text || notYet()),
       s.share === false ? h('p', { class: 'note' }, 'Kept out of the full profile when sharing.') : null)),
-    sec('Files', 'mp-files', 'profile.files-sec', null,
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Photos and docs'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)}`), ico('chevron'))),
+    sec('Photos and docs', 'mp-files', 'profile.files-sec', null, filesInline()),
     h('div', { class: 'stamp pc-stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet'),
   ];
 }
@@ -302,4 +301,34 @@ function drawSharing() {
         h('pre', { class: 'mp-text', dir: 'auto' }, s.text), s.files?.length ? h('p', { class: 'note' }, 'Files: ' + s.files.join(', ')) : null] }) },
         h('span', { class: 'stamp' }, store.formatDate(s.at)), h('span', { class: 'grow', dir: 'auto' }, `${s.recipientName || 'No recipient chosen'} · ${s.what}`), ico('chevron'))))));
   sharingEl.append(det);
+}
+
+// Photos and docs live right on the page: list, Add and Remove, no popup (owner request).
+function filesInline() {
+  const wrap = h('div', { class: 'mp-files', 'data-id': 'profile.files' });
+  const picker = h('input', { type: 'file', multiple: true, class: 'hidden', accept: 'image/*,application/pdf', 'data-id': 'profile.files.input' });
+  const draw = () => {
+    wrap.innerHTML = '';
+    const photos = P.files.filter(f => PD.fileKind(f) === 'photo'), docs = P.files.filter(f => PD.fileKind(f) !== 'photo');
+    const del = async (f) => {
+      if (!(await confirmDialog({ title: 'Remove this file?', text: f.name, ok: 'Remove', danger: true, dataId: 'profile.file-remove-dialog' }))) return;
+      await store.attachments.remove(f.id); P.files = P.files.filter(x => x.id !== f.id); draw();
+    };
+    if (photos.length) wrap.append(h('div', { class: 'me-photos' }, photos.map(f => h('figure', { class: 'me-photo', 'data-id': 'profile.photo' },
+      h('a', { href: f.dataUrl, download: f.name }, h('img', { src: f.dataUrl, alt: f.name })),
+      h('button', { type: 'button', class: 'linkish danger-text', onClick: () => del(f) }, 'Remove')))));
+    for (const f of docs) wrap.append(h('div', { class: 'me-doc', 'data-id': 'profile.file' }, ico('file'),
+      h('a', { class: 'grow', dir: 'auto', href: f.dataUrl, download: f.name }, f.name), h('button', { type: 'button', class: 'linkish danger-text', onClick: () => del(f) }, 'Remove')));
+    wrap.append(picker, h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'profile.files.add', onClick: () => picker.click() }, ico('upload'), 'Add photos or docs'));
+  };
+  picker.addEventListener('change', async () => {
+    for (const f of picker.files) {
+      if (f.size > MAX_FILE) { toast(`${f.name} is larger than 5 MB`); continue; }
+      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
+      P.files.push(await store.attachments.save({ name: f.name, type: f.type, size: f.size, dataUrl, profileFile: true, personId: null, contactId: null }));
+    }
+    picker.value = ''; draw();
+  });
+  draw();
+  return wrap;
 }
