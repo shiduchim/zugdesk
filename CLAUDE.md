@@ -53,3 +53,20 @@ Keep labels unique and stable; give every new element one.
 - **No plus signs (+) anywhere visible** in the app: no + icons, no "+ Add" labels, no + in phone numbers (use 00 for country codes). Use words like "Add" or "New".
 - End of every stage: update ROADMAP.md, commit, push, and create the PR without being asked.
 - The owner prefers step-by-step, plain-language instructions for anything they must do themselves.
+
+## Tweak mode (after Stage 8)
+
+When the owner starts a chat with "Tweak mode":
+
+1. Reply in one or two lines: ready, and remind them to send changes as a list (labels or screenshots).
+2. For **each** list they send, first say which model fits, in one line, then work:
+   - **Sonnet 5.5 · Low**: sizes, moving, removing, wording, colours, small fixes.
+   - **Opus 5.5 · Medium**: new features, changing how something works, restyling a whole page, data changes.
+   - **Fable 5.1 · High**: a bug still broken after 2 tries.
+   If the current model is weaker than needed, say "Switch to X first, then send the list again" and stop.
+   If it is stronger than needed, just mention a cheaper model would do and carry on.
+   You cannot see which model you are running on from this file; if unsure, ask the owner in one line.
+3. After each list: commit and push (that publishes to the phone link), then say "Pushed. Close and reopen the app in about a minute."
+4. Do **not** make the PR until the owner says "make the PR".
+5. After about 25 messages, or if the chat is getting slow, suggest: make the PR, merge, start a new chat with "Read CLAUDE.md. Tweak mode."
+6. If a request is unclear, ask one short question instead of guessing.
