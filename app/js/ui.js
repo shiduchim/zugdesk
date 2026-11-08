@@ -151,3 +151,32 @@ export function bubbles({ options, selected = [], multi = true, dataId, onChange
   wrap.select = (v) => { if (!sel.includes(v)) sel = multi ? [...sel, v] : [v]; draw(); onChange && onChange(multi ? sel : v); };
   return wrap;
 }
+
+// Swipe left / right on a page to move between its tabs (owner request, tweak mode).
+// The page container is shared, so the listeners go on once and each page registers its own
+// tabs with swipeTabs(root, { keys, current, go }) and clears them with swipeTabs(root, null).
+// Ignores the left-edge swipe that opens the menu, typing, and things that scroll sideways.
+export function swipeTabs(el, cfg) {
+  el.__swipe = cfg;
+  if (el.__swipeOn || !cfg) return;
+  el.__swipeOn = true;
+  let sx = null, sy = 0, st = 0;
+  el.addEventListener('touchstart', (e) => {
+    const t = e.touches[0], tg = e.target;
+    sx = null;
+    if (!el.__swipe || e.touches.length > 1 || t.clientX < 30 || document.body.classList.contains('drawer-open')) return;
+    if (tg.closest('input, textarea, select, [contenteditable], dialog, .sheet, [data-noswipe]')) return;
+    for (let n = tg; n && n !== el; n = n.parentElement) if (n.scrollWidth > n.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) return;
+    sx = t.clientX; sy = t.clientY; st = Date.now();
+  }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    const c = el.__swipe;
+    if (sx == null || !c) return;
+    const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
+    sx = null;
+    if (Math.abs(dx) < 70 || dy > Math.abs(dx) * 0.5 || Date.now() - st > 800) return;
+    const keys = c.keys(), i = keys.indexOf(c.current());
+    const next = keys[i + (dx < 0 ? 1 : -1)];
+    if (i >= 0 && next) c.go(next);
+  }, { passive: true });
+}

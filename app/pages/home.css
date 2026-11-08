@@ -204,3 +204,8 @@
 
 .home-head{position:relative}
 .home-settings{position:absolute;top:-6px;right:-10px}
+
+/* My notes / All switch (home.notes-filter) */
+.notes-filter{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.notes-filter-btn{border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:var(--font-sm);font-weight:600;min-height:32px;padding:4px 12px;border-radius:var(--radius-pill)}
+.notes-filter-btn[aria-pressed="true"]{background:var(--surface-2);color:var(--text);border-color:var(--text)}

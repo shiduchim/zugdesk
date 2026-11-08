@@ -4,7 +4,7 @@
 // The arrow on a card opens that one card's one-tap Stage / answer choices, Add update and Open details.
 // Make Match is removed in single mode (owner request): it belongs to a future shadchan mode.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import * as sh from './shidduch-data.js';
 
@@ -13,6 +13,7 @@ const S = { lane: 'offers', menu: null, updateId: null, updateText: '', open: nu
 let root = null, gen = 0, unsub = null, timer = 0, A = null, docClick = null, docKey = null;
 
 export function destroy() {
+  if (root) swipeTabs(root, null);
   root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer);
   document.removeEventListener('click', docClick, true); document.removeEventListener('keydown', docKey);
   S.menu = null;
@@ -21,6 +22,7 @@ export function destroy() {
 export async function render(container) {
   root = container;
   root.classList.add('sh-page');
+  swipeTabs(root, { keys: () => sh.LANES.map(l => l[0]), current: () => S.lane, go: (k) => { S.lane = k; S.menu = null; S.updateId = null; draw(); } });
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(true), 80); } });
   docClick = (e) => { if (S.menu && !e.target.closest('.sh-answer-cell')) { S.menu = null; draw(true); } };

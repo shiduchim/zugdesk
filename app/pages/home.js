@@ -346,7 +346,7 @@ async function save(key) {
   const msg = (key === 'new' && !d.targetNoteId ? 'Note saved' : 'Dated update added') + (d.followUp ? ' · Follow Up added' : '') + (d.answer ? ' · answer updated' : '');
   delete drafts[key]; persist();
   if (key === 'new') drawComposer(); else U.expanded = note.id;
-  toast(msg);
+  toast(msg + (!U.allNotes && aboutPerson(note) && U.expanded !== note.id ? ' · find it on the person’s Notes tab or under All' : ''), 4000);
 }
 
 function drawComposer() { if (!root) return; els.composer.innerHTML = ''; els.composer.append(composer('new')); }
@@ -380,16 +380,24 @@ function applySection() {
 function showSection(k) { section = k; applySection(); }
 function tabCounts() {
   if (!els.tabs) return;
-  const c = { notes: D.notes.length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
+  const c = { notes: shownNotes().length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
   els.tabs.querySelectorAll('[data-count]').forEach(el => { el.textContent = String(c[el.dataset.count] ?? ''); });
 }
 
 // ---------- Existing Notes ----------
+// Home shows MY notes by default: notes not about a person (owner request, tweak mode).
+// Notes about a person live on that person's Notes tab; "All" shows them here too.
+const aboutPerson = (n) => (n.personIds || []).length > 0;
+function shownNotes() { return U.allNotes ? D.notes : D.notes.filter(n => !aboutPerson(n) || n.id === U.expanded); }
 function drawNotes() {
-  const pinned = D.notes.filter(n => n.pinned), other = D.notes.filter(n => !n.pinned);
+  const list = shownNotes(), people = D.notes.filter(aboutPerson).length;
+  const pinned = list.filter(n => n.pinned), other = list.filter(n => !n.pinned);
   els.notes.innerHTML = '';
-  els.notes.append(secHead('Notes', 'Existing Notes', D.notes.length, 'home.notes-head'));
-  if (!D.notes.length) { els.notes.append(h('p', { class: 'note home-empty' }, 'No notes yet. Write one above — a title is optional.')); return; }
+  els.notes.append(secHead('Notes', U.allNotes ? 'All Notes' : 'My Notes', list.length, 'home.notes-head'));
+  if (people) els.notes.append(h('div', { class: 'notes-filter', role: 'group', 'aria-label': 'Which notes', 'data-id': 'home.notes-filter' },
+    [[false, 'My notes', 'home.notes-mine'], [true, `All (with ${people} about people)`, 'home.notes-all']].map(([v, l, id]) =>
+      h('button', { type: 'button', class: 'notes-filter-btn', 'aria-pressed': !!U.allNotes === v ? 'true' : 'false', 'data-id': id, onClick: () => { U.allNotes = v; drawNotes(); tabCounts(); } }, l))));
+  if (!list.length) { els.notes.append(h('p', { class: 'note home-empty' }, D.notes.length ? 'No notes of your own yet. Notes about a person are on their Notes tab.' : 'No notes yet. Write one above — a title is optional.')); return; }
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
   if (other.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))), h('div', { class: 'note-list' }, other.map(noteCard)));
 }

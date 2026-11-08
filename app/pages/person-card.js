@@ -2,7 +2,7 @@
 // My Profile (source/Shadchanim Offers.html). Reads the one shared person record; editing
 // opens the Add Person form. Interest never creates, ends or reopens a formal offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
@@ -20,11 +20,12 @@ const atFrom = (d, prev) => (!d ? store.now() : prev && prev.slice(0, 10) === d 
 
 let root = null, gen = 0, unsub = null, timer = 0, B = null, tab = 'profile';
 const drafts = {}; // personId → unsent note text
-export function destroy() { EDITF = false; SEC = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { if (root) swipeTabs(root, null); EDITF = false; SEC = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('person-card-page');
+  swipeTabs(root, { keys: () => TABS.map(t => t[0]), current: () => tab, go: (k) => setTab(k) });
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (EDITF || SEC) return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });

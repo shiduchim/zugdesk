@@ -1,15 +1,15 @@
 // My Profile — Profile · Short versions · Notes (spec/my-profile.md; source My Profile.html and
 // my profile short tab.html, Claude look). One owner record; the tabs are views of it.
-// Private notes live in the shared notes store (me: true) and never enter outgoing text.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, promptText, bubbles, telLink, mailLink, dock } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, promptText, bubbles, telLink, mailLink, dock, swipeTabs } from '../js/ui.js';
 import { listType, GIRLS_ONLY } from './people-data.js';
 import { navigate } from '../js/router.js';
 import * as PD from './profile-data.js';
 import * as N from './notes-data.js';
 import { openShare, copy } from './profile-share.js';
 
-const TABS = [['profile', 'Profile'], ['short', 'Short versions'], ['notes', 'Notes']];
+// No Notes tab here any more (owner request, tweak mode): your own notes live on Home.
+const TABS = [['profile', 'Profile'], ['short', 'Short versions']];
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const MAX_FILE = 5 * 1024 * 1024;
 
@@ -17,17 +17,17 @@ let root = null, unsub = null, timer = 0, gen = 0, tab = 'profile';
 let P = null, ND = null, lang = 'en';
 let lastDeleted = null;               // { version } for the inline Undo line
 let shareOpen = false;
-const W = { noteId: null, entryId: null, text: '', saveTimer: 0, savedAt: null }; // note being written
 
-export function destroy() { EDIT = false; SEC = null; OPEN = null; flushNote(); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
+export function destroy() { if (root) swipeTabs(root, null); EDIT = false; SEC = null; OPEN = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('profile-page', 'wide');
+  swipeTabs(root, { keys: () => (EDIT || SEC ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' || ch.store === 'meta') return;
-    if (W.busy || EDIT || SEC) return; // our own saves while editing in place: no redraw under the finger: do not redraw under the typing finger
+    if (EDIT || SEC) return; // editing in place: do not redraw under the typing finger
     clearTimeout(timer); timer = setTimeout(() => draw(true), 100);
   });
   await draw();
@@ -41,20 +41,17 @@ async function draw(keep = false) {
   P = p; ND = nd;
   lang = P.me?.lang || 'en'; // the profile is written in one language; each short version chooses its own
   const y = window.scrollY;
-  const active = document.activeElement?.dataset?.id === 'profile.note-composer' ? document.activeElement : null;
-  if (active && tab === 'notes') { refreshNotesList(); return; } // keep the composer as it is
   root.innerHTML = '';
   const v = PD.view(P.me, lang);
-  const myNotes = ND.notes.filter(n => n.me);
   root.append(h('div', { class: 'mp-layout' },
-    sideNav(v, myNotes.length),
+    sideNav(v),
     h('div', { class: 'mp-main' },
       header(v),
       h('div', { class: 'pc-tabs mp-tabs', role: 'tablist', 'data-id': 'profile.tabs' },
         TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'profile.tab-' + k, onClick: () => setTab(k) }, l))),
-      h('div', { class: 'mp-body', dir: PD.isRtl(lang) && tab !== 'notes' ? 'rtl' : null, 'data-id': 'profile.' + tab },
-        tab === 'profile' ? profileTab(v) : tab === 'short' ? shortTab(v) : notesTab(myNotes)),
-      tab !== 'notes' && !EDIT && !SEC ? dock('profile.dock', h('span', { class: 'grow note' }, 'Send your profile to a shadchan'),
+      h('div', { class: 'mp-body', dir: PD.isRtl(lang) ? 'rtl' : null, 'data-id': 'profile.' + tab },
+        tab === 'short' ? shortTab(v) : profileTab(v)),
+      !EDIT && !SEC ? dock('profile.dock', h('span', { class: 'grow note' }, 'Send your profile to a shadchan'),
         h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'profile.dock-share', onClick: () => share() }, 'Share profile')) : null)));
   if (keep) window.scrollTo(0, y);
 }
@@ -70,7 +67,7 @@ function header(v) {
 }
 async function share(opts) { if (shareOpen) return; shareOpen = true; try { await openShare(opts); } finally { shareOpen = false; } }
 
-function sideNav(v, notesCount) {
+function sideNav(v) {
   const go = (id) => (e) => { e.preventDefault(); if (tab !== 'profile') { setTab('profile'); setTimeout(() => scrollToSec(id), 250); } else scrollToSec(id); };
   const link = (label, id) => h('a', { href: '#/profile', class: 'mp-nav-sub', onClick: go(id) }, label);
   return h('nav', { class: 'mp-nav', 'aria-label': 'My Profile sections', 'data-id': 'profile.side-nav' },
@@ -78,7 +75,6 @@ function sideNav(v, notesCount) {
     h('a', { href: '#/profile', class: 'mp-nav-item', 'aria-current': tab === 'profile' ? 'page' : null }, 'Profile'),
     link('Facts', 'mp-facts'), link('About me', 'mp-about'), link('What I’m looking for', 'mp-looking'), link('Contact', 'mp-contact'), link('References', 'mp-refs'), link('Files', 'mp-files'),
     h('a', { href: '#/profile/short', class: 'mp-nav-item', 'aria-current': tab === 'short' ? 'page' : null }, 'Short versions', h('span', { class: 'mp-count' }, String(P.versions.length + 1))),
-    h('a', { href: '#/profile/notes', class: 'mp-nav-item', 'aria-current': tab === 'notes' ? 'page' : null }, 'Notes', h('span', { class: 'mp-count' }, String(notesCount))),
     h('div', { class: 'mp-nav-foot' },
       h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.side-add-section', onClick: () => navigate('/profile/edit/me-sections') }, 'Add section…'),
       h('div', { class: 'stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet')));
@@ -210,6 +206,7 @@ function shortTab(v) {
       versionSheet(x);
     } }, 'New short version'),
     h('p', { class: 'stamp mp-foot' }, 'these are the texts people receive · copy any box'),
+    (sharingEl = h('section', { class: 'pc-sec', 'data-id': 'profile.sharing' }), drawSharing(), sharingEl),
   ];
 }
 async function undoDelete() { if (!lastDeleted) return; const x = lastDeleted; lastDeleted = null; await store.profileVersions.save(x); toast('Restored'); }
@@ -237,71 +234,8 @@ async function shortSettings() {
     actions: [{ id: 'save', label: 'Save', primary: true, run: () => save({ shortFacts: v.facts.filter(f => ids.includes(f.id)).map(f => f.id) }) }] });
 }
 
-// ---------- Notes (only me) ----------
-let notesListEl = null, sharingEl = null;
-function notesTab(myNotes) {
-  notesListEl = h('div', { class: 'mp-notes', 'data-id': 'profile.notes-list' });
-  refreshNotesList(myNotes);
-  const ta = h('textarea', { class: 'input mp-composer', rows: 2, dir: 'auto', placeholder: 'Write a note…', 'aria-label': 'Write a private note', 'data-id': 'profile.note-composer' });
-  ta.value = W.text;
-  const status = h('span', { class: 'stamp', 'data-id': 'profile.note-status' }, 'saves as you type · linked to you · add people after');
-  ta.addEventListener('input', () => {
-    W.text = ta.value; ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 2 + 'px';
-    clearTimeout(W.saveTimer); W.saveTimer = setTimeout(() => flushNote(status), 600);
-  });
-  ta.addEventListener('blur', async () => { await flushNote(status); if (W.noteId) { W.noteId = null; W.entryId = null; W.text = ''; ta.value = ''; ta.style.height = ''; status.textContent = 'saved · write another'; refreshNotesList(); } });
-  sharingEl = h('section', { class: 'pc-sec', 'data-id': 'profile.sharing' });
-  drawSharing();
-  return [
-    h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow' }, 'Notes'), h('span', { class: 'priv' }, 'only me')),
-    notesListEl,
-    h('div', { class: 'mp-compose' }, ta, status),
-    sharingEl,
-    h('p', { class: 'stamp mp-foot' }, 'nothing on this screen is ever shared'),
-  ];
-}
-async function flushNote(status) {
-  clearTimeout(W.saveTimer);
-  const text = W.text.trim();
-  if (!text) return;
-  W.busy = true;
-  try {
-    if (!W.noteId) { const r = await N.createNote({ text, me: true }); W.noteId = r.note.id; W.entryId = r.entry.id; }
-    else {
-      const e = await store.events.get(W.entryId), n = await store.notes.get(W.noteId);
-      if (e && e.text !== text) await store.events.save({ ...e, text });
-      if (n) await store.notes.save({ ...n, title: (text.split('\n')[0] || '').slice(0, 60) || n.title });
-    }
-    if (status && root) status.textContent = 'saved ' + new Date().toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) + ' · linked to you · add people after';
-  } finally { setTimeout(() => { W.busy = false; }, 150); }
-}
-async function refreshNotesList(list) {
-  if (!notesListEl) return;
-  if (!list) { ND = await N.loadNotes(); list = ND.notes.filter(n => n.me); }
-  notesListEl.innerHTML = '';
-  const shown = list.filter(n => n.id !== W.noteId);
-  if (!shown.length) notesListEl.append(h('p', { class: 'note' }, 'No private notes yet. They stay on this phone and are never part of what you share.'));
-  for (const n of shown) {
-    const es = ND.entries.get(n.id) || [];
-    const links = N.linksOf(n, ND);
-    notesListEl.append(h('div', { class: 'mp-note', 'data-id': 'profile.note' },
-      h('span', { class: 'mp-note-ico', html: icon('file') }),
-      h('div', { class: 'mp-note-main' },
-        h('p', { dir: 'auto', class: 'prewrap' }, es[0]?.text || n.title),
-        es.length > 1 ? h('p', { class: 'note' }, `${es.length - 1} later update${es.length > 2 ? 's' : ''} — see it on Home`) : null,
-        h('div', { class: 'mp-note-links' }, h('span', { 'aria-hidden': 'true' }, '↳ '),
-          links.map((l, i) => [i ? ' · ' : '', h('a', { href: l.href, dir: 'auto' }, l.label)]),
-          ' · ', h('a', { href: `#/home/note/${encodeURIComponent(n.id)}`, 'data-id': 'profile.note-home' }, 'Home'),
-          ' · ', h('button', { type: 'button', class: 'linkish inline danger-text', 'data-id': 'profile.note-delete', onClick: async () => {
-            if (!(await confirmDialog({ title: 'Delete this note?', text: 'It also disappears from Home and from anyone it is linked to.', ok: 'Delete note', danger: true, dataId: 'profile.note-delete-dialog' }))) return;
-            await N.deleteNote(n); toast('Note deleted'); refreshNotesList();
-          } }, 'delete'),
-          ' · ', h('button', { type: 'button', class: 'linkish inline', 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'data-id': 'profile.note-add-people', onClick: (e) => {
-            const sel = { contactIds: [...(n.contactIds || [])], personIds: [...(n.personIds || [])] };
-            N.linkMenu(e.currentTarget, 'profile.note-link-menu', ND, sel, async (s) => { await N.setLinks(n, s.contactIds, s.personIds); n.contactIds = s.contactIds; n.personIds = s.personIds; });
-          } }, 'add people')))));
-  }
-}
+// ---------- Sharing activity (bottom of Short versions) ----------
+let sharingEl = null;
 function drawSharing() {
   const S = P.shares, last = S[0];
   sharingEl.innerHTML = '';
