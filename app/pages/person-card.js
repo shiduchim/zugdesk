@@ -6,6 +6,7 @@ import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink } from
 import { navigate } from '../js/router.js';
 import { loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
+import { ideaStatus, latestByPerson, recordInterest, reopen } from './idea-flow.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
@@ -52,6 +53,7 @@ async function draw(id, keepScroll = false) {
     h('div', { class: 'pc-actions', 'data-id': 'person-card.actions' },
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.add-note', onClick: () => { setTab('notes'); setTimeout(() => root?.querySelector('[data-id="person-card.note-text"]')?.focus(), 120); } }, ico('message'), 'Add note'),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.follow-up', onClick: () => followUpSheet() }, ico('clock'), 'Follow-up')),
+    statusStrip(b),
     h('div', { class: 'pc-tabs', role: 'tablist', 'data-id': 'person-card.tabs' },
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l))),
     h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? offersTab(b) : notesTab(b)));
@@ -225,7 +227,7 @@ async function startOfferSheet(b) {
   const linked = (p.contactIds || []).map(id => b.contactsById.get(id)).filter(Boolean);
   let contactId = p.senderContactId && linked.some(c => c.id === p.senderContactId) ? p.senderContactId : (linked[0]?.id || null);
   const res = await sheet({ title: `Start a formal offer · ${store.personName(p)}`, dataId: 'start-offer-sheet',
-    body: [h('p', {}, 'This creates one shidduch record for you and ', h('span', { dir: 'auto' }, store.personName(p)), '. It starts in Offers with both answers waiting; it moves to In Progress only when both sides say Yes.'),
+    body: [h('p', {}, 'This creates one shidduch record for you and ', h('span', { dir: 'auto' }, store.personName(p)), '. Normally this happens by itself when you both say yes. It starts in Offers and moves to In Progress when the first date is set up.'),
       linked.length ? h('div', { class: 'field' }, h('label', {}, 'Shadchan (optional)'),
         bubbles({ options: linked.map(c => [c.id, store.displayName(c)]), selected: contactId ? [contactId] : [], multi: false, dataId: 'start-offer-sheet.shadchan', onChange: (v) => { contactId = v || null; } }))
         : h('p', { class: 'note' }, 'No shadchan is linked to this person yet. You can set one on the shidduch afterwards.'),
@@ -293,9 +295,9 @@ async function interestSheet(side) {
   await sheet({ title: side === 'mine' ? 'My interest' : `${pron(p).His} response, as reported`, dataId: 'interest-sheet', body,
     actions: [{ id: 'save', label: 'Save', primary: true, run: async () => {
       if (!value) { toast('Choose one answer first'); return false; }
-      await store.interests.save({ personId: p.id, side, value, reason: reason.value.trim(), at: atFrom(date.value),
+      const o = await recordInterest(p.id, { side, value, reason: reason.value.trim(), at: atFrom(date.value),
         ...(side === 'theirs' ? { reportedBy: by.value.trim(), reportedByContactId } : {}) });
-      toast('Saved — earlier answers stay in the history');
+      if (o) movedToast(o); else toast('Saved — earlier answers stay in the history');
     } }] });
 }
 
@@ -560,4 +562,31 @@ function secForm(key, dataId) {
       } }, 'Save')));
   setTimeout(() => form.querySelector('input,textarea,select')?.focus({ preventScroll: true }), 30);
   return form;
+}
+
+// ---------- Ideas status strip (owner request): one tap per step; both yes → Shidduchim ----------
+function movedToast(o) {
+  toast('Both said yes. Moved to Shidduchim → Offers', 5000, { label: 'Open', run: () => navigate(`/shidduchim/${encodeURIComponent(o.id)}`) });
+}
+function statusStrip(b) {
+  const p = b.p, P = pron(p), l = latestByPerson(b.ints).get(p.id) || {};
+  const st = ideaStatus(p, l, b.offers.length > 0);
+  const quick = (label, dataId, rec, primary) => h('button', { type: 'button', class: 'btn small' + (primary ? ' primary' : ''), 'data-id': dataId, onClick: async () => {
+    const o = await recordInterest(p.id, rec);
+    if (o) movedToast(o); else toast('Saved');
+  } }, label);
+  const strip = (...kids) => h('div', { class: 'pc-status pc-status-' + st.key, 'data-id': 'person-card.status' }, ...kids);
+  const label = h('span', { class: 'pc-status-label' }, st.label);
+  if (st.key === 'shidduch') {
+    const o = b.offers[0];
+    return strip(h('a', { class: 'pc-status-link', href: `#/shidduchim/${encodeURIComponent(o.id)}`, 'data-id': 'person-card.status-open' }, label, h('span', { class: 'note' }, 'Open'), ico('chevron')));
+  }
+  if (st.key === 'closed') return strip(label, h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.status-reopen', onClick: async () => { await reopen(p.id, l); toast('Reopened'); } }, 'Reopen'));
+  if (st.key === 'waiting') return strip(label, h('div', { class: 'pc-status-btns' },
+    quick(`${P.He} said yes`, 'person-card.status-yes', { side: 'theirs', value: 'Yes, interested' }, true),
+    quick(`${P.He} said no`, 'person-card.status-no', { side: 'theirs', value: 'No' }),
+    quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
+  return strip(label, h('div', { class: 'pc-status-btns' },
+    quick('I’m interested', 'person-card.status-interested', { side: 'mine', value: 'Interested' }, true),
+    quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
 }

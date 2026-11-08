@@ -6,6 +6,7 @@ import { h, icon, toast, sheet, confirmDialog, promptText } from '../js/ui.js';
 import * as N from './notes-data.js';
 import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from './home-data.js';
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
+import { recordInterest } from './idea-flow.js';
 
 const STAR = '<svg class="star" viewBox="230 215 533 605" width="12" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M 491 228 L 477 233 L 463 245 L 417 324 L 405 337 L 397 343 L 384 350 L 361 355 L 292 354 L 271 356 L 258 363 L 247 376 L 243 388 L 243 400 L 246 411 L 291 489 L 296 507 L 297 525 L 290 549 L 245 627 L 243 646 L 246 657 L 252 667 L 260 674 L 271 679 L 292 681 L 359 680 L 376 683 L 398 693 L 407 700 L 418 713 L 462 790 L 470 798 L 483 805 L 501 807 L 517 802 L 530 791 L 576 712 L 592 695 L 598 691 L 617 683 L 633 680 L 718 680 L 730 676 L 736 672 L 744 663 L 750 647 L 749 630 L 745 620 L 701 544 L 697 530 L 696 517 L 698 502 L 703 487 L 747 411 L 750 400 L 750 387 L 743 371 L 734 362 L 721 356 L 708 354 L 624 354 L 608 349 L 595 342 L 575 322 L 528 242 L 523 237 L 510 230 Z M 493 255 L 503 256 L 509 262 L 554 339 L 564 351 L 585 367 L 602 375 L 627 381 L 712 381 L 717 383 L 723 391 L 723 398 L 679 475 L 670 505 L 671 536 L 676 553 L 683 568 L 723 637 L 722 647 L 713 654 L 620 655 L 597 662 L 585 668 L 571 678 L 559 690 L 542 716 L 512 770 L 507 776 L 500 780 L 490 779 L 484 774 L 440 698 L 422 678 L 408 668 L 385 658 L 364 654 L 279 654 L 272 648 L 270 643 L 270 638 L 274 629 L 317 554 L 323 530 L 323 506 L 318 484 L 311 469 L 273 405 L 270 397 L 271 389 L 277 383 L 283 381 L 374 380 L 395 374 L 407 368 L 425 355 L 437 342 L 483 263 L 487 258 Z"/></svg>';
 const FU_FIRST = 10, HIST_FIRST = 5, HIST_STEP = 50;
@@ -270,7 +271,9 @@ async function applyAnswer(ans) {
     else await setAnswer(m, 'them', 'Yes', { source });
     return;
   }
-  await store.interests.save({ personId: ans.personId, side: 'theirs', value: ans.value === 'No' ? 'No' : 'Yes, interested', reason: 'From a note on Home', reportedBy: source, reportedByContactId: ans.reporterId || null, at: store.now() });
+  // Ideas flow: if I already said yes, her yes moves the person to Shidduchim → Offers.
+  const o = await recordInterest(ans.personId, { side: 'theirs', value: ans.value === 'No' ? 'No' : 'Yes, interested', reason: 'From a note on Home', reportedBy: source, reportedByContactId: ans.reporterId || null });
+  if (o) toast('Both said yes. Moved to Shidduchim → Offers', 4000);
 }
 
 // ---------- Actions / Link Contact dropdowns ----------

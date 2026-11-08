@@ -191,3 +191,9 @@ a.sh-who:hover{text-decoration:underline}
   .sh-num{min-width:18px;height:18px}
   .sh-quick-persons{grid-template-columns:1fr}
 }
+
+/* per-card quick actions toggle (replaces the Compact / Expanded switch) */
+.sh-expand-btn{position:absolute;top:6px;right:6px;z-index:3;width:36px;height:36px;color:var(--muted)}
+.sh-expand-btn svg{transform:rotate(90deg);transition:transform .15s}
+.sh-expand-btn.open svg{transform:rotate(-90deg)}
+.sh-match .sh-card-names{padding-right:30px}

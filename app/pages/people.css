@@ -59,3 +59,16 @@
 .people-page .avatar svg{width:18px;height:18px}
 
 .pc-body>.mp-card{margin-top:10px}.pc-body>[data-id="person-card.short-new"]{margin-top:12px;align-self:flex-start}
+
+/* Ideas status strip on the person card + status chips on the Ideas list (owner request) */
+.pc-status{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:8px 10px;margin:0 0 10px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.pc-status-label{font-weight:600;font-size:var(--font-sm);flex:1 1 auto}
+.pc-status-btns{display:flex;flex-wrap:wrap;gap:6px}
+.pc-status-closed{background:var(--surface-2)}
+.pc-status-closed .pc-status-label{color:var(--muted)}
+.pc-status-link{display:flex;align-items:center;gap:8px;width:100%;min-height:var(--btn-small-height);text-decoration:none;color:var(--text)}
+.pc-status-link svg{width:16px;height:16px;color:var(--muted)}
+.person-row.closed{opacity:.6}
+.chip.st-waiting{background:var(--warn-bg);color:var(--warn)}
+.chip.st-shidduch{background:var(--ok-bg);color:var(--ok)}
+.chip.st-yes{background:var(--ok-bg);color:var(--ok)}

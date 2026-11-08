@@ -4,12 +4,13 @@ import * as store from '../js/store.js';
 import { h, icon, toast, confirmDialog } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
 import { kindLabel, dateOnly, seekingKind } from './people-data.js';
+import { ideaStatus, latestByPerson } from './idea-flow.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
-const S = { q: '', filter: 'all' };   // survives leaving the page
-const FILTERS = [['all', 'All'], ['guy', 'Guys'], ['girl', 'Girls'], ['interested', 'I’m interested'], ['waiting', 'Waiting to hear']];
-const MINE_POSITIVE = ['Interested', 'Want to learn more'];
-const THEIRS_WAITING = ['Checking availability', 'Thinking about it', 'Not asked yet'];
+const S = { q: '', filter: 'active' };   // survives leaving the page
+// Active = new + waiting; Closed (not for me / they said no) is hidden unless chosen (owner request).
+const filters = (seek) => [['active', 'Active'], ['waiting', seek === 'guy' ? 'Waiting for him' : seek === 'girl' ? 'Waiting for her' : 'Waiting'],
+  ['closed', 'Closed'], ['all', 'All'], ...(seek ? [] : [['guy', 'Guys'], ['girl', 'Girls']])];
 
 let root = null, gen = 0, unsub = null, timer = 0;
 export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
@@ -24,14 +25,13 @@ export async function render(container) {
 
 async function draw() {
   const token = ++gen;
-  const [people, later, ints, contacts, srcs] = await Promise.all([
-    store.people.list(), store.unfiledSources(), store.interests.list(), store.contacts.list(), store.sources.list()]);
+  const [people, later, ints, contacts, srcs, offers] = await Promise.all([
+    store.people.list(), store.unfiledSources(), store.interests.list(), store.contacts.list(), store.sources.list(), store.offers.list()]);
   if (token !== gen || !root) return;
   const byId = new Map(contacts.map(c => [c.id, c]));
-  const latest = new Map(); // personId → { mine, theirs }
-  for (const i of [...ints].sort((a, b) => (a.at || '').localeCompare(b.at || ''))) {
-    const cur = latest.get(i.personId) || {}; cur[i.side] = i; latest.set(i.personId, cur);
-  }
+  const latest = latestByPerson(ints);
+  const withOffer = new Set(offers.map(o => o.personId));
+  const status = new Map(people.map(p => [p.id, ideaStatus(p, latest.get(p.id), withOffer.has(p.id))]));
   const senders = new Map();
   for (const s of srcs) if (s.personId && s.sender) (senders.get(s.personId) || senders.set(s.personId, new Set()).get(s.personId)).add(s.sender);
   const searchText = (p) => [p.name, p.city, p.occupation, p.about, p.looking, p.sender, ...(p.languages || []),
@@ -39,14 +39,14 @@ async function draw() {
     ...(senders.get(p.id) || [])].filter(Boolean).join(' ').toLowerCase();
   const words = S.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const seek = seekingKind(store.getPrefs());
-  if (seek && (S.filter === 'guy' || S.filter === 'girl')) S.filter = 'all';
+  if (!filters(seek).some(f => f[0] === S.filter)) S.filter = 'active';
   const list = people.filter(p => {
     if (seek && p.kind && p.kind !== seek) return false;
     if (words.length && !words.every(w => searchText(p).includes(w))) return false;
-    const l = latest.get(p.id) || {};
+    const st = status.get(p.id).key;
     if (S.filter === 'guy' || S.filter === 'girl') return p.kind === S.filter;
-    if (S.filter === 'interested') return MINE_POSITIVE.includes(l.mine?.value);
-    if (S.filter === 'waiting') return THEIRS_WAITING.includes(l.theirs?.value);
+    if (S.filter === 'active') return st === 'new' || st === 'waiting';
+    if (S.filter === 'waiting' || S.filter === 'closed') return st === S.filter;
     return true;
   }).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 
@@ -60,7 +60,7 @@ async function draw() {
       h('a', { class: 'btn primary', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
     h('div', { class: 'ct-search' }, ico('search'), search),
     h('div', { class: 'chips filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
-      FILTERS.filter(([k]) => !seek || (k !== 'guy' && k !== 'girl')).map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
+      filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
         onClick: () => { S.filter = k; draw(); } }, l))),
     drafts.length ? h('section', { class: 'section', 'data-id': 'people.drafts' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `Not saved yet · ${drafts.length}`)),
@@ -86,7 +86,7 @@ async function draw() {
         } }, 'Delete')))) : null,
     h('section', { class: 'section', 'data-id': 'people.list' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `People · ${list.length}${list.length !== people.length ? ' of ' + people.length : ''}`)),
-      list.length ? list.map(p => personRow(p, latest.get(p.id) || {}, byId))
+      list.length ? list.map(p => personRow(p, status.get(p.id), byId))
         : h('div', { class: 'empty' }, people.length ? 'Nobody matches. ' : 'No people saved yet. ',
             people.length ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; S.filter = 'all'; draw(); } }, 'Show everyone')
               : h('a', { href: '#/people/new' }, 'Add the first person'))),
@@ -95,10 +95,10 @@ async function draw() {
 
 function firstLine(t) { return (t || '').trim().split('\n').find(l => l.trim())?.trim().slice(0, 80) || ''; }
 
-function personRow(p, l, byId) {
+function personRow(p, st, byId) {
   const from = (p.contactIds || []).map(id => byId.get(id)).filter(Boolean).map(c => store.displayName(c));
   const sub = [p.age, p.city, p.occupation].filter(Boolean).join(' · ') || 'Details not recorded';
-  return h('a', { class: 'row-link person-row', href: `#/people/${encodeURIComponent(p.id)}`, 'data-id': 'people.row' },
+  return h('a', { class: 'row-link person-row' + (st.key === 'closed' ? ' closed' : ''), href: `#/people/${encodeURIComponent(p.id)}`, 'data-id': 'people.row' },
     h('div', { class: 'avatar' }, store.initials(p)),
     h('div', { class: 'row-main' },
       h('div', { class: 'row-title', dir: 'auto' }, store.personName(p)),
@@ -106,5 +106,5 @@ function personRow(p, l, byId) {
       from.length || p.sender ? h('div', { class: 'row-sub', dir: 'auto' }, 'via ' + (from.length ? from.join(', ') : p.sender)) : null),
     h('div', { class: 'row-tags' },
       p.kind ? h('span', { class: 'chip' }, kindLabel(p.kind)) : null,
-      l.mine ? h('span', { class: 'chip strong' }, l.mine.value) : null));
+      st.label !== 'New' ? h('span', { class: 'chip st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null));
 }
