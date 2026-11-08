@@ -3,7 +3,10 @@
 .people-page .ct-search{margin-bottom:10px}
 .filter-chips{margin-bottom:4px}
 .filter-chips .bubble{min-height:var(--chip-height)}
-.person-row .row-tags{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;max-width:40%}
+.person-row .row-tags{display:flex;align-items:flex-start;flex-shrink:0;align-self:flex-start}
+.person-row .row-main{flex:1;min-width:0}
+.person-row .row-sub{max-width:100%}
+.person-row .row-status{margin-top:4px}
 .person-row .row-tags .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chip.strong{background:var(--selected-bg);color:var(--text)}
 .people-page .row-link .row-main{text-decoration:none;color:var(--text)}

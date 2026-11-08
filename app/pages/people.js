@@ -104,8 +104,8 @@ function personRow(p, st, byId) {
     h('div', { class: 'row-main' },
       h('div', { class: 'row-title', dir: 'auto' }, store.personName(p)),
       h('div', { class: 'row-sub', dir: 'auto' }, sub),
-      from.length || p.sender ? h('div', { class: 'row-sub', dir: 'auto' }, 'via ' + (from.length ? from.join(', ') : p.sender)) : null),
-    h('div', { class: 'row-tags' },
-      p.kind ? h('span', { class: 'chip' }, kindLabel(p.kind)) : null,
-      st.label !== 'New' ? h('span', { class: 'chip st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null));
+      from.length || p.sender ? h('div', { class: 'row-sub', dir: 'auto' }, 'via ' + (from.length ? from.join(', ') : p.sender)) : null,
+      // Status sits on its own line under the details, so it never covers the work or city (owner request).
+      st.label !== 'New' ? h('span', { class: 'chip row-status st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null),
+    p.kind ? h('div', { class: 'row-tags' }, h('span', { class: 'chip' }, kindLabel(p.kind))) : null);
 }
