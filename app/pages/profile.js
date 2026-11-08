@@ -298,7 +298,6 @@ function card({ title, sub, text, dataId, edit, menu, lang: cardLang = 'en', lan
   return h('article', { class: 'mp-card', 'data-id': dataId, dir: PD.isRtl(cardLang) ? 'rtl' : null },
     h('div', { class: 'mp-card-head' },
       h('div', { class: 'mp-card-title' }, h('strong', { dir: 'auto' }, title), h('span', { class: 'stamp' }, sub)),
-      pick,
       h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '.copy', onClick: async () => { if (await copy(text)) toast('Copied. Copying is not sending — use Share to log a send.'); } }, 'Copy'),
       edit ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit ' + title, 'data-id': dataId + '.edit', html: icon('edit'), onClick: edit }) : null,
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'More for ' + title, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'data-id': dataId + '.more', html: icon('more'), onClick: (e) => menu(e.currentTarget) })),
