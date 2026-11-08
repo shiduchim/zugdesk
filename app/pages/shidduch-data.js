@@ -35,6 +35,13 @@ export function segmentsDone(t, dates) {
   return done;
 }
 
+// Dates set up but not yet happened: their segments show lightly ("coming").
+export function segmentsNext(t, dates) {
+  const next = new Set();
+  for (const d of dates) { const n = dateNum(d); if (d.status === 'Arranged' && n >= 1 && n <= 8) next.add(n + 1); }
+  return next;
+}
+
 // Stage word on a card: Ended / Date n (latest arranged, else latest happened) / References / Offer.
 export function stageWord(t, dates) {
   if (t.phase === 'ended') return 'Ended';
@@ -62,12 +69,12 @@ export function whenNice(x) {
   if (!x) return 'Time not set';
   const d = new Date(x); if (isNaN(d)) return x;
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: sameYear ? undefined : 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: sameYear ? undefined : 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 export function dateTime(x) {
   if (!x) return '';
   const d = new Date(x); if (isNaN(d)) return x;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 // datetime-local input value from a stored "when"
 export function toLocalInput(x) {
@@ -147,7 +154,8 @@ export async function startOffer({ personId, contactId = null, myAnswer = '', th
   await log(t, 'Offer recorded.', { kind: 'offer' });
   if (myAnswer) await log(t, `Me: ${myAnswer}.`, { kind: 'answer' });
   if (theirAnswer) await log(t, `${person ? store.personName(person).split(/\s+/)[0] : 'They'}: ${theirAnswer}.`, { kind: 'answer' });
-  if (myAnswer === 'Yes' && theirAnswer === 'Yes') { await store.tries.save({ ...t, phase: 'dating' }); await log(t, 'Both said Yes; moved to In Progress.', { kind: 'stage' }); await touch(o, { ...t, phase: 'dating' }); }
+  // Both Yes stays in Offers (checking references); a date moves it to In Progress (owner request).
+  if (myAnswer === 'Yes' && theirAnswer === 'Yes') await log(t, 'Both said Yes. Moved here from Ideas.', { kind: 'stage' });
   return o;
 }
 
@@ -159,10 +167,9 @@ export async function setAnswer(m, side, value, { source = '' } = {}) {
   if ((t[key] || '') === (value || '')) return null;
   const undo = await snapshot(m);
   const t2 = { ...t, [key]: value || '' };
-  if (bothYes(t2) && t2.phase === 'checking') { t2.phase = 'dating'; }
   await store.tries.save(t2);
   const event = await log(t2, `${sideName(m, side)}: ${value || 'Not answered yet'}.`, { source, kind: 'answer' });
-  if (t2.phase !== t.phase) await log(t2, 'Both said Yes; moved to In Progress.', { kind: 'stage' });
+  if (bothYes(t2) && !bothYes(t)) await log(t2, 'Both said Yes. Next: references and Date 1.', { kind: 'stage' });
   await touch(m.o, t2);
   return { undo, event };
 }
@@ -233,7 +240,7 @@ export async function saveDate(m, d, { when, where, status, feedback }) {
     await log(t, text, { kind: 'date', eventAt: status === 'Happened' ? when : null });
   }
   let t2 = t;
-  if (bothYes(t) && t.phase === 'checking') { t2 = { ...t, phase: 'dating' }; await store.tries.save(t2); await log(t2, 'Both said Yes; moved to In Progress.', { kind: 'stage' }); }
+  if (bothYes(t) && t.phase === 'checking') { t2 = { ...t, phase: 'dating' }; await store.tries.save(t2); await log(t2, 'First date set up; moved to In Progress.', { kind: 'stage' }); }
   await touch(m.o, t2);
   return rec;
 }

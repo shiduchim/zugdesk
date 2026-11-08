@@ -111,7 +111,6 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-iam{margin-bottom:0;align-self:flex-start}
 
 .mp-sub{font-size:var(--font-sm);font-weight:600;margin-top:4px}
-.mp-reach{font-size:var(--font-sm);color:var(--muted);font-weight:400}
 
 .mp-files .me-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:8px}
 .mp-files .me-photo{margin:0;display:flex;flex-direction:column;align-items:flex-start;gap:2px}
@@ -130,3 +129,32 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-tap:hover,.mp-tap.open{background:var(--surface-2)}
 .mp-inline{display:flex;flex-direction:column;gap:8px;padding:8px 0 12px}
 .mp-inline-actions{display:flex;justify-content:flex-end;gap:8px}
+
+/* Compact My Profile and the Ideas person card + edit-in-place (owner request, tweak mode). Spacing only shrinks;
+   buttons and inputs keep their tap sizes from tokens. */
+.profile-page .pc-summary,.person-card-page .pc-summary{padding:12px 0;gap:10px}
+.profile-page .pc-sec,.person-card-page .pc-sec{padding:12px 0;gap:6px}
+.profile-page .pc-sec .facts .fact,.person-card-page .pc-sec .facts .fact{padding:4px 0}
+.profile-page .pc-sec-head,.person-card-page .pc-sec-head{min-height:var(--btn-small-height)}
+.profile-page .mp-head,.person-card-page .mp-head{margin-bottom:2px}
+.mp-more-link{display:block;padding:6px 0;font-size:var(--font-sm)}
+.profile-page .mp-editing,.person-card-page .mp-editing{background:var(--surface-2);margin:0 calc(var(--pad-page) * -1);padding-left:var(--pad-page);padding-right:var(--pad-page)}
+.profile-page .pc-sec .facts .fact.mp-edit-row,.person-card-page .pc-sec .facts .fact.mp-edit-row{grid-template-columns:var(--fact-key) minmax(0,1fr);align-items:center;padding:3px 0;border-bottom:1px solid var(--border)}
+.mp-edit-row:last-of-type{border-bottom:0}
+.mp-edit-row .mp-inline{padding:0;gap:4px}
+.mp-edit-row .mp-inline .input{background:var(--surface)}
+.mp-form{display:flex;flex-direction:column;gap:8px;flex:1;min-width:0}
+.mp-form .input{background:var(--surface)}
+.mp-frow{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mp-flabel{font-size:var(--font-xs);color:var(--muted);font-family:var(--font-mono)}
+.mp-fgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.mp-farea{min-height:0;resize:vertical;line-height:var(--line)}
+.mp-frefs{display:flex;flex-direction:column;gap:8px}
+.mp-fref{display:flex;flex-direction:column;gap:6px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.mp-fref .linkish{align-self:flex-start;min-height:32px}
+.mp-form>.btn.small{align-self:flex-start}
+.mp-form .share-tick{min-height:var(--btn-small-height)}
+@media (max-width:380px){.profile-page .pc-sec .facts .fact.mp-edit-row,.person-card-page .pc-sec .facts .fact.mp-edit-row{grid-template-columns:96px minmax(0,1fr)}}
+
+/* Share lives in the dock on phones; the top button stays on wide screens */
+@media (max-width:1023px){.mp-share-top{display:none}}

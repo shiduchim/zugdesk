@@ -5,7 +5,7 @@
 // with inline Add note and expandable previous tries. The quick-choice panel from the list
 // is deliberately NOT repeated here.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, dock } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import * as sh from './shidduch-data.js';
 import { bar, endDialog } from './shidduchim.js';
@@ -51,7 +51,11 @@ async function draw(id, keepScroll = false) {
         h('div', { class: 'sh-pastname' }, `${sh.tryName(i + 1)} · ended`), bar(old.t, old.dates, { dim: true })])) : null),
     h('div', { class: 'sh-detailtabs', role: 'tablist', 'data-id': 'shidduch.tabs' },
       TABS.map(([k, l]) => h('a', { role: 'tab', class: 'sh-detailtab', 'aria-selected': tab === k ? 'true' : 'false', href: `#/shidduchim/${enc}${k === 'overview' ? '' : '/' + k}`, 'data-id': 'shidduch.tab-' + k }, l))),
-    h('div', { class: 'sh-detailbody', 'data-id': 'shidduch.' + tab }, tab === 'overview' ? overview(m) : tab === 'dates' ? datesView(m) : historyView(m)));
+    h('div', { class: 'sh-detailbody', 'data-id': 'shidduch.' + tab }, tab === 'overview' ? overview(m) : tab === 'dates' ? datesView(m) : historyView(m)),
+    // Most-used steps stay on screen at the bottom (owner request).
+    st === 'ended' || U.dateEdit !== null || U.noteOpen ? '' : dock('shidduch.dock',
+      h('button', { type: 'button', class: 'btn wide', 'data-id': 'shidduch.dock-note', onClick: () => { U.noteOpen = true; if (tab === 'history') draw(m.o.id, true); else go('history'); } }, 'Add note'),
+      h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'shidduch.dock-date', onClick: () => { U.dateEdit = 'new'; const show = () => root?.querySelector('[data-id="shidduch.date-form"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); if (tab === 'dates') draw(m.o.id, true).then(show); else { go('dates'); setTimeout(show, 300); } } }, 'Arrange a date')));
   if (keepScroll) window.scrollTo(0, y);
 }
 

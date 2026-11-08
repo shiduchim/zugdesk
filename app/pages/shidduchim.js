@@ -1,15 +1,15 @@
 // Shidduchim — Offers / In Progress / Ended (spec/shidduchim.md SH-01). Layout and behaviour
 // follow source/ZivugMatch_Shidduchim_Floating_Answer_Choices_v7 EXPANDED.html, drawn in
 // the Claude look. Compact cards show arrow-free answer bubbles that open a floating panel;
-// Expanded cards add one-tap Stage / answer choices, Add update and Open details.
-// Make Match is not designed yet (SH-05): the button says so and points to the approved way in.
+// The arrow on a card opens that one card's one-tap Stage / answer choices, Add update and Open details.
+// Make Match is removed in single mode (owner request): it belongs to a future shadchan mode.
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import * as sh from './shidduch-data.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
-const S = { lane: 'offers', menu: null, updateId: null, updateText: '' }; // survives leaving the page
+const S = { lane: 'offers', menu: null, updateId: null, updateText: '', open: null }; // open: the one card showing quick actions // survives leaving the page
 let root = null, gen = 0, unsub = null, timer = 0, A = null, docClick = null, docKey = null;
 
 export function destroy() {
@@ -37,48 +37,43 @@ async function draw(keepScroll = false) {
   A = all;
   const y = window.scrollY;
   const prefs = store.getPrefs();
-  const mode = prefs.shidduchimView === 'expanded' ? 'expanded' : 'compact';
   const counts = { offers: 0, progress: 0, ended: 0 };
   for (const m of all.list) counts[m.lane]++;
   const list = all.list.filter(m => m.lane === S.lane).sort((a, b) => S.lane === 'ended'
     ? (b.cur.t.endedAt || b.o.updatedAt || '').localeCompare(a.cur.t.endedAt || a.o.updatedAt || '')
     : (b.o.updatedAt || '').localeCompare(a.o.updatedAt || ''));
-  const intro = { offers: 'Waiting for answers or checking references.', progress: 'Both sides have said Yes.', ended: 'The history is kept, even when a match ends.' };
+  const intro = { offers: 'Both said yes. Checking references and setting up Date 1.', progress: 'Dating.', ended: 'The history is kept, even when a match ends.' };
 
   root.innerHTML = '';
   root.append(
     h('div', { class: 'page-head sh-head', 'data-id': 'shidduchim.head' },
-      h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'), h('p', { class: 'note' }, 'Every shidduch, from first offer to what happens next.')),
-      h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduchim.make-match', onClick: makeMatch }, 'Make Match')),
-    prefs.navArrangement !== 'four' ? h('a', { class: 'row-link sh-people-link', href: '#/people', 'data-id': 'shidduchim.people-link' },
-      h('div', { class: 'avatar', html: icon('people') }),
-      h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `Ideas · ${all.people.length}`),
-        h('div', { class: 'row-sub' }, 'Everyone suggested to you. Saving someone is not a formal offer.')),
-      ico('chevron')) : null,
+      h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'), h('p', { class: 'note' }, 'Every shidduch, from first offer to what happens next.'))),
+    // Ideas link only when Ideas has no button of its own in the bottom bar ('' — never the word null).
+    prefs.navArrangement !== 'four' && prefs.shellStyle !== 'slim' ? h('a', { class: 'row-link sh-people-link', href: '#/people', 'data-id': 'shidduchim.people-link' },
+      h('div', { class: 'avatar', html: icon('idea') }),
+      h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `Ideas · ${all.people.length}`)),
+      ico('chevron')) : '',
     h('div', { class: 'sh-tabbar', role: 'tablist', 'aria-label': 'Shidduchim lanes', 'data-id': 'shidduchim.lanes' },
       sh.LANES.map(([k, l]) => h('button', { type: 'button', role: 'tab', class: 'sh-tab', 'aria-selected': S.lane === k ? 'true' : 'false', 'data-id': 'shidduchim.lane-' + k,
         onClick: () => { S.lane = k; S.menu = null; S.updateId = null; draw(); } }, l, h('span', { class: 'sh-num' }, counts[k])))),
     h('div', { class: 'sh-listhead' },
-      h('div', { class: 'sh-listhead-text' }, h('h2', {}, sh.laneLabel(S.lane)), h('p', { class: 'note' }, intro[S.lane])),
-      h('div', { class: 'sh-view-switch', role: 'group', 'aria-label': 'Card size', 'data-id': 'shidduchim.view-switch' },
-        [['compact', 'Compact'], ['expanded', 'Expanded']].map(([k, l]) => h('button', { type: 'button', 'aria-pressed': mode === k ? 'true' : 'false', 'data-id': 'shidduchim.view-' + k,
-          onClick: () => { S.menu = null; S.updateId = null; store.setPref('shidduchimView', k); draw(true); } }, l)))),
+      h('div', { class: 'sh-listhead-text' }, h('h2', {}, sh.laneLabel(S.lane)), h('p', { class: 'note' }, intro[S.lane]))),
     h('div', { class: 'sh-matches', 'data-id': 'shidduchim.list' },
-      list.length ? list.map(m => mode === 'compact' ? compactCard(m) : expandedCard(m))
+      list.length ? list.map(m => S.open === m.o.id ? expandedCard(m) : compactCard(m))
         : h('div', { class: 'sh-blank', 'data-id': 'shidduchim.empty' }, h('h3', {}, 'Nothing here yet'),
-          h('p', {}, all.list.length ? 'Shidduchim appear here as their status changes.' : 'A formal offer starts from a person: Ideas → open the person → Offers → Start a formal offer.'))));
+          h('p', {}, all.list.length ? 'Shidduchim appear here as their status changes.' : 'Someone moves here from Ideas when you and they both say yes.'))));
   if (keepScroll) window.scrollTo(0, y);
 }
 
 // ---------- shared card pieces ----------
 export function bar(t, dates, { dim = false, large = false, dataId = null } = {}) {
-  const done = sh.segmentsDone(t, dates);
+  const done = sh.segmentsDone(t, dates), next = sh.segmentsNext(t, dates);
   return h('div', { class: 'sh-bars' + (large ? ' large' : ''), role: 'img', 'aria-label': 'Progress: offer, references, dates 1 through 8, marriage', 'data-id': dataId },
     sh.SEG_LABELS.map((label, i) => {
       let cls = '';
       if (dim) cls = done.has(i) ? 'past' : 'empty-past';
-      else if (done.has(i)) cls = i < 2 ? 'a' : i < 6 ? 'b' : i < 10 ? 'c' : 'd';
-      return h('span', { class: 'sh-seg ' + cls, title: `${label}: ${done.has(i) ? 'completed' : 'not completed'}` });
+      else if (done.has(i) || next.has(i)) cls = (i < 2 ? 'a' : i < 6 ? 'b' : i < 10 ? 'c' : 'd') + (done.has(i) ? '' : ' next');
+      return h('span', { class: 'sh-seg ' + cls, title: `${label}: ${done.has(i) ? 'completed' : next.has(i) ? 'set up' : 'not completed'}` });
     }));
 }
 
@@ -108,7 +103,7 @@ function statusRow(m, mode) {
   const compactAnswers = mode === 'compact' && (st === 'ended' || !sh.bothYes(t));
   if (compactAnswers) return h('div', { class: 'sh-answers', 'aria-label': 'Current answers' }, answerBubble(m, 'me'), answerBubble(m, 'them'), st === 'ended' ? h('span', { class: 'sh-ended-word' }, 'Ended') : null);
   if (st === 'ended') return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage ended' }, 'Ended'));
-  const next = st === 'offers' ? 'Waiting for answers' : sh.summary(t, m.cur.dates).next;
+  const next = sh.summary(t, m.cur.dates).next;
   return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage' + (stg.startsWith('Date') ? ' dating' : '') }, stg), next ? h('span', {}, '·') : null, next ? h('span', { dir: 'auto' }, next) : null);
 }
 
@@ -128,10 +123,16 @@ function cardSummary(m, mode) {
 const openHref = (m) => `#/shidduchim/${encodeURIComponent(m.o.id)}`;
 const openDetails = (m) => navigate(`/shidduchim/${encodeURIComponent(m.o.id)}`);
 
+// One card at a time opens its quick actions (owner request: replaces the Compact / Expanded switch).
+function expandBtn(m, open) {
+  return h('button', { type: 'button', class: 'icon-btn sh-expand-btn' + (open ? ' open' : ''), 'aria-expanded': open ? 'true' : 'false', 'aria-label': open ? 'Hide quick actions' : 'Show quick actions', 'data-id': 'shidduchim.card-expand', html: icon('chevron'),
+    onClick: (e) => { e.preventDefault(); e.stopPropagation(); S.open = open ? null : m.o.id; S.menu = null; S.updateId = null; draw(true); } });
+}
 function compactCard(m) {
   const names = `Me and ${sh.personName(m)}`;
   return h('article', { class: 'sh-match compact' + (S.menu && S.menu.id === m.o.id ? ' menu-open' : ''), 'aria-label': names, 'data-id': 'shidduchim.card' },
     h('a', { class: 'sh-card-open', href: openHref(m), 'aria-label': 'Open details for ' + names, 'data-id': 'shidduchim.card-open' }),
+    expandBtn(m, false),
     cardSummary(m, 'compact'));
 }
 
@@ -148,6 +149,7 @@ function expandedCard(m) {
   };
   const update = S.updateId === m.o.id ? updateForm(m) : null;
   return h('article', { class: 'sh-match expanded', 'aria-label': `Shidduch: Me and ${sh.personName(m)}`, 'data-id': 'shidduchim.card' },
+    expandBtn(m, true),
     h('div', { class: 'sh-expanded-body' },
       h('a', { class: 'sh-expanded-summary', href: openHref(m), title: 'Open full shidduch details', 'data-id': 'shidduchim.card-open' }, cardSummary(m, 'expanded')),
       h('div', { class: 'sh-expanded-actions' },
@@ -155,6 +157,7 @@ function expandedCard(m) {
           h('div', { class: 'sh-choice-group' }, sh.PHASES.map(([k, l]) => choice(k, l, phase === k, ended, 'shidduchim.stage-' + k, () => quickStage(m, k))))),
         h('div', { class: 'sh-quick-persons' }, answersFor('me'), answersFor('them')),
         h('div', { class: 'sh-quick-foot' },
+          !t.refsChecked && !ended ? h('button', { type: 'button', class: 'btn small', 'data-id': 'shidduchim.refs-checked', onClick: async () => { await sh.markRefs(m); toast('References checked'); } }, 'References checked') : null,
           h('button', { type: 'button', class: 'btn small', 'data-id': 'shidduchim.add-update', 'aria-expanded': update ? 'true' : 'false', onClick: () => { S.updateId = update ? null : m.o.id; draw(true).then(() => root?.querySelector('[data-id="shidduchim.update-text"]')?.focus()); } }, 'Add update'),
           h('a', { class: 'linkish', href: openHref(m), 'data-id': 'shidduchim.open-details' }, 'Open details')))),
     update);
@@ -184,8 +187,6 @@ async function quickAnswer(m, side, value) {
   if (value === 'No') { await endDialog(m, { side }); return; }
   const r = await sh.setAnswer(m, side, value);
   if (!r) return;
-  const movedLane = sh.laneOf({ ...t, [side === 'me' ? 'myAnswer' : 'theirAnswer']: value, phase: sh.bothYes({ ...t, [side === 'me' ? 'myAnswer' : 'theirAnswer']: value }) && t.phase === 'checking' ? 'dating' : t.phase });
-  if (movedLane !== S.lane) S.lane = movedLane;
   toast(`${sh.sideName(m, side)}'s answer → ${value || 'Not answered yet'}`, 2600, { label: 'Undo', run: () => undoTo(r.undo, m.lane) });
 }
 
@@ -225,11 +226,3 @@ export async function endDialog(m, { side = null, afterEnd = null } = {}) {
   return res === 'end';
 }
 
-// SH-05: Make Match is not designed. Say so, and show the approved way to start an offer.
-async function makeMatch() {
-  const res = await sheet({ title: 'Make Match', dataId: 'make-match-sheet',
-    body: [h('p', {}, 'The Make Match screen has not been designed yet. This button is here so its place can be reviewed.'),
-      h('p', { class: 'note' }, 'To start a formal offer now: open the person in Ideas, then Offers → Start a formal offer. Saving a person or recording interest never starts one on its own.')],
-    actions: [{ id: 'people', label: 'Go to Ideas', primary: true }] });
-  if (res === 'people') navigate('/people');
-}

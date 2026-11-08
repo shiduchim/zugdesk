@@ -150,3 +150,7 @@
 @media (min-width:600px){
   .a-quick .qf{grid-template-columns:90px minmax(0,1fr)}
 }
+
+/* phone: leave room for the Add Shadchan dock under the panes */
+.contacts-page{--dock-space:58px;--pane-height:calc(100dvh - var(--topbar-height) - var(--safe-top) - var(--nav-height) - var(--safe-bottom) - var(--dock-space) - 12px)}
+@media (min-width:1024px){.contacts-page{--dock-space:0px}}

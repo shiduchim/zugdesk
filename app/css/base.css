@@ -31,7 +31,7 @@ main.content{flex:1;width:100%;max-width:var(--content-max);margin:0 auto;paddin
 .bottom-nav .inner{width:100%;max-width:var(--content-max);display:flex}
 .bottom-nav a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;text-decoration:none;color:var(--muted);font-size:var(--nav-font);font-weight:500;padding:6px 2px}
 .bottom-nav a svg{width:var(--nav-icon);height:var(--nav-icon)}
-.bottom-nav a span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bottom-nav a span{max-width:100%;overflow:hidden;text-align:center;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .bottom-nav a[aria-current="page"]{color:var(--text)}
 .bottom-nav a[aria-current="page"] span{font-weight:600}
 
@@ -150,3 +150,85 @@ dialog.form-sheet.tall .sheet-body{flex:1}
   main.content.wide{max-width:none;margin-right:0}
   .toast{bottom:24px}
 }
+
+/* Phone and email links look different at a glance (owner request): colour + icon. */
+.tel-link,.mail-link{display:inline-flex;align-items:center;gap:5px;text-decoration:none;font-size:var(--font-sm);font-weight:500;min-height:28px;max-width:100%;overflow-wrap:anywhere}
+.tel-link{color:var(--phone-color);font-family:var(--font-mono)}
+.mail-link{color:var(--email-color)}
+.tel-link svg,.mail-link svg{width:14px;height:14px;flex:none}
+.reach{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:0}
+
+/* ---- Claude-style shell (Settings → Screen layout, being tested) ----
+   Menu icon top-left, page name, Settings top-right. No bottom menu. The top bar slides
+   away while scrolling down; --topbar-height follows it so sticky page parts move up too. */
+#menu-btn{display:none}
+.topbar{transition:transform .2s ease}
+body.shell-claude{--nav-height:0px;--topbar-height:var(--shell-bar)}
+body.shell-claude .bottom-nav{display:none}
+body.shell-claude #menu-btn{display:inline-flex;margin-left:-10px}
+body.shell-claude .topbar{height:calc(var(--shell-bar) + var(--safe-top));border-bottom-color:transparent}
+body.shell-claude .topbar .brand{display:none}
+body.shell-claude .topbar .title{display:none} /* each page already shows its own heading */
+body.shell-claude.bar-hidden{--topbar-height:0px}
+body.shell-claude.bar-hidden .topbar{transform:translateY(-100%)}
+body.shell-claude main.content{padding-top:var(--gap)}
+.drawer-backdrop{position:fixed;inset:0;z-index:40;background:var(--backdrop);opacity:0;transition:opacity .2s}
+.drawer{position:fixed;top:0;bottom:0;left:0;z-index:41;width:var(--drawer-width);max-width:85vw;background:var(--bg);box-shadow:var(--shadow-lg);padding:calc(var(--safe-top) + 6px) 8px calc(var(--safe-bottom) + 12px);display:flex;flex-direction:column;gap:2px;transform:translateX(-100%);transition:transform .2s ease;overflow-y:auto}
+body.drawer-open .drawer{transform:none}
+body.drawer-open .drawer-backdrop{opacity:1}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:0 0 8px 10px;margin-bottom:4px;border-bottom:1px solid var(--border)}
+.drawer-brand{font-weight:600;font-size:var(--font-lg)}
+.drawer-item{display:flex;align-items:center;gap:12px;min-height:var(--touch-min);padding:0 12px;border-radius:var(--radius);color:var(--text);text-decoration:none;font-weight:500}
+.drawer-item svg{width:var(--icon);height:var(--icon);color:var(--muted)}
+.drawer-item[aria-current="page"]{background:var(--selected-bg);font-weight:600}
+.drawer-item[data-id="drawer.settings"]{margin-top:auto}
+
+/* ---- Slim icon bar (Settings → Screen layout, being tested) ----
+   No top bar. One thin row of section icons at the bottom (thumb reach), no words;
+   it slides down out of the way while scrolling down and returns on scroll up. */
+body.shell-slim{--topbar-height:0px;--nav-height:var(--slim-nav)}
+body.shell-slim .topbar{display:none}
+body.shell-slim main.content{padding-top:calc(var(--safe-top) + var(--gap))}
+body.shell-slim .bottom-nav{transition:transform .2s ease}
+body.shell-slim .bottom-nav a{padding:0;gap:0}
+body.shell-slim .bottom-nav a span:not(.ico){display:none}
+body.shell-slim .bottom-nav a[aria-current="page"]{color:var(--text)}
+body.shell-slim .bottom-nav a[aria-current="page"] svg{stroke-width:2.6}
+body.shell-slim .bottom-nav a[aria-current="page"]::after{content:"";width:18px;height:2px;margin-top:4px;border-radius:var(--radius);background:var(--text)}
+body.shell-slim.bar-hidden .bottom-nav{transform:translateY(100%)}
+
+/* Calendar (js/calendar.js): a normal month view with weekday names, weeks start Sunday. */
+.cal-btn{display:flex;align-items:center;gap:8px;text-align:start;cursor:pointer;color:var(--text);min-width:0}
+.cal-btn svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.cal-btn .cal-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-btn.empty .cal-text{color:var(--muted)}
+dialog.cal-sheet{padding:12px 12px calc(12px + var(--safe-bottom));max-width:min(360px,calc(100vw - 16px))}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-prev svg{transform:rotate(180deg)}
+.cal-month{font-size:var(--font-lg)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center}
+.cal-dow{font-size:var(--font-xs);font-family:var(--font-mono);color:var(--muted);padding:4px 0}
+.cal-day{aspect-ratio:1;min-height:36px;border:0;border-radius:var(--radius);background:transparent;color:var(--text);font-size:var(--font-base);display:flex;align-items:center;justify-content:center;padding:0}
+.cal-day:hover{background:var(--surface-2)}
+.cal-day.blank{pointer-events:none}
+.cal-day.shabbos,.cal-dow.shabbos{color:var(--muted)}
+.cal-day.today{box-shadow:inset 0 0 0 1px var(--text);font-weight:600}
+.cal-day.picked{background:var(--text);color:var(--accent-text);font-weight:600}
+.cal-picked{text-align:center;font-weight:600;padding:8px 0 4px}
+.cal-time{display:flex;align-items:center;gap:8px;padding:6px 0}
+.cal-time select{flex:1;min-width:0}
+.cal-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cal-actions .spacer{flex:1}
+
+/* Dock (ui.js dock()): main buttons that never scroll away. Sits just above the bottom bar;
+   when the slim bar slides away it follows it down to the screen edge. */
+body{--dock-bottom:calc(var(--nav-height) + var(--safe-bottom));--dock-safe:0px} /* on body: follows the slim bar height */
+/* bar slid away (or no bar): the dock goes to the very edge and pads itself over the phone's home strip */
+body.shell-slim.bar-hidden,body.focus-mode{--dock-bottom:0px;--dock-safe:var(--safe-bottom)}
+.dock{position:sticky;bottom:var(--dock-bottom);z-index:15;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:12px calc(var(--pad-page) * -1) 0;padding:8px var(--pad-page) calc(8px + var(--dock-safe));background:var(--bg);border-top:1px solid var(--border);transition:bottom .2s ease,padding .2s ease}
+/* a page that ends with a dock or a Save bar needs no empty space under it: no gap above the bar,
+   no blank strip when the bar slides away */
+main.content:has(.dock),main.content:has(.form-foot),main.content:has(.me-foot){padding-bottom:0}
+.dock .grow{flex:1;min-width:0}
+.dock .btn{flex:none}
+@media (max-width:420px){.dock .btn.wide{flex:1}}
