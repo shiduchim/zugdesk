@@ -130,3 +130,6 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-tap:hover,.mp-tap.open{background:var(--surface-2)}
 .mp-inline{display:flex;flex-direction:column;gap:8px;padding:8px 0 12px}
 .mp-inline-actions{display:flex;justify-content:flex-end;gap:8px}
+.mp-editing .mp-tap{cursor:default;background:none}
+.mp-more-link{display:block;padding:8px 0}
+.mp-editing .mp-tap dd{display:none}
