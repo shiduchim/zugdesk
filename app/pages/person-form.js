@@ -206,14 +206,14 @@ function phoneCard(c) {
 // ---------- Detailed Info ----------
 function detailsTab() {
   const visible = ctx.cats.filter(c => !c.hidden);
-  const jumps = [...visible.map(c => [c.key, c.jump || c.name]), ['attachments', 'Attached items']];
+  const jumps = [...visible.flatMap(c => c.key === 'contacts' ? [[c.key, c.jump || c.name], ['references', 'References']] : [[c.key, c.jump || c.name]]), ['attachments', 'Attached items']];
   return h('div', { class: 'ap-body', 'data-id': 'person.details' },
     h('div', { class: 'details-top', 'data-id': 'person.details-top' },
       h('div', { class: 'details-title' }, h('h2', {}, 'Detailed Info'),
         hasOriginal() ? h('button', { type: 'button', class: 'btn small', 'data-id': 'person.view-original', onClick: viewOriginal }, ico('file'), 'View Original') : null),
       h('nav', { class: 'jumpnav', 'aria-label': 'Jump to category', 'data-id': 'person.jumpnav' },
         jumps.map(([k, l]) => h('button', { type: 'button', class: 'jump', 'data-id': 'person.jump-' + k, onClick: () => jump(k) }, l)))),
-    ...visible.map(c => section(c)),
+    ...visible.flatMap(c => c.key === 'contacts' ? [section(c), referencesSection()] : [section(c)]),
     attachmentsSection(),
     newCategory(),
     h('div', { class: 'form-foot', 'data-id': 'person.footer' },
@@ -246,7 +246,7 @@ function section(cat) {
       cityField(),
       h('div', { class: 'field' }, h('label', {}, 'Languages spoken'), choiceGroup('languages', 'person.languages')));
     case 'contacts': return block(cat,
-      h('div', { class: 'contact-cards', 'data-id': 'person.contact-cards' }, contactCards()),
+      h('div', { class: 'contact-cards', 'data-id': 'person.contact-cards' }, contactCards((c) => c.role !== 'reference')),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person.add-contact', onClick: () => { const k = card({}); d.p.contactCards.push(k); d.editCard = k.id; paint({ keepScroll: true }); } }, 'Add a contact'),
       senderField(),
       h('p', { class: 'note' }, 'The sender and the shadchan may be the same person, but the app does not assume so.'));
@@ -413,9 +413,16 @@ function inlineAdder(what, onSave, dataId, asLink = false) {
 }
 
 // ----- Contacts & Source: separate rounded cards with a small pencil -----
-function contactCards() {
-  const shown = d.p.contactCards.filter(c => c.number || c.name || c.email || c.contactId || d.editCard === c.id);
-  if (!shown.length) return [h('p', { class: 'note' }, 'No contacts yet. Add one below.')];
+// References get their own section (owner request): numbers marked "Reference" in Basic Info show here.
+function referencesSection() {
+  return block({ key: 'references', name: 'References' },
+    h('div', { class: 'contact-cards', 'data-id': 'person.reference-cards' }, contactCards((c) => c.role === 'reference', 'No references yet.')),
+    h('button', { type: 'button', class: 'btn small', 'data-id': 'person.add-reference', onClick: () => { const k = card({ role: 'reference' }); d.p.contactCards.push(k); d.editCard = k.id; paint({ keepScroll: true }); } }, 'Add a reference'));
+}
+
+function contactCards(keep = () => true, empty = 'No contacts yet. Add one below.') {
+  const shown = d.p.contactCards.filter(c => keep(c) && (c.number || c.name || c.email || c.contactId || d.editCard === c.id));
+  if (!shown.length) return [h('p', { class: 'note' }, empty)];
   return shown.map(c => {
     const linked = c.contactId && ctx.contactsById.get(c.contactId);
     const name = c.name || (c.role === 'person' ? d.p.name : '');
