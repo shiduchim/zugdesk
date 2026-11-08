@@ -29,7 +29,7 @@
 .ed-title::placeholder{color:var(--muted);font-weight:500}
 .ed-title:focus{outline:none}
 .ed-wrap{position:relative;border:0;border-radius:var(--radius);background:transparent}
-.ed-box{font:inherit;font-size:var(--font-base);line-height:1.6;padding:10px 12px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;letter-spacing:normal}
+.ed-box{font:inherit;font-size:var(--ed-font);line-height:1.6;padding:10px 12px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;letter-spacing:normal}
 .ed-mirror{position:absolute;inset:0;color:transparent;pointer-events:none;overflow:hidden;border:1px solid transparent}
 .ed-mirror mark{color:transparent;border-radius:var(--radius-sm)}
 .ed-mirror .hl-known{background:var(--hl-known)}

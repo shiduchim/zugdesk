@@ -187,6 +187,7 @@
   --dot-size:9px;  --dot-tap:32px;
   --qmenu-width:290px;  --qmenu-max:min(420px,calc(100dvh - 24px));  --swatch:32px;
   --ed-min:96px;
+  --ed-font:16px;                  /* note writing text (cursor grows with it) */
 }
 :root{
   /* Stage 7 — My Profile (source/My Profile.html + my profile short tab.html, Claude look) */
