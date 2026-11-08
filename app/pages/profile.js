@@ -19,7 +19,7 @@ let lastDeleted = null;               // { version } for the inline Undo line
 let shareOpen = false;
 const W = { noteId: null, entryId: null, text: '', saveTimer: 0, savedAt: null }; // note being written
 
-export function destroy() { EDIT = false; OPEN = null; flushNote(); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
+export function destroy() { EDIT = false; SEC = null; OPEN = null; flushNote(); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
 
 export async function render(container, params) {
   root = container;
@@ -27,7 +27,7 @@ export async function render(container, params) {
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' || ch.store === 'meta') return;
-    if (W.busy) return; // our own autosave: do not redraw under the typing finger
+    if (W.busy || EDIT || SEC) return; // our own saves while editing in place: no redraw under the finger: do not redraw under the typing finger
     clearTimeout(timer); timer = setTimeout(() => draw(true), 100);
   });
   await draw();
@@ -88,14 +88,18 @@ function scrollToSec(id) { document.getElementById(id)?.scrollIntoView({ block: 
 // Add Person–style form at #/profile/edit; each pencil opens it at that section.
 const notYet = (what) => h('span', { class: 'muted' }, what || 'Not filled in yet');
 const editAt = (s) => '#/profile/edit' + (s ? '/' + s : '');
-function sec(title, id, dataId, editSec, ...kids) {
-  const facts = id === 'mp-facts'; // Facts pencil edits right here (owner request, tweak mode)
-  return h('section', { class: 'pc-sec' + (facts && EDIT ? ' mp-editing' : ''), id, 'data-id': dataId },
+// Every pencil edits its section right here (owner request, tweak mode). Facts save as you go
+// (one Done); the other sections are a small form with Cancel / Save.
+const pencil = (label, dataId, onClick) => h('button', { type: 'button', class: 'icon-btn', 'aria-label': label, 'data-id': dataId, html: icon('edit'), onClick });
+const openSec = (key) => { SEC = key; EDIT = false; OPEN = null; draw(true); };
+function sec(title, id, dataId, key, ...kids) {
+  const facts = key === 'facts', editing = facts ? EDIT : key && SEC === key;
+  return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), id, 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts ? (EDIT ? h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDIT = false; OPEN = null; draw(true); } }, 'Done')
-        : h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit facts here', 'data-id': dataId + '-edit', html: icon('edit'), onClick: () => { EDIT = true; OPEN = null; draw(true); } }))
-      : editSec ? h('a', { class: 'icon-btn', href: editAt(editSec), 'aria-label': 'Edit ' + title.toLowerCase(), 'data-id': dataId + '-edit', html: icon('edit') }) : null),
-    ...kids);
+      facts && EDIT ? h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDIT = false; OPEN = null; draw(true); } }, 'Done')
+      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; draw(true); })
+      : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
+    ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
 const fact = (k, v, dataId, extra = null) => !v ? null : h('div', { class: 'fact', 'data-id': dataId }, h('dt', { dir: 'auto' }, k), h('dd', { dir: 'auto' }, v), extra); // empty = left out
 function profileTab(v) {
@@ -104,14 +108,15 @@ function profileTab(v) {
   const iAm = store.getPrefs().iAm;
   return [
     !P.me ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Tap the pencil at the top to fill it in. Everything stays on this phone until you choose to share it.') : null,
+    SEC === 'summary' ? h('div', { class: 'pc-summary mp-editing', 'data-id': 'profile.summary' }, secForm('summary', 'profile.summary')) :
     h('div', { class: 'pc-summary', 'data-id': 'profile.summary' },
       h('div', { class: 'avatar lg' }, P.me?.name ? store.initials({ name: P.me.name }) : 'ME'),
       h('div', { class: 'pc-summary-text' },
         h('div', { class: 'pc-summary-line', dir: 'auto' }, PD.summaryLine(v) || notYet('Age · city · work')),
         (c.phone || c.email) ? h('div', { class: 'pc-summary-line mp-reach', dir: 'auto', 'data-id': 'profile.reach' }, [c.phone, c.email].filter(Boolean).join(' · ')) : null,
         h('div', { class: 'muted', dir: 'auto' }, v.intro || 'A one-line introduction')),
-      h('a', { class: 'icon-btn', href: editAt('me-basic'), 'aria-label': 'Edit summary', 'data-id': 'profile.summary-edit', html: icon('edit') })),
-    sec(l.facts, 'mp-facts', 'profile.facts', 'personal',
+      pencil('Edit summary here', 'profile.summary-edit', () => openSec('summary'))),
+    sec(l.facts, 'mp-facts', 'profile.facts', 'facts',
       h('dl', { class: 'facts' },
         ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
         ...tapFact('age', 'Age', v.age, 'profile.fact-age'), ...tapFact('city', 'City', v.city, 'profile.fact-city'), ...tapFact('work', 'Work / learning', v.occupation, 'profile.fact-work'),
@@ -120,14 +125,14 @@ function profileTab(v) {
         v.facts.some(f => !f.value) ? h('div', { class: 'fact', 'data-id': 'profile.fact-more' }, h('dt', {}, 'More facts'),
           h('dd', { dir: 'auto', class: 'mp-more' }, v.facts.filter(f => !f.value).map(f => h('div', {}, f.label)))) : null)),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
-    sec(l.looking, 'mp-looking', 'profile.looking', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
-    sec('Inquiries and references', 'mp-refs', 'profile.refs', 'me-refs',
+    sec(l.looking, 'mp-looking', 'profile.looking', 'looking', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
+    sec('Inquiries and references', 'mp-refs', 'profile.refs', 'refs',
       h('div', { class: 'mp-sub' }, 'Inquiries'),
       h('dl', { class: 'facts' }, fact('Call', c.inquiriesName || c.inquiriesPhone ? [c.inquiriesName, c.inquiriesName && c.inquiriesPhone ? ' · ' : '', c.inquiriesPhone].join('') : '', 'profile.fact-inquiries')),
       h('div', { class: 'mp-sub' }, 'References'),
       (v.references || []).length ? h('dl', { class: 'facts' }, v.references.map(r => fact(r.name, [r.relation, r.phone].filter(Boolean).join(' · '), 'profile.reference')))
         : h('p', {}, notYet('No references yet'))),
-    ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', 'me-sections',
+    ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', 'sec:' + s.id,
       h('p', { dir: 'auto', class: 'prewrap' }, s.text || notYet()),
       s.share === false ? h('p', { class: 'note' }, 'Kept out of the full profile when sharing.') : null)),
     sec('Photos and docs', 'mp-files', 'profile.files-sec', null, filesInline()),
@@ -343,7 +348,7 @@ function filesInline() {
 
 // ---------- Tap a fact to change it right here (owner request, tweak mode) ----------
 // One row open at a time. One-choice lists save on tap; several-choice lists and text use Done.
-let CH = {}, OPEN = null, EDIT = false; // EDIT: Facts pencil opened every fact at once
+let CH = {}, OPEN = null, EDIT = false, SEC = null; // SEC: section open as a small form // EDIT: Facts pencil opened every fact at once
 const DKEY = { 'd:Languages': 'languages', 'd:Status': 'pStatus', 'd:Religious level': 'pLevel', 'd:Tzniut': 'pTzniut',
   'd:Religious background': 'pBackground', 'd:Religious': 'pReligious', 'd:Character & lifestyle': 'pTraits', 'd:Body type': 'pBody' };
 function editorFor(id) {
@@ -369,10 +374,14 @@ function tapFact(id, label, value, dataId) {
   const row = h('div', { class: 'fact mp-tap' + (open ? ' open' : ''), 'data-id': dataId, role: ed ? 'button' : null, tabindex: ed ? 0 : null,
     'aria-expanded': ed ? String(open) : null, onClick: ed && !EDIT ? () => { OPEN = open ? null : id; draw(true); } : null },
     h('dt', { dir: 'auto' }, label), h('dd', { dir: 'auto' }, value));
+  if (EDIT && ed) return [h('div', { class: 'fact mp-edit-row', 'data-id': dataId }, h('dt', { dir: 'auto' }, label), h('dd', {}, inlineEditor(id, ed)))];
   return open && ed ? [row, inlineEditor(id, ed)] : [row];
 }
 function inlineEditor(id, ed) {
-  const done = async (patch) => { if (!EDIT) OPEN = null; if (patch) { P.me = await PD.saveProfile(P.me, lang, patch); toast('Saved'); } draw(true); };
+  const done = async (patch) => {
+    if (EDIT) { if (patch) { P.me = await PD.saveProfile(P.me, lang, patch); toast('Saved', 1200); } return; } // stay open, no redraw
+    OPEN = null; if (patch) { P.me = await PD.saveProfile(P.me, lang, patch); toast('Saved'); } draw(true);
+  };
   const box = h('div', { class: 'mp-inline', 'data-id': 'profile.inline-editor' });
   if (ed.type === 'iam') {
     box.append(bubbles({ options: [['guy', 'Guy'], ['girl', 'Girl']], selected: [store.getPrefs().iAm], multi: false, dataId: 'profile.inline-choice',
@@ -401,4 +410,58 @@ function inlineEditor(id, ed) {
     h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
     h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: () => done(ed.set(cur)) }, 'Done')));
   return box;
+}
+
+// ---------- Section forms (pencil on summary, About, Looking for, References, own sections) ----------
+function secForm(key, dataId) {
+  const v = PD.view(P.me, lang), c = v.contact;
+  const id = dataId + '-form';
+  const row = (label, el) => h('label', { class: 'mp-frow' }, h('span', { class: 'mp-flabel' }, label), el);
+  const tin = (val, name, extra = {}) => h('input', { class: 'input', dir: 'auto', value: val || '', 'data-id': id + '.' + name, ...extra });
+  const tarea = (val, name, rows = 5) => { const t = h('textarea', { class: 'input mp-farea', dir: 'auto', rows, 'data-id': id + '.' + name }); t.value = val || ''; return t; };
+  const t = (x) => (x || '').trim();
+  let body = [], collect;
+  if (key === 'summary') {
+    const f = { name: tin(v.name, 'name'), age: tin(v.age, 'age', { inputmode: 'numeric' }), city: tin(v.city, 'city'), occupation: tin(v.occupation, 'work'),
+      intro: tin(v.intro, 'intro'), phone: tin(c.phone, 'phone', { type: 'tel' }), email: tin(c.email, 'email', { type: 'email' }) };
+    body = [row('Name', f.name), h('div', { class: 'mp-fgrid' }, row('Age', f.age), row('City', f.city)), row('Work / learning', f.occupation),
+      row('One-line intro', f.intro), h('div', { class: 'mp-fgrid' }, row('My phone', f.phone), row('My email', f.email))];
+    collect = () => ({ name: t(f.name.value), age: t(f.age.value), city: t(f.city.value), occupation: t(f.occupation.value), intro: t(f.intro.value),
+      contact: { ...c, phone: store.cleanPhone(t(f.phone.value)), email: t(f.email.value) } });
+  } else if (key === 'about' || key === 'looking') {
+    const a = tarea(v[key], key, 6); body = [a]; collect = () => ({ [key]: a.value.trim() });
+  } else if (key === 'refs') {
+    const inqName = tin(c.inquiriesName, 'inquiries-name'), inqPhone = tin(c.inquiriesPhone, 'inquiries-phone', { type: 'tel' });
+    const refs = (v.references || []).map(r => ({ ...r }));
+    const list = h('div', { class: 'mp-frefs' });
+    const paint = () => {
+      list.innerHTML = '';
+      refs.forEach((r, i) => {
+        const nm = tin(r.name, 'ref-name', { placeholder: 'Name', 'aria-label': 'Reference name', onInput: (e) => { r.name = e.target.value; } });
+        const rel = tin(r.relation, 'ref-relation', { placeholder: 'Relation', 'aria-label': 'Relation', onInput: (e) => { r.relation = e.target.value; } });
+        const ph = tin(r.phone, 'ref-phone', { type: 'tel', placeholder: 'Phone', 'aria-label': 'Reference phone', onInput: (e) => { r.phone = e.target.value; } });
+        list.append(h('div', { class: 'mp-fref', 'data-id': id + '.reference' }, nm, h('div', { class: 'mp-fgrid' }, rel, ph),
+          h('button', { type: 'button', class: 'linkish danger-text', 'data-id': id + '.ref-remove', onClick: () => { refs.splice(i, 1); paint(); } }, 'Remove')));
+      });
+    };
+    paint();
+    body = [h('div', { class: 'mp-sub' }, 'Inquiries'), h('div', { class: 'mp-fgrid' }, row('Name', inqName), row('Phone', inqPhone)),
+      h('div', { class: 'mp-sub' }, 'References'), list,
+      h('button', { type: 'button', class: 'btn small', 'data-id': id + '.ref-add', onClick: () => { refs.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); paint(); list.querySelector('.mp-fref:last-child input')?.focus(); } }, 'Add a reference')];
+    collect = () => ({ contact: { ...c, inquiriesName: t(inqName.value), inquiriesPhone: store.cleanPhone(t(inqPhone.value)) },
+      references: refs.filter(r => t(r.name)).map(r => ({ ...r, name: t(r.name), relation: t(r.relation), phone: store.cleanPhone(t(r.phone)) })) });
+  } else if (key.startsWith('sec:')) {
+    const sid = key.slice(4), s0 = v.sections.find(x => x.id === sid) || {};
+    const title = tin(s0.title, 'section-title'), text = tarea(s0.text, 'section-text', 5);
+    const shareBox = h('input', { type: 'checkbox', checked: s0.share !== false || null, 'data-id': id + '.section-share' });
+    body = [row('Title', title), text, h('label', { class: 'share-tick' }, shareBox, h('span', {}, 'Include when sharing the full profile'))];
+    collect = () => ({ sections: v.sections.map(x => x.id === sid ? { ...x, title: t(title.value) || x.title, text: text.value.trim(), share: shareBox.checked } : x) });
+  }
+  const close = () => { SEC = null; draw(true); };
+  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body,
+    h('div', { class: 'mp-inline-actions' },
+      h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => { P.me = await PD.saveProfile(P.me, lang, collect()); toast('Saved'); close(); } }, 'Save')));
+  setTimeout(() => form.querySelector('input,textarea')?.focus({ preventScroll: true }), 30);
+  return form;
 }
