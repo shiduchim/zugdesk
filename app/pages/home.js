@@ -405,7 +405,7 @@ function noteCard(n) {
   const links = N.linksOf(n, D);
   const pin = h('button', { type: 'button', class: 'pin-text corner', 'aria-pressed': n.pinned ? 'true' : 'false', 'data-id': 'home.note-pin',
     onClick: async (e) => { e.stopPropagation(); await N.togglePin(n); toast(n.pinned ? 'Unpinned' : 'Pinned'); } }, n.pinned ? 'Unpin' : 'Pin');
-  const linkRow = links.length ? h('span', { class: 'note-links' }, links.map((l, i) => [i ? ', ' : '', h('a', { href: l.href, dir: 'auto', onClick: (e) => e.stopPropagation() }, l.label)])) : h('span', { class: 'note-links muted' }, 'Note');
+  const linkRow = links.length ? h('span', { class: 'note-links' }, links.map((l, i) => [i ? ', ' : '', h('a', { href: l.href, dir: 'auto', onClick: (e) => e.stopPropagation() }, l.label)])) : null;
   if (!open) {
     const card = h('article', { class: `note-card tone-${n.color || 'plain'}`, 'data-note': n.id, 'data-id': 'home.note',
       onClick: (e) => { if (!fine() || e.target.closest('a,button')) return; expand(n.id); } },
