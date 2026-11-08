@@ -157,3 +157,28 @@ dialog.form-sheet.tall .sheet-body{flex:1}
 .mail-link{color:var(--email-color)}
 .tel-link svg,.mail-link svg{width:14px;height:14px;flex:none}
 .reach{display:flex;flex-wrap:wrap;column-gap:14px;row-gap:0}
+
+/* ---- Claude-style shell (Settings → Screen layout, being tested) ----
+   Menu icon top-left, page name, Settings top-right. No bottom menu. The top bar slides
+   away while scrolling down; --topbar-height follows it so sticky page parts move up too. */
+#menu-btn{display:none}
+.topbar{transition:transform .2s ease}
+body.shell-claude{--nav-height:0px;--topbar-height:var(--shell-bar)}
+body.shell-claude .bottom-nav{display:none}
+body.shell-claude #menu-btn{display:inline-flex;margin-left:-10px}
+body.shell-claude .topbar{height:calc(var(--shell-bar) + var(--safe-top));border-bottom-color:transparent}
+body.shell-claude .topbar .brand{display:none}
+body.shell-claude .topbar .title{display:none} /* each page already shows its own heading */
+body.shell-claude.bar-hidden{--topbar-height:0px}
+body.shell-claude.bar-hidden .topbar{transform:translateY(-100%)}
+body.shell-claude main.content{padding-top:var(--gap)}
+.drawer-backdrop{position:fixed;inset:0;z-index:40;background:var(--backdrop);opacity:0;transition:opacity .2s}
+.drawer{position:fixed;top:0;bottom:0;left:0;z-index:41;width:var(--drawer-width);max-width:85vw;background:var(--bg);box-shadow:var(--shadow-lg);padding:calc(var(--safe-top) + 6px) 8px calc(var(--safe-bottom) + 12px);display:flex;flex-direction:column;gap:2px;transform:translateX(-100%);transition:transform .2s ease;overflow-y:auto}
+body.drawer-open .drawer{transform:none}
+body.drawer-open .drawer-backdrop{opacity:1}
+.drawer-head{display:flex;align-items:center;justify-content:space-between;padding:0 0 8px 10px;margin-bottom:4px;border-bottom:1px solid var(--border)}
+.drawer-brand{font-weight:600;font-size:var(--font-lg)}
+.drawer-item{display:flex;align-items:center;gap:12px;min-height:var(--touch-min);padding:0 12px;border-radius:var(--radius);color:var(--text);text-decoration:none;font-weight:500}
+.drawer-item svg{width:var(--icon);height:var(--icon);color:var(--muted)}
+.drawer-item[aria-current="page"]{background:var(--selected-bg);font-weight:600}
+.drawer-item[data-id="drawer.settings"]{margin-top:auto}

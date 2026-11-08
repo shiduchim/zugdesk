@@ -52,6 +52,8 @@
   /* layout */
   --topbar-height:48px;
   --nav-height:60px;
+  --shell-bar:44px;             /* Claude-style top bar height */
+  --drawer-width:280px;         /* Claude-style side menu width */
   --nav-icon:22px;
   --nav-font:11px;
   --content-max:720px;

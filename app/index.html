@@ -28,6 +28,9 @@
 <body>
 <div class="app" id="app">
   <header class="topbar" data-id="shell.topbar">
+    <button type="button" class="icon-btn" id="menu-btn" data-id="shell.menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h10"/></svg>
+    </button>
     <a class="brand" href="#/home" data-id="shell.brand" aria-label="ZugDesk home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></svg>
       ZugDesk
@@ -41,6 +44,8 @@
   <main class="content" id="content" data-id="shell.content">
     <p class="muted" style="padding:24px 0">Loading…</p>
   </main>
+ <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <nav class="drawer" id="drawer" data-id="shell.drawer" aria-label="Menu" hidden></nav>
   <nav class="bottom-nav" id="nav" data-id="shell.nav" aria-label="Main"><div class="inner"></div></nav>
 </div>
 <noscript><p style="padding:16px">ZugDesk needs JavaScript turned on.</p></noscript>
