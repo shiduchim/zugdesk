@@ -121,7 +121,8 @@ function profileTab(v) {
         ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
         ...tapFact('age', 'Age', v.age, 'profile.fact-age'), ...tapFact('city', 'City', v.city, 'profile.fact-city'), ...tapFact('work', 'Work / learning', v.occupation, 'profile.fact-work'),
         // one list in order: "name: value" rows and one-line facts (no value) together, newest last
-        ...v.facts.filter(f => f.value || f.label).flatMap(f => f.value ? tapFact(f.id, f.label, f.value, 'profile.fact')
+        ...v.facts.filter(f => f.value || f.label).flatMap(f => isCustom(f.id) ? customFact(f)
+          : f.value ? tapFact(f.id, f.label, f.value, 'profile.fact')
           : [h('div', { class: 'fact fact-line', 'data-id': 'profile.fact-line' }, h('dd', { dir: 'auto' }, f.label))]),
         addFactRow())),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
@@ -335,6 +336,42 @@ function addFactRow() {
         h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.fact-add-cancel', onClick: () => cancelFacts() }, 'Cancel'),
         h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; SNAP = null; draw(true); } }, 'Save')) : null,
       h('a', { class: 'linkish mp-add-fact-full', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Full edit screen')));
+}
+// Facts the owner added (Add a fact): tap to change the name / text, or delete it.
+const isCustom = (id) => (P.me?.facts || []).some(f => f.id === id);
+function customFact(f) {
+  const open = OPEN === f.id || EDIT;
+  const show = f.value ? [h('dt', { dir: 'auto' }, f.label), h('dd', { dir: 'auto' }, f.value)] : [h('dd', { dir: 'auto' }, f.label)];
+  const row = h('div', { class: 'fact mp-tap' + (f.value ? '' : ' fact-line') + (open ? ' open' : ''), 'data-id': 'profile.fact-custom', role: 'button', tabindex: 0,
+    'aria-expanded': String(open), onClick: EDIT ? null : () => { OPEN = OPEN === f.id ? null : f.id; draw(true); } }, ...show);
+  if (!open) return [row];
+  const lab = h('input', { class: 'input', dir: 'auto', value: f.value ? f.label : '', placeholder: 'Name (optional)', 'aria-label': 'Fact name', 'data-id': 'profile.fact-custom-label' });
+  const val = h('input', { class: 'input', dir: 'auto', value: f.value ? f.value : f.label, placeholder: 'Fact', 'aria-label': 'Fact', 'data-id': 'profile.fact-custom-value' });
+  const patchFor = () => {
+    const l = lab.value.trim(), x = val.value.trim();
+    if (!l && !x) return null;
+    const nf = { ...f, label: l || x, value: l ? x : '' };
+    return { facts: (P.me.facts || []).map(y => y.id === f.id ? nf : y) };
+  };
+  const saveNow = async (quiet) => { const pt = patchFor(); if (!pt) return; P.me = await PD.saveProfile(P.me, lang, pt); if (!quiet) toast('Saved'); };
+  const del = async () => {
+    if (!(await confirmDialog({ title: 'Delete this fact?', text: f.value ? `${f.label}: ${f.value}` : f.label, ok: 'Delete', danger: true, dataId: 'profile.fact-delete-dialog' }))) return;
+    P.me = await PD.saveProfile(P.me, lang, { facts: (P.me.facts || []).filter(y => y.id !== f.id) });
+    if (OPEN === f.id) OPEN = null; toast('Fact deleted'); draw(true);
+  };
+  const delBtn = h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'profile.fact-delete', onClick: del }, 'Delete');
+  const box = h('div', { class: 'mp-inline mp-custom-edit', 'data-id': 'profile.fact-custom-editor' }, h('div', { class: 'mp-add-fact-row' }, lab, val));
+  if (EDIT) { // editing all facts: saves as you leave a box; Cancel in the top bar undoes
+    lab.addEventListener('change', () => saveNow(true)); val.addEventListener('change', () => saveNow(true));
+    box.firstChild.classList.add('with-del'); box.firstChild.append(delBtn); return [h('div', { class: 'fact mp-edit-row fact-line', 'data-id': 'profile.fact-custom' }, h('dd', {}, box))];
+  }
+  const save = async () => { await saveNow(); OPEN = null; draw(true); };
+  [lab, val].forEach(i => i.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } }));
+  setTimeout(() => val.focus(), 30);
+  box.append(delBtn, h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
+    h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => { OPEN = null; draw(true); } }, 'Cancel'),
+    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')));
+  return [row, box];
 }
 function tapFact(id, label, value, dataId) {
   if (!value) return [];
