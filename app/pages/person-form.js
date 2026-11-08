@@ -35,7 +35,8 @@ export async function render(container, params = {}, path = '') {
     drafts.set(key, fresh);
   }
   d = drafts.get(key);
-  if (params.section) { d.tab = 'details'; d.jumpTo = params.section; }
+  if (params.section === 'basic') d.tab = 'basic';
+  else if (params.section) { d.tab = 'details'; d.jumpTo = params.section; }
   const [choices, cats, contacts, people, srcs] = await Promise.all([
     store.getChoices(), store.getPersonCategories(), store.contacts.list(), store.people.list(), store.sources.list()]);
   if (token !== gen) return;
@@ -55,7 +56,7 @@ async function makeDraft({ key, editing, params, path }) {
   if (editing) {
     const p = await store.people.get(params.id);
     if (!p) return null;
-    base.personId = p.id; base.kind = p.kind || ''; base.tab = 'basic';
+    base.personId = p.id; base.kind = p.kind || ''; base.tab = 'details'; // already saved: edit opens on Detailed Info
     base.href = `#/people/${encodeURIComponent(p.id)}/edit`;
     base.p = { ...base.p, ...JSON.parse(JSON.stringify(p)) };
     base.p.answers = base.p.answers || {};
