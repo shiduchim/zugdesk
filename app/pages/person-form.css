@@ -117,3 +117,10 @@ body.focus-mode main.content{margin-left:auto;padding-top:0;padding-bottom:var(-
 /* Body type: one column in Edit profile */
 body.focus-mode [data-id="person.body-type"]{flex-direction:column;align-items:stretch}
 body.focus-mode [data-id="person.body-type"] .bubble{width:100%;justify-content:flex-start;text-align:start}
+.me-two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.me-sub{font-size:var(--font-sm);font-weight:600;color:var(--text)}
+.me-ref{gap:6px;padding-bottom:8px}
+.me-body .ap-sec{gap:8px}
+.me-body .field{gap:3px}
+.me-body .field label{font-size:var(--font-sm)}
+@media (max-width:340px){.me-two{grid-template-columns:minmax(0,1fr)}}

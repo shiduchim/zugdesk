@@ -694,7 +694,7 @@ const ME_SKIP = new Set(['contacts', 'known']);
 function paintMe() {
   const visible = ctx.cats.filter(c => !c.hidden && !ME_SKIP.has(c.key));
   const jumps = [['me-basic', 'Basics'], ...visible.map(c => [c.key, c.key === 'about' ? 'About me' : (c.jump || c.name)]),
-    ['me-facts', 'More facts'], ['me-contact', 'Contact'], ['me-refs', 'References'], ['me-sections', 'Sections']];
+    ['me-facts', 'More facts'], ['me-refs', 'Inquiries · References'], ['me-sections', 'Sections']];
   const cancel = async () => {
     if (d.dirty && !(await confirmDialog({ title: 'Leave without saving?', text: 'Your changes on this page are lost.', ok: 'Leave', danger: true, dataId: 'me-form.leave-dialog' }))) return;
     drafts.delete('me'); navigate('/profile');
@@ -715,10 +715,12 @@ function paintMe() {
             d.kind = k; touch(); store.setPref('iAm', k); paint({ keepScroll: true });
           } }, 'I am a ' + l.toLowerCase()))),
         textField('Name', 'name', { autocomplete: 'off', placeholder: 'Full name' }, 'me-form.name'),
+        h('div', { class: 'me-two' }, mIn('Phone', d.p.contact, 'phone', 'me-form.my-phone', { inputmode: 'tel' }), mIn('Email', d.p.contact, 'email', 'me-form.my-email', { type: 'email', inputmode: 'email' })),
+        h('p', { class: 'note' }, 'Phone and email are sent only if you tick them when sharing.'),
         textField('Age', 'age', { inputmode: 'numeric', class: 'input short' }, 'me-form.age'),
         areaField('One-line introduction', 'intro', 'e.g. An architect who loves good conversations…', 'me-form.intro')),
       ...visible.map(c => c.key === 'about' ? meAbout(c) : section(c)),
-      meFacts(), meContact(), meRefs(), meSections(),
+      meFacts(), meRefs(), meSections(),
       newCategory(),
       h('div', { class: 'me-foot', 'data-id': 'me-form.footer' },
         h('button', { type: 'button', class: 'linkish manage', 'data-id': 'me-form.manage-choices', onClick: async () => {
@@ -747,21 +749,22 @@ function meFacts() {
       mRemove('me-form.fact-remove', () => { d.p.facts = d.p.facts.filter(x => x !== f); }))),
     h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-fact', onClick: () => { d.p.facts.push({ id: store.newId('f'), label: '', value: '' }); paint({ keepScroll: true }); const a = root.querySelectorAll('[data-id="me-form.fact-label"]'); a[a.length - 1]?.focus(); } }, 'Add a fact'));
 }
-function meContact() {
-  const c = d.p.contact;
-  return block({ key: 'me-contact', name: 'Contact' },
-    mIn('For inquiries — name', c, 'inquiriesName', 'me-form.inq-name', { placeholder: 'e.g. Mrs. Cohen (mother)' }),
-    mIn('For inquiries — phone', c, 'inquiriesPhone', 'me-form.inq-phone', { inputmode: 'tel' }),
-    mIn('My phone (you choose)', c, 'phone', 'me-form.my-phone', { inputmode: 'tel' }),
-    mIn('My email (you choose)', c, 'email', 'me-form.my-email', { type: 'email', inputmode: 'email' }));
-}
 function meRefs() {
-  return block({ key: 'me-refs', name: 'References' },
-    ...d.p.references.map(r => h('div', { class: 'me-item', 'data-id': 'me-form.reference' },
-      mIn('Name', r, 'name', 'me-form.reference-name'), mIn('How they know me', r, 'relation', 'me-form.reference-relation'),
-      mIn('Phone', r, 'phone', 'me-form.reference-phone', { inputmode: 'tel' }), mIn('Private note — only me', r, 'privateNote', 'me-form.reference-note'),
-      mRemove('me-form.reference-remove', () => { d.p.references = d.p.references.filter(x => x !== r); }))),
-    h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-reference', onClick: () => { d.p.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); paint({ keepScroll: true }); const a = root.querySelectorAll('[data-id="me-form.reference-name"]'); a[a.length - 1]?.focus(); } }, 'Add a reference'));
+  const c = d.p.contact, refs = d.p.references;
+  if (!refs.some(r => !(r.name || '').trim())) refs.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); // one empty row always open
+  return block({ key: 'me-refs', name: 'Inquiries and references' },
+    h('div', { class: 'me-sub' }, 'Who to call about me'),
+    h('div', { class: 'me-two' },
+      mIn('Name', c, 'inquiriesName', 'me-form.inq-name', { placeholder: 'e.g. Mrs. Cohen (mother)' }),
+      mIn('Phone', c, 'inquiriesPhone', 'me-form.inq-phone', { inputmode: 'tel' })),
+    h('div', { class: 'me-sub' }, 'References'),
+    ...refs.map(r => h('div', { class: 'me-item me-ref', 'data-id': 'me-form.reference' },
+      h('div', { class: 'me-two' }, mIn('Name', r, 'name', 'me-form.reference-name'), mIn('Phone', r, 'phone', 'me-form.reference-phone', { inputmode: 'tel' })),
+      h('div', { class: 'me-two' }, mIn('How they know me', r, 'relation', 'me-form.reference-relation'), mIn('Private note', r, 'privateNote', 'me-form.reference-note')),
+      (r.name || '').trim() ? mRemove('me-form.reference-remove', () => { d.p.references = d.p.references.filter(x => x !== r); }) : null)),
+    h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-reference', onClick: () => {
+      d.p.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); paint({ keepScroll: true });
+      const a = root.querySelectorAll('[data-id="me-form.reference-name"]'); a[a.length - 1]?.focus(); } }, 'Add another reference'));
 }
 function meSections() {
   return block({ key: 'me-sections', name: 'Your own sections' },

@@ -61,7 +61,7 @@ function header(v) {
   return h('div', { class: 'mp-head', 'data-id': 'profile.header' },
     h('h1', { dir: 'auto' }, v.name || 'My Profile'),
     h('span', { class: 'spacer' }),
-    h('a', { class: 'btn', href: '#/profile/edit', 'data-id': 'profile.edit' }, 'Edit profile'),
+    h('a', { class: 'icon-btn bordered', href: '#/profile/edit', 'aria-label': 'Edit profile', title: 'Edit profile', 'data-id': 'profile.edit', html: icon('edit') }),
     h('button', { type: 'button', class: 'btn primary', 'data-id': 'profile.share', onClick: () => share() }, 'Share'));
 }
 async function share(opts) { if (shareOpen) return; shareOpen = true; try { await openShare(opts); } finally { shareOpen = false; } }
@@ -98,7 +98,7 @@ function profileTab(v) {
   const c = v.contact;
   const iAm = store.getPrefs().iAm;
   return [
-    !P.me ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Tap “Edit profile” to fill it in. Everything stays on this phone until you choose to share it.') : null,
+    !P.me ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Tap the pencil at the top to fill it in. Everything stays on this phone until you choose to share it.') : null,
     h('div', { class: 'pc-summary', 'data-id': 'profile.summary' },
       h('div', { class: 'avatar lg' }, P.me?.name ? store.initials({ name: P.me.name }) : 'ME'),
       h('div', { class: 'pc-summary-text' },
@@ -112,19 +112,19 @@ function profileTab(v) {
         ...v.facts.map(f => fact(f.label, f.value, 'profile.fact')))),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
     sec(l.looking, 'mp-looking', 'profile.looking', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
-    sec('Contact', 'mp-contact', 'profile.contact', 'me-contact',
+    sec('Contact', 'mp-contact', 'profile.contact', 'me-basic',
       h('dl', { class: 'facts mp-contact' },
-        fact(l.inquiries, c.inquiriesName || c.inquiriesPhone ? [c.inquiriesName, c.inquiriesName && c.inquiriesPhone ? h('br') : null, c.inquiriesPhone] : '', 'profile.fact-inquiries', h('span', { class: 'priv' }, 'shared')),
-        fact(l.phone, c.phone, 'profile.fact-phone', h('span', { class: 'priv' }, 'you choose')),
-        fact(l.email, c.email, 'profile.fact-email', h('span', { class: 'priv' }, 'you choose')))),
+        fact('Phone', c.phone, 'profile.fact-phone'),
+        fact('Email', c.email, 'profile.fact-email'),
+        fact(l.inquiries, c.inquiriesName || c.inquiriesPhone ? [c.inquiriesName, c.inquiriesName && c.inquiriesPhone ? ' · ' : '', c.inquiriesPhone].join('') : '', 'profile.fact-inquiries'))),
     sec('References', 'mp-refs', 'profile.references', 'me-refs',
-      (v.references || []).length ? h('dl', { class: 'facts' }, v.references.map(r => fact(r.name, [r.relation, r.phone].filter(Boolean).join(' · '), 'profile.reference', h('span', { class: 'priv' }, 'you choose'))))
+      (v.references || []).length ? h('dl', { class: 'facts' }, v.references.map(r => fact(r.name, [r.relation, r.phone].filter(Boolean).join(' · '), 'profile.reference')))
         : h('p', {}, notYet('No references yet'))),
     ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', 'me-sections',
       h('p', { dir: 'auto', class: 'prewrap' }, s.text || notYet()),
       s.share === false ? h('p', { class: 'note' }, 'Kept out of the full profile when sharing.') : null)),
     sec('Files', 'mp-files', 'profile.files-sec', null,
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Photos and résumé'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)} · you choose`), ico('chevron'))),
+      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Photos and résumé'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)}`), ico('chevron'))),
     h('div', { class: 'stamp pc-stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet'),
   ];
 }
