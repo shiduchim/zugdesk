@@ -33,6 +33,12 @@ export async function render(root) {
   root.append(
     h('div', { class: 'page-head' }, h('h1', {}, 'Settings')),
 
+    section('Appearance', 'settings.appearance',
+      h('div', { class: 'radio-list', 'data-id': 'settings.theme-choice' },
+        radio('theme', 'light', 'Light', 'Warm light colours', prefs.theme || 'light', (v) => store.setPref('theme', v)),
+        radio('theme', 'dark', 'Dark', 'Dark background, light text — easier at night', prefs.theme || 'light', (v) => store.setPref('theme', v)),
+        radio('theme', 'auto', 'Match my phone', 'Switches with your phone’s own light / dark setting', prefs.theme || 'light', (v) => store.setPref('theme', v)))),
+
     section('Help Claude edit the app', 'settings.labels',
       toggle('settings.show-labels', 'Show labels', 'Overlays every element’s name. Tap a label to copy it, then paste it in your request (e.g. “contacts.add-btn bigger”).',
         prefs.showLabels, (v) => { store.setPref('showLabels', v); toast(v ? 'Labels on — tap one to copy its name' : 'Labels off'); })),

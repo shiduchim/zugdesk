@@ -70,6 +70,7 @@ const ALL = [contacts, people, notes, events, followUps, folders, sources, inter
 const PREF_KEY = 'zugdesk.prefs';
 const PREF_DEFAULTS = {
   showLabels: false,
+  theme: 'light',            // 'light' | 'dark' | 'auto' (match phone)
   shellStyle: 'tabs',        // 'tabs' = top bar + bottom menu; 'claude' = menu icon top-left, no bottom menu (being tested)
   navArrangement: 'three',   // 'three' = Home/Contacts/Shidduchim (+Profile); 'four' adds People & Ideas
   contactsLayout: 'a',       // phone view: a | split | rail | tabs | list | inbox (spec/contacts.md CT-13)
