@@ -73,3 +73,8 @@
 .chip.st-shidduch{background:var(--ok-bg);color:var(--ok)}
 .chip.st-yes{background:var(--ok-bg);color:var(--ok)}
 .dock .pc-status{border:0;padding:0;margin:0;background:none;width:100%}
+
+/* Hebrew names stay left-aligned above the age in Ideas rows (owner request); text still reads right-to-left inside */
+.person-row .row-title,.person-row .row-sub{text-align:left}
+.person-row .row-main{align-items:flex-start}
+.person-row .row-title[dir="auto"],.person-row .row-sub[dir="auto"]{unicode-bidi:plaintext}
