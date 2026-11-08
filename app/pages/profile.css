@@ -125,3 +125,8 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .pc-sec .facts .fact.fact-line{grid-template-columns:minmax(0,1fr)}
 
 .mp-more{display:flex;flex-direction:column;gap:2px}
+
+.mp-tap{cursor:pointer;border-radius:var(--radius)}
+.mp-tap:hover,.mp-tap.open{background:var(--surface-2)}
+.mp-inline{display:flex;flex-direction:column;gap:8px;padding:8px 0 12px}
+.mp-inline-actions{display:flex;justify-content:flex-end;gap:8px}

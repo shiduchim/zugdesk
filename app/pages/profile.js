@@ -2,7 +2,8 @@
 // my profile short tab.html, Claude look). One owner record; the tabs are views of it.
 // Private notes live in the shared notes store (me: true) and never enter outgoing text.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, promptText } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, promptText, bubbles } from '../js/ui.js';
+import { listType, GIRLS_ONLY } from './people-data.js';
 import { navigate } from '../js/router.js';
 import * as PD from './profile-data.js';
 import * as N from './notes-data.js';
@@ -34,7 +35,8 @@ export async function render(container, params) {
 
 async function draw(keep = false) {
   const token = ++gen;
-  const [p, nd] = await Promise.all([PD.loadProfile(), N.loadNotes()]);
+  const [p, nd, ch] = await Promise.all([PD.loadProfile(), N.loadNotes(), store.getChoices()]);
+  CH = ch;
   if (token !== gen || !root) return;
   P = p; ND = nd;
   lang = P.me?.lang || 'en'; // the profile is written in one language; each short version chooses its own
@@ -108,9 +110,9 @@ function profileTab(v) {
       h('a', { class: 'icon-btn', href: editAt('me-basic'), 'aria-label': 'Edit summary', 'data-id': 'profile.summary-edit', html: icon('edit') })),
     sec(l.facts, 'mp-facts', 'profile.facts', 'personal',
       h('dl', { class: 'facts' },
-        fact('I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
-        fact('Age', v.age, 'profile.fact-age'), fact('City', v.city, 'profile.fact-city'), fact('Work / learning', v.occupation, 'profile.fact-work'),
-        ...v.facts.filter(f => f.value).map(f => fact(f.label, f.value, 'profile.fact')),
+        ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
+        ...tapFact('age', 'Age', v.age, 'profile.fact-age'), ...tapFact('city', 'City', v.city, 'profile.fact-city'), ...tapFact('work', 'Work / learning', v.occupation, 'profile.fact-work'),
+        ...v.facts.filter(f => f.value).flatMap(f => tapFact(f.id, f.label, f.value, 'profile.fact')),
         v.facts.some(f => !f.value) ? h('div', { class: 'fact', 'data-id': 'profile.fact-more' }, h('dt', {}, 'More facts'),
           h('dd', { dir: 'auto', class: 'mp-more' }, v.facts.filter(f => !f.value).map(f => h('div', {}, f.label)))) : null)),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
@@ -333,4 +335,65 @@ function filesInline() {
   });
   draw();
   return wrap;
+}
+
+// ---------- Tap a fact to change it right here (owner request, tweak mode) ----------
+// One row open at a time. One-choice lists save on tap; several-choice lists and text use Done.
+let CH = {}, OPEN = null;
+const DKEY = { 'd:Languages': 'languages', 'd:Status': 'pStatus', 'd:Religious level': 'pLevel', 'd:Tzniut': 'pTzniut',
+  'd:Religious background': 'pBackground', 'd:Religious': 'pReligious', 'd:Character & lifestyle': 'pTraits', 'd:Body type': 'pBody' };
+function editorFor(id) {
+  const me = P.me || {}, A = me.answers || {};
+  const text = (get, set) => ({ type: 'text', get, set });
+  const choice = (key) => ({ type: 'choice', key, get: () => key === 'languages' ? (me.languages || []) : [].concat(A[key] ?? []).filter(Boolean),
+    set: (val) => key === 'languages' ? { languages: val } : { answers: { ...A, [key]: val } } });
+  if (id === 'i-am') return { type: 'iam' };
+  if (id === 'age') return text(() => me.age, (x) => ({ age: x }));
+  if (id === 'city') return text(() => me.city, (x) => ({ city: x }));
+  if (id === 'work') return text(() => me.occupation, (x) => ({ occupation: x }));
+  if (id === 'd:Other religious details') return text(() => me.religiousOther, (x) => ({ religiousOther: x }));
+  if (id === 'd:maxAge') return text(() => me.maxAge, (x) => ({ maxAge: x }));
+  if (DKEY[id]) return choice(DKEY[id]);
+  if (id.startsWith('d:')) return choice(id.slice(2));
+  const f = (me.facts || []).find(x => x.id === id);
+  if (f) return text(() => f.value, (x) => ({ facts: me.facts.map(y => y.id === id ? { ...y, value: x } : y) }));
+  return null;
+}
+function tapFact(id, label, value, dataId) {
+  if (!value) return [];
+  const open = OPEN === id, ed = editorFor(id);
+  const row = h('div', { class: 'fact mp-tap' + (open ? ' open' : ''), 'data-id': dataId, role: ed ? 'button' : null, tabindex: ed ? 0 : null,
+    'aria-expanded': ed ? String(open) : null, onClick: ed ? () => { OPEN = open ? null : id; draw(true); } : null },
+    h('dt', { dir: 'auto' }, label), h('dd', { dir: 'auto' }, value));
+  return open && ed ? [row, inlineEditor(id, ed)] : [row];
+}
+function inlineEditor(id, ed) {
+  const done = async (patch) => { OPEN = null; if (patch) { P.me = await PD.saveProfile(P.me, lang, patch); toast('Saved'); } draw(true); };
+  const box = h('div', { class: 'mp-inline', 'data-id': 'profile.inline-editor' });
+  if (ed.type === 'iam') {
+    box.append(bubbles({ options: [['guy', 'Guy'], ['girl', 'Girl']], selected: [store.getPrefs().iAm], multi: false, dataId: 'profile.inline-choice',
+      onChange: (v) => { if (v) store.setPref('iAm', v); done(null); } }));
+    return box;
+  }
+  if (ed.type === 'text') {
+    const inp = h('input', { class: 'input', dir: 'auto', value: ed.get() || '', 'data-id': 'profile.inline-text' });
+    const save = () => done(ed.set(inp.value.trim()));
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+    setTimeout(() => inp.focus(), 30);
+    box.append(inp, h('div', { class: 'mp-inline-actions' },
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Done')));
+    return box;
+  }
+  const type = listType(ed.key), multi = type !== 'single';
+  const girl = store.getPrefs().iAm === 'girl', only = GIRLS_ONLY[ed.key] || [];
+  const opts = (CH[ed.key] || []).filter(o => !o.hidden && (girl || !only.includes(o.v))).map(o => [o.v, o.v]);
+  let cur = ed.get();
+  for (const v of cur) if (!opts.some(o => o[0] === v)) opts.push([v, v]); // keep answers no longer in the list
+  box.append(bubbles({ options: opts, selected: cur, multi, dataId: 'profile.inline-choice',
+    onChange: (v) => { if (multi) cur = v; else done(ed.set(v ? [v] : [])); } }));
+  if (multi) box.append(h('div', { class: 'mp-inline-actions' },
+    h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
+    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: () => done(ed.set(cur)) }, 'Done')));
+  return box;
 }
