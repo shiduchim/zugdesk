@@ -28,7 +28,7 @@
 .ed-title{border:0;background:transparent;padding:2px 0;font-weight:600;font-size:var(--font-base);color:var(--text);min-height:32px;width:100%}
 .ed-title::placeholder{color:var(--muted);font-weight:500}
 .ed-title:focus{outline:none;border-bottom:1px solid var(--border)}
-.ed-wrap{position:relative;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+.ed-wrap{position:relative;border:1px solid var(--tone-edge,var(--border));border-radius:var(--radius);background:transparent}
 .ed-box{font:inherit;font-size:var(--font-base);line-height:1.6;padding:10px 12px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;letter-spacing:normal}
 .ed-mirror{position:absolute;inset:0;color:transparent;pointer-events:none;overflow:hidden;border:1px solid transparent}
 .ed-mirror mark{color:transparent;border-radius:var(--radius-sm)}
