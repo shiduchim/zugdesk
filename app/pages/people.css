@@ -72,3 +72,4 @@
 .chip.st-waiting{background:var(--warn-bg);color:var(--warn)}
 .chip.st-shidduch{background:var(--ok-bg);color:var(--ok)}
 .chip.st-yes{background:var(--ok-bg);color:var(--ok)}
+.dock .pc-status{border:0;padding:0;margin:0;background:none;width:100%}

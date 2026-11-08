@@ -2,7 +2,7 @@
 // My Profile (source/Shadchanim Offers.html). Reads the one shared person record; editing
 // opens the Add Person form. Interest never creates, ends or reopens a formal offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
@@ -53,10 +53,11 @@ async function draw(id, keepScroll = false) {
     h('div', { class: 'pc-actions', 'data-id': 'person-card.actions' },
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.add-note', onClick: () => { setTab('notes'); setTimeout(() => root?.querySelector('[data-id="person-card.note-text"]')?.focus(), 120); } }, ico('message'), 'Add note'),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.follow-up', onClick: () => followUpSheet() }, ico('clock'), 'Follow-up')),
-    statusStrip(b),
     h('div', { class: 'pc-tabs', role: 'tablist', 'data-id': 'person-card.tabs' },
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l))),
-    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? offersTab(b) : notesTab(b)));
+    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? offersTab(b) : notesTab(b)),
+    // Status buttons stay on screen at the bottom (owner request); hidden while a section is being edited.
+    EDITF || SEC ? '' : dock('person-card.dock', statusStrip(b)));
   if (keepScroll) window.scrollTo(0, y);
 }
 

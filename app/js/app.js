@@ -3,6 +3,7 @@ import * as store from './store.js';
 import { route, start, currentPath } from './router.js';
 import { h, icon, toast } from './ui.js';
 import { setLabels } from './labels.js';
+import { watchDates } from './calendar.js';
 
 const NAV = {
   three: [
@@ -49,8 +50,8 @@ const $ = (s) => document.querySelector(s);
 function renderNav() {
   const prefs = store.getPrefs();
   const slim = prefs.shellStyle === 'slim';
-  // Slim icon bar: every section one tap away, Settings included, icons only (owner request).
-  const items = slim ? [...NAV.four, { path: '/settings', label: 'Settings', icon: 'settings', id: 'nav.settings' }] : (NAV[prefs.navArrangement] || NAV.three);
+  // Slim icon bar: every section one tap away, icons only (owner request). Settings is on Home.
+  const items = slim ? NAV.four : (NAV[prefs.navArrangement] || NAV.three); // slim: Settings is on Home, top right
   const inner = $('#nav .inner');
   inner.innerHTML = '';
   let path = currentPath();
@@ -153,7 +154,7 @@ async function boot() {
     if (ch.store === 'prefs' && ch.key === 'navArrangement') renderNav();
     if (ch.store === 'prefs' && ch.key === 'shellStyle') applyShell();
   });
-  applyShell(); wireShell();
+  applyShell(); wireShell(); watchDates();
 
   await start($('#content'), (path) => { renderNav(); setTitle(path); closeDrawer(); document.body.classList.remove('bar-hidden'); document.body.classList.toggle('focus-mode', path.startsWith('/profile/edit')); });
 

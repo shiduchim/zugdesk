@@ -201,3 +201,6 @@
   .ed-save{flex:1}
   .hist-line{grid-template-columns:52px minmax(0,1fr) auto;gap:6px}
 }
+
+.home-head{position:relative}
+.home-settings{position:absolute;top:-6px;right:-10px}

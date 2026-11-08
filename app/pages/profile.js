@@ -2,7 +2,7 @@
 // my profile short tab.html, Claude look). One owner record; the tabs are views of it.
 // Private notes live in the shared notes store (me: true) and never enter outgoing text.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, promptText, bubbles, telLink, mailLink } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, promptText, bubbles, telLink, mailLink, dock } from '../js/ui.js';
 import { listType, GIRLS_ONLY } from './people-data.js';
 import { navigate } from '../js/router.js';
 import * as PD from './profile-data.js';
@@ -53,7 +53,9 @@ async function draw(keep = false) {
       h('div', { class: 'pc-tabs mp-tabs', role: 'tablist', 'data-id': 'profile.tabs' },
         TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'profile.tab-' + k, onClick: () => setTab(k) }, l))),
       h('div', { class: 'mp-body', dir: PD.isRtl(lang) && tab !== 'notes' ? 'rtl' : null, 'data-id': 'profile.' + tab },
-        tab === 'profile' ? profileTab(v) : tab === 'short' ? shortTab(v) : notesTab(myNotes)))));
+        tab === 'profile' ? profileTab(v) : tab === 'short' ? shortTab(v) : notesTab(myNotes)),
+      tab !== 'notes' && !EDIT && !SEC ? dock('profile.dock', h('span', { class: 'grow note' }, 'Send your profile to a shadchan'),
+        h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'profile.dock-share', onClick: () => share() }, 'Share profile')) : null)));
   if (keep) window.scrollTo(0, y);
 }
 function setTab(k) { navigate(k === 'profile' ? '/profile' : '/profile/' + k, { replace: true }); }
@@ -64,7 +66,7 @@ function header(v) {
     h('h1', { dir: 'auto' }, v.name || 'My Profile'),
     h('span', { class: 'spacer' }),
     h('a', { class: 'icon-btn bordered', href: '#/profile/edit', 'aria-label': 'Edit profile', title: 'Edit profile', 'data-id': 'profile.edit', html: icon('edit') }),
-    h('button', { type: 'button', class: 'btn primary', 'data-id': 'profile.share', onClick: () => share() }, 'Share'));
+    h('button', { type: 'button', class: 'btn primary mp-share-top', 'data-id': 'profile.share', onClick: () => share() }, 'Share'));
 }
 async function share(opts) { if (shareOpen) return; shareOpen = true; try { await openShare(opts); } finally { shareOpen = false; } }
 

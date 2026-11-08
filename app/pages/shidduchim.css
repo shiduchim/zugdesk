@@ -197,3 +197,4 @@ a.sh-who:hover{text-decoration:underline}
 .sh-expand-btn svg{transform:rotate(90deg);transition:transform .15s}
 .sh-expand-btn.open svg{transform:rotate(-90deg)}
 .sh-match .sh-card-names{padding-right:30px}
+.sh-seg.next{opacity:.4}

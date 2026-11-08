@@ -35,6 +35,13 @@ export function segmentsDone(t, dates) {
   return done;
 }
 
+// Dates set up but not yet happened: their segments show lightly ("coming").
+export function segmentsNext(t, dates) {
+  const next = new Set();
+  for (const d of dates) { const n = dateNum(d); if (d.status === 'Arranged' && n >= 1 && n <= 8) next.add(n + 1); }
+  return next;
+}
+
 // Stage word on a card: Ended / Date n (latest arranged, else latest happened) / References / Offer.
 export function stageWord(t, dates) {
   if (t.phase === 'ended') return 'Ended';
@@ -62,12 +69,12 @@ export function whenNice(x) {
   if (!x) return 'Time not set';
   const d = new Date(x); if (isNaN(d)) return x;
   const sameYear = d.getFullYear() === new Date().getFullYear();
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: sameYear ? undefined : 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: sameYear ? undefined : 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 export function dateTime(x) {
   if (!x) return '';
   const d = new Date(x); if (isNaN(d)) return x;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 // datetime-local input value from a stored "when"
 export function toLocalInput(x) {

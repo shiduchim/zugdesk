@@ -73,7 +73,8 @@
   --rail-width:104px;                          /* narrow sidebar view */
   --desk-nav-width:200px;                      /* desktop: app navigation column */
   --desk-dir-width:360px;                      /* desktop: contact directory column */
-  --pane-height:calc(100dvh - var(--topbar-height) - var(--safe-top) - var(--nav-height) - var(--safe-bottom) - 12px);
+  --pane-height:calc(100dvh - var(--topbar-height) - var(--safe-top) - var(--nav-height) - var(--safe-bottom) - var(--dock-space) - 12px);
+  --dock-space:0px;             /* height kept free for a page's bottom dock (Contacts sets it) */
 }
 :root{
   /* Theme tokens — page CSS must use ONLY these (no raw colours, corners, shadows or fonts).

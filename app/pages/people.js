@@ -1,7 +1,7 @@
 // Ideas — every saved person (one record each), originals saved for later,
 // and unsaved Add Person drafts. A saved idea is not a formal shidduch offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, confirmDialog } from '../js/ui.js';
+import { h, icon, toast, confirmDialog, dock } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
 import { kindLabel, dateOnly, seekingKind } from './people-data.js';
 import { ideaStatus, latestByPerson } from './idea-flow.js';
@@ -56,8 +56,7 @@ async function draw() {
 
   root.innerHTML = '';
   root.append(...[
-    h('div', { class: 'page-head' }, h('h1', {}, 'Ideas'),
-      h('a', { class: 'btn primary', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
+    h('div', { class: 'page-head' }, h('h1', {}, 'Ideas')),
     h('div', { class: 'ct-search' }, ico('search'), search),
     h('div', { class: 'chips filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
       filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
@@ -90,6 +89,7 @@ async function draw() {
         : h('div', { class: 'empty' }, people.length ? 'Nobody matches. ' : 'No people saved yet. ',
             people.length ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; S.filter = 'all'; draw(); } }, 'Show everyone')
               : h('a', { href: '#/people/new' }, 'Add the first person'))),
+    dock('people.dock', h('a', { class: 'btn primary wide', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
   ].filter(Boolean));
 }
 

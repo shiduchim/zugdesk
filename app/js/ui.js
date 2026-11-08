@@ -21,7 +21,7 @@ export function h(tag, attrs = {}, ...children) {
 const paths = {
   home: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/>',
   contacts: '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.2.2 3.8 1.6 4.3 4.3"/>',
-  idea: '<path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>', // Ideas: a light bulb
+  idea: '<circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M18.5 13.2l-2.6-2.5a1.6 1.6 0 0 1 2.3-2.3l.3.3.3-.3a1.6 1.6 0 0 1 2.3 2.3z"/>', // Ideas: a suggested person (person + small heart)
   people: '<path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h7"/><circle cx="18" cy="16" r="3"/>',   // Ideas: a list
   shidduchim: '<path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/>', // Shidduchim: a heart
   profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/>',
@@ -53,6 +53,10 @@ export function icon(name, size) {
   const s = size ? `width="${size}" height="${size}"` : '';
   return `<svg ${s} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || ''}</svg>`;
 }
+// Dock: the page's main button(s) stay on screen at the bottom, where the thumb is (owner request).
+// Put it last in the page; it sticks above the bottom bar while the page scrolls.
+export function dock(dataId, ...kids) { return h('div', { class: 'dock', 'data-id': dataId }, ...kids); }
+
 // Phone / email links: same look everywhere (green phone, blue mail).
 export function telLink(n, dataId) { return h('a', { class: 'tel-link', href: 'tel:' + String(n).replace(/[^0-9]/g, ''), dir: 'ltr', 'data-id': dataId || null, html: icon('phone') }, String(n)); }
 export function mailLink(e, dataId) { return h('a', { class: 'mail-link', href: 'mailto:' + e, dir: 'ltr', 'data-id': dataId || null, html: icon('mail') }, e); }

@@ -155,3 +155,6 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-form>.btn.small{align-self:flex-start}
 .mp-form .share-tick{min-height:var(--btn-small-height)}
 @media (max-width:380px){.profile-page .pc-sec .facts .fact.mp-edit-row,.person-card-page .pc-sec .facts .fact.mp-edit-row{grid-template-columns:96px minmax(0,1fr)}}
+
+/* Share lives in the dock on phones; the top button stays on wide screens */
+@media (max-width:1023px){.mp-share-top{display:none}}

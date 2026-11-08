@@ -48,10 +48,11 @@ async function draw(keepScroll = false) {
   root.append(
     h('div', { class: 'page-head sh-head', 'data-id': 'shidduchim.head' },
       h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'), h('p', { class: 'note' }, 'Every shidduch, from first offer to what happens next.'))),
-    prefs.navArrangement !== 'four' ? h('a', { class: 'row-link sh-people-link', href: '#/people', 'data-id': 'shidduchim.people-link' },
+    // Ideas link only when Ideas has no button of its own in the bottom bar ('' — never the word null).
+    prefs.navArrangement !== 'four' && prefs.shellStyle !== 'slim' ? h('a', { class: 'row-link sh-people-link', href: '#/people', 'data-id': 'shidduchim.people-link' },
       h('div', { class: 'avatar', html: icon('idea') }),
       h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `Ideas · ${all.people.length}`)),
-      ico('chevron')) : null,
+      ico('chevron')) : '',
     h('div', { class: 'sh-tabbar', role: 'tablist', 'aria-label': 'Shidduchim lanes', 'data-id': 'shidduchim.lanes' },
       sh.LANES.map(([k, l]) => h('button', { type: 'button', role: 'tab', class: 'sh-tab', 'aria-selected': S.lane === k ? 'true' : 'false', 'data-id': 'shidduchim.lane-' + k,
         onClick: () => { S.lane = k; S.menu = null; S.updateId = null; draw(); } }, l, h('span', { class: 'sh-num' }, counts[k])))),
@@ -66,13 +67,13 @@ async function draw(keepScroll = false) {
 
 // ---------- shared card pieces ----------
 export function bar(t, dates, { dim = false, large = false, dataId = null } = {}) {
-  const done = sh.segmentsDone(t, dates);
+  const done = sh.segmentsDone(t, dates), next = sh.segmentsNext(t, dates);
   return h('div', { class: 'sh-bars' + (large ? ' large' : ''), role: 'img', 'aria-label': 'Progress: offer, references, dates 1 through 8, marriage', 'data-id': dataId },
     sh.SEG_LABELS.map((label, i) => {
       let cls = '';
       if (dim) cls = done.has(i) ? 'past' : 'empty-past';
-      else if (done.has(i)) cls = i < 2 ? 'a' : i < 6 ? 'b' : i < 10 ? 'c' : 'd';
-      return h('span', { class: 'sh-seg ' + cls, title: `${label}: ${done.has(i) ? 'completed' : 'not completed'}` });
+      else if (done.has(i) || next.has(i)) cls = (i < 2 ? 'a' : i < 6 ? 'b' : i < 10 ? 'c' : 'd') + (done.has(i) ? '' : ' next');
+      return h('span', { class: 'sh-seg ' + cls, title: `${label}: ${done.has(i) ? 'completed' : next.has(i) ? 'set up' : 'not completed'}` });
     }));
 }
 
@@ -156,6 +157,7 @@ function expandedCard(m) {
           h('div', { class: 'sh-choice-group' }, sh.PHASES.map(([k, l]) => choice(k, l, phase === k, ended, 'shidduchim.stage-' + k, () => quickStage(m, k))))),
         h('div', { class: 'sh-quick-persons' }, answersFor('me'), answersFor('them')),
         h('div', { class: 'sh-quick-foot' },
+          !t.refsChecked && !ended ? h('button', { type: 'button', class: 'btn small', 'data-id': 'shidduchim.refs-checked', onClick: async () => { await sh.markRefs(m); toast('References checked'); } }, 'References checked') : null,
           h('button', { type: 'button', class: 'btn small', 'data-id': 'shidduchim.add-update', 'aria-expanded': update ? 'true' : 'false', onClick: () => { S.updateId = update ? null : m.o.id; draw(true).then(() => root?.querySelector('[data-id="shidduchim.update-text"]')?.focus()); } }, 'Add update'),
           h('a', { class: 'linkish', href: openHref(m), 'data-id': 'shidduchim.open-details' }, 'Open details')))),
     update);

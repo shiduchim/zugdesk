@@ -196,3 +196,36 @@ body.shell-slim .bottom-nav a[aria-current="page"]{color:var(--text)}
 body.shell-slim .bottom-nav a[aria-current="page"] svg{stroke-width:2.6}
 body.shell-slim .bottom-nav a[aria-current="page"]::after{content:"";width:18px;height:2px;margin-top:4px;border-radius:var(--radius);background:var(--text)}
 body.shell-slim.bar-hidden .bottom-nav{transform:translateY(100%)}
+
+/* Calendar (js/calendar.js): a normal month view with weekday names, weeks start Sunday. */
+.cal-btn{display:flex;align-items:center;gap:8px;text-align:start;cursor:pointer;color:var(--text);min-width:0}
+.cal-btn svg{width:16px;height:16px;flex:none;color:var(--muted)}
+.cal-btn .cal-text{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cal-btn.empty .cal-text{color:var(--muted)}
+dialog.cal-sheet{padding:12px 12px calc(12px + var(--safe-bottom));max-width:min(360px,calc(100vw - 16px))}
+.cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.cal-prev svg{transform:rotate(180deg)}
+.cal-month{font-size:var(--font-lg)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:2px;text-align:center}
+.cal-dow{font-size:var(--font-xs);font-family:var(--font-mono);color:var(--muted);padding:4px 0}
+.cal-day{aspect-ratio:1;min-height:36px;border:0;border-radius:var(--radius);background:transparent;color:var(--text);font-size:var(--font-base);display:flex;align-items:center;justify-content:center;padding:0}
+.cal-day:hover{background:var(--surface-2)}
+.cal-day.blank{pointer-events:none}
+.cal-day.shabbos,.cal-dow.shabbos{color:var(--muted)}
+.cal-day.today{box-shadow:inset 0 0 0 1px var(--text);font-weight:600}
+.cal-day.picked{background:var(--text);color:var(--accent-text);font-weight:600}
+.cal-picked{text-align:center;font-weight:600;padding:8px 0 4px}
+.cal-time{display:flex;align-items:center;gap:8px;padding:6px 0}
+.cal-time select{flex:1;min-width:0}
+.cal-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:8px}
+.cal-actions .spacer{flex:1}
+
+/* Dock (ui.js dock()): main buttons that never scroll away. Sits just above the bottom bar;
+   when the slim bar slides away it follows it down to the screen edge. */
+:root{--dock-bottom:calc(var(--nav-height) + var(--safe-bottom))}
+body.shell-slim.bar-hidden{--dock-bottom:var(--safe-bottom)}
+body.focus-mode{--dock-bottom:var(--safe-bottom)}
+.dock{position:sticky;bottom:var(--dock-bottom);z-index:15;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:12px calc(var(--pad-page) * -1) 0;padding:8px var(--pad-page);background:var(--bg);border-top:1px solid var(--border);transition:bottom .2s ease}
+.dock .grow{flex:1;min-width:0}
+.dock .btn{flex:none}
+@media (max-width:420px){.dock .btn.wide{flex:1}}

@@ -38,6 +38,8 @@ export async function render(container, params) {
   els.grid = h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
   root.append(h('div', { class: 'home-wrap' },
     h('header', { class: 'home-head', 'data-id': 'home.head' },
+      // Slim icon bar has no top bar: Settings lives here, top right of Home (owner request).
+      store.getPrefs().shellStyle === 'slim' ? h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') }) : null,
       h('div', { class: 'eyebrow' }, 'Single Mode'),
       h('h1', {}, 'Home'),
       h('p', { class: 'muted' }, 'Write anything. Keep the things that matter close.')),
