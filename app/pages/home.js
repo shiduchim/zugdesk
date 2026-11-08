@@ -371,6 +371,7 @@ function applySection() {
   if (!root) return;
   const phone = PHONE.matches;
   els.tabs?.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', b.dataset.id === 'home.tab-' + section ? 'true' : 'false'));
+  els.composer.classList.toggle('hidden', phone && section !== 'notes');
   els.notes.classList.toggle('hidden', phone && section !== 'notes');
   els.fus.classList.toggle('hidden', phone && section !== 'followups');
   els.hist.classList.toggle('hidden', phone && section !== 'history');

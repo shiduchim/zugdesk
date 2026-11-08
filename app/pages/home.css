@@ -227,3 +227,18 @@
 .home-settings{flex:none;color:var(--muted)}
 @media (min-width:900px){body:not(.shell-slim) .home-settings{display:none}.home-tabline{justify-content:flex-end}}
 .home-tabline .home-tab{white-space:nowrap;gap:4px;padding:0 4px}
+
+/* ---- History: ultra compact, one line per entry, like a command prompt ---- */
+.home-history{font-family:var(--font-mono);padding:8px 10px}
+.home-history .home-sec-head{margin-bottom:4px;padding-bottom:4px}
+.home-history h2{font-size:var(--font-base)}
+.home-history .hist-line{grid-template-columns:auto minmax(0,1fr) auto;gap:8px;padding:1px 0;line-height:1.3}
+.home-history .hist-date{font-size:var(--font-xs);white-space:nowrap}
+.home-history .hist-date br{display:none}
+.home-history .hist-main{display:flex;gap:8px;min-width:0;align-items:baseline}
+.home-history .hist-main strong{display:inline;font-size:var(--font-xs);white-space:nowrap;flex:none;max-width:55%;overflow:hidden;text-overflow:ellipsis}
+.home-history .hist-main p{font-size:var(--font-xs);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.home-history .hist-chevron{width:22px;height:22px}
+.home-history .hist-chevron svg{width:12px;height:12px}
+.home-history .hist-detail{margin:0 0 4px;padding:4px 6px}
+.home-composer-slot.hidden{display:none}
