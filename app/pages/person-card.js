@@ -5,11 +5,12 @@ import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { loadPerson, pron, kindLabel, dateOnly, LISTS } from './people-data.js';
+import { copy } from './profile-share.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
-const TABS = [['profile', 'Profile'], ['offers', 'Offers'], ['notes', 'Notes']];
+const TABS = [['profile', 'Profile'], ['short', 'Short versions'], ['offers', 'Offers'], ['notes', 'Notes']];
 export const MY_INTEREST = ['Interested', 'Want to learn more', 'Not sure yet', 'Not interested'];
 export const THEIR_RESPONSE = ['Yes, interested', 'Checking availability', 'Thinking about it', 'Not available now', 'No', 'Not asked yet'];
 const TYPE_OPTS = store.EVENT_TYPES.map(([v, l]) => [v || '_unknown', l]);
@@ -51,7 +52,7 @@ async function draw(id, keepScroll = false) {
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.follow-up', onClick: () => followUpSheet() }, ico('clock'), 'Follow-up')),
     h('div', { class: 'pc-tabs', role: 'tablist', 'data-id': 'person-card.tabs' },
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l))),
-    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'offers' ? offersTab(b) : notesTab(b)));
+    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? offersTab(b) : notesTab(b)));
   if (keepScroll) window.scrollTo(0, y);
 }
 
@@ -66,7 +67,9 @@ function sec(title, dataId, editHref, ...kids) {
       editHref ? h('a', { class: 'icon-btn', href: editHref, 'aria-label': 'Edit ' + title.toLowerCase(), 'data-id': dataId + '-edit', html: icon('edit') }) : null),
     ...kids);
 }
-const fact = (k, v, dataId) => h('div', { class: 'fact', 'data-id': dataId }, h('dt', {}, k), h('dd', { dir: 'auto' }, v == null || v === '' || (Array.isArray(v) && !v.length) ? NR() : Array.isArray(v) ? v.join(', ') : v));
+// Empty answers are left out of the profile screen (owner request): no "Not recorded" rows.
+const isEmpty = (v) => v == null || v === '' || (Array.isArray(v) && !v.length);
+const fact = (k, v, dataId) => isEmpty(v) ? null : h('div', { class: 'fact', 'data-id': dataId }, h('dt', {}, k), h('dd', { dir: 'auto' }, Array.isArray(v) ? v.join(', ') : v));
 const firstName = (p) => (p.name || '').trim().split(/\s+/)[0] || pron(p).him;
 
 // ---------- Profile ----------
@@ -79,13 +82,15 @@ function profileTab(b) {
   const custom = Object.entries(A).filter(([k, v]) => !LISTS[k] && (Array.isArray(v) ? v.length : v));
   const religiousOther = p.religiousOther?.trim();
   const cards = p.contactCards || [];
+  const own = cards.filter(c => c.role === 'person' && c.number).map(c => c.number);
   return [
     h('div', { class: 'pc-summary', 'data-id': 'person-card.summary' },
       h('div', { class: 'avatar lg' }, store.initials(p)),
       h('div', { class: 'pc-summary-text' },
-        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || 'Age, city and occupation not recorded'),
+        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || ''),
+        own.length ? h('div', { class: 'pc-summary-line pc-own-phone', 'data-id': 'person-card.phone' }, own.map((n, i) => [i ? ' · ' : '', h('a', { href: 'tel:' + n.replace(/[^0-9]/g, ''), class: 'mono' }, n)])) : null,
         p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
-      h('a', { class: 'icon-btn', href: `#/people/${enc}/edit`, 'aria-label': 'Edit basic info', 'data-id': 'person-card.summary-edit', html: icon('edit') })),
+      h('a', { class: 'icon-btn', href: `#/people/${enc}/edit/basic`, 'aria-label': 'Edit basic info', 'data-id': 'person-card.summary-edit', html: icon('edit') })),
     sec('Facts', 'person-card.facts', edit('personal'),
       h('dl', { class: 'facts' },
         fact('Age', p.age, 'person-card.fact-age'),
@@ -104,25 +109,23 @@ function profileTab(b) {
         ...custom.map(([k, v]) => fact((p.answerLabels || {})[k] || k, v, 'person-card.fact-custom')),
         fact('Profile source', first ? [first.sender || 'Sender not recorded', dateOnly(first.receivedAt || first.createdAt)].join(' · ') : (p.sender || ''), 'person-card.fact-source')),
       h('a', { class: 'pc-add', href: edit('about'), 'data-id': 'person-card.add-fact' }, 'Add a fact…')),
-    sec(`About ${firstName(p)}`, 'person-card.about', edit('about'),
-      p.about ? h('p', { class: 'prewrap', dir: 'auto' }, p.about) : h('p', {}, NR())),
-    sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', edit('about'),
-      p.looking ? h('p', { class: 'prewrap', dir: 'auto' }, p.looking) : h('p', {}, NR())),
-    sec('Contacts and source', 'person-card.contacts', edit('contacts'),
+    !p.about ? null : sec(`About ${firstName(p)}`, 'person-card.about', edit('about'),
+      h('p', { class: 'prewrap', dir: 'auto' }, p.about)),
+    !p.looking ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', edit('about'),
+      h('p', { class: 'prewrap', dir: 'auto' }, p.looking)),
+    !(cards.length || p.sender) ? null : sec('Contacts and source', 'person-card.contacts', edit('contacts'),
       cards.length || p.sender ? h('dl', { class: 'facts' },
         ...cards.map(c => contactFact(c, b)),
         p.sender ? h('div', { class: 'fact' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(p.sender, p.senderContactId, b)), h('span', { class: 'priv' }, 'private')) : null)
         : h('p', {}, NR()),
       h('p', { class: 'note' }, 'A number given for a mother, father, reference or shadchan is never shown as their own number.')),
-    sec(`How I know ${P.him}`, 'person-card.known', edit('known'),
+    !((p.know || []).length || p.yearsKnown || p.howKnow) ? null : sec(`How I know ${P.him}`, 'person-card.known', edit('known'),
       (p.know || []).length || p.yearsKnown || p.howKnow ? h('dl', { class: 'facts' },
         fact('Contact', p.know, 'person-card.fact-know'),
         p.yearsKnown ? fact('Years known', p.yearsKnown) : null,
         p.howKnow ? fact('How', p.howKnow) : null) : h('p', {}, NR()),
       h('p', { class: 'note' }, 'Internal only. Never part of anything you share.')),
     sec('Also yours to keep', 'person-card.keep', null,
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'person-card.originals', onClick: () => originalsSheet(b) },
-        ico('file'), h('span', { class: 'grow' }, 'Original profiles'), h('span', { class: 'mono note' }, `${srcs.length} · private`), ico('chevron')),
       h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'person-card.attachments', onClick: () => attachmentsSheet(b) },
         ico('folder'), h('span', { class: 'grow' }, 'Attachments'), h('span', { class: 'mono note' }, `${atts.length ? atts.length : 'No files'} · private`), ico('chevron'))),
     h('div', { class: 'stamp pc-stamp' }, `updated ${dateOnly(p.updatedAt)} · added ${dateOnly(p.createdAt)}`),
@@ -147,16 +150,6 @@ function contactFact(c, b) {
     h('span', { class: 'priv' }, 'private'));
 }
 
-function originalsSheet(b) {
-  const list = [...b.srcs].reverse();
-  sheet({ title: 'Original profiles', dataId: 'person-card.originals-sheet', className: 'tall',
-    body: list.length ? [h('p', { class: 'note' }, 'Kept exactly as received. Newer versions never replace older ones.'),
-      ...list.map((s, i) => h('div', { class: 'orig-item' },
-        h('div', { class: 'eyebrow' }, [dateOnly(s.receivedAt || s.createdAt), s.sender || 'sender not recorded'].join(' · '), i === list.length - 1 ? ' · earliest' : ''),
-        s.text ? h('div', { class: 'orig-text', dir: 'auto' }, s.text) : null,
-        ...b.atts.filter(a => a.sourceId === s.id).map(a => h('a', { class: 'att-row', href: a.dataUrl, download: a.name }, ico('file'), h('span', { dir: 'auto' }, a.name)))))]
-      : [h('p', { class: 'note' }, 'No original was pasted or attached for this person.')] });
-}
 function attachmentsSheet(b) {
   sheet({ title: 'Attachments', dataId: 'person-card.attachments-sheet',
     body: b.atts.length ? b.atts.map(a => h('a', { class: 'att-row', href: a.dataUrl, download: a.name, 'data-id': 'person-card.attachment' }, ico('file'),
@@ -400,4 +393,59 @@ async function followUpSheet(f = null) {
     body: [h('div', { class: 'field' }, h('label', {}, 'What to do'), text),
       h('div', { class: 'field' }, h('label', {}, 'When (optional)'), due),
       linked.length ? h('div', { class: 'field' }, h('label', {}, 'With (optional)'), bubbles({ options: linked.map(c => [c.id, store.displayName(c)]), selected: contactId ? [contactId] : [], multi: false, dataId: 'followup-sheet.contact', onChange: (v) => { contactId = v || null; } })) : null] });
+}
+
+// ---------- Short versions (owner request, tweak mode) ----------
+// Like My Profile › Short versions. A pasted profile shows here word for word ("Pasted profile");
+// editing it saves an editable copy on the person (shortVersions) — the original itself never changes.
+// Suggested is built from the person's fields and is always up to date.
+function suggestedFor(p) {
+  const A = p.answers || {}, txt = (v) => Array.isArray(v) ? v.filter(Boolean).join(', ') : (v || '');
+  const lines = [p.name || ''];
+  const sum = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
+  if (sum) lines.push('• ' + sum);
+  for (const [k, v] of [['Religious level', A.pLevel], ['Religious background', A.pBackground], ['Languages', p.languages], ['Status', A.pStatus]]) if (txt(v)) lines.push(`• ${k}: ${txt(v)}`);
+  if (p.about) lines.push('', p.about.split(/(?<=[.!?])\s/)[0]);
+  if (p.looking) lines.push('', 'Looking for: ' + p.looking.split(/(?<=[.!?])\s/)[0]);
+  return lines.join('\n').trim();
+}
+function shortCard({ title, sub, text, dataId, edit, remove }) {
+  return h('article', { class: 'mp-card', 'data-id': dataId },
+    h('div', { class: 'mp-card-head' },
+      h('div', { class: 'mp-card-title' }, h('strong', { dir: 'auto' }, title), h('span', { class: 'stamp' }, sub)),
+      h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '.copy', onClick: async () => { if (await copy(text)) toast('Copied'); } }, 'Copy'),
+      edit ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit ' + title, 'data-id': dataId + '.edit', html: icon('edit'), onClick: edit }) : null,
+      remove ? h('button', { type: 'button', class: 'linkish danger-text', 'data-id': dataId + '.remove', onClick: remove }, 'Delete') : null),
+    h('pre', { class: 'mp-text', dir: 'auto' }, text || '(empty)'));
+}
+function shortTab(b) {
+  const p = b.p, list = p.shortVersions || [];
+  const edited = new Set(list.map(x => x.fromSourceId).filter(Boolean));
+  const pasted = b.srcs.filter(s => (s.text || '').trim() && !edited.has(s.id));
+  const saveList = async (next) => { await store.people.save({ ...p, shortVersions: next }); };
+  return [
+    ...list.map(x => shortCard({ title: x.title || 'Short version', sub: (x.fromSourceId ? 'pasted, edited · ' : 'saved · ') + dateOnly(x.savedAt), text: x.text, dataId: 'person-card.short-version',
+      edit: () => shortSheet(p, x), remove: async () => {
+        if (!(await confirmDialog({ title: 'Delete this short version?', text: x.fromSourceId ? 'The pasted original stays in Original profiles.' : '', ok: 'Delete', danger: true, dataId: 'person-card.short-delete' }))) return;
+        await saveList(list.filter(y => y.id !== x.id)); toast('Deleted');
+      } })),
+    ...pasted.map(s => shortCard({ title: 'Pasted profile', sub: [s.sender, dateOnly(s.receivedAt || s.createdAt)].filter(Boolean).join(' · '), text: s.text, dataId: 'person-card.short-pasted',
+      edit: () => shortSheet(p, { id: store.newId('sv'), title: 'Pasted profile', text: s.text, fromSourceId: s.id }) })),
+    shortCard({ title: 'Suggested', sub: 'auto · always up to date', text: suggestedFor(p), dataId: 'person-card.short-suggested' }),
+    h('button', { type: 'button', class: 'btn', 'data-id': 'person-card.short-new', onClick: () => shortSheet(p, { id: store.newId('sv'), title: '', text: '' }) }, 'New short version'),
+  ];
+}
+async function shortSheet(p, x) {
+  const title = h('input', { class: 'input', dir: 'auto', value: x.title || '', placeholder: 'Name (optional)', 'data-id': 'person-card.short-sheet.title' });
+  const text = h('textarea', { class: 'input mono', rows: 12, dir: 'auto', 'data-id': 'person-card.short-sheet.text' }); text.value = x.text || '';
+  setTimeout(() => (x.text ? text : title).focus(), 50);
+  await sheet({ title: x.text ? 'Edit short version' : 'New short version', dataId: 'person-card.short-sheet', className: 'tall',
+    body: [h('div', { class: 'field' }, h('label', {}, 'Name'), title), h('div', { class: 'field' }, h('label', {}, 'Text'), text)],
+    actions: [{ id: 'save', label: 'Save', primary: true, run: async () => {
+      if (!text.value.trim()) { toast('Write some text first'); return false; }
+      const rec = { ...x, title: title.value.trim() || x.title || 'Short version', text: text.value, savedAt: store.now() };
+      const list = p.shortVersions || [];
+      await store.people.save({ ...p, shortVersions: list.some(y => y.id === x.id) ? list.map(y => y.id === x.id ? rec : y) : [...list, rec] });
+      toast('Saved');
+    } }] });
 }

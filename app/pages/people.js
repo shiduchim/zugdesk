@@ -3,7 +3,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, confirmDialog } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
-import { kindLabel, dateOnly } from './people-data.js';
+import { kindLabel, dateOnly, seekingKind } from './people-data.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const S = { q: '', filter: 'all' };   // survives leaving the page
@@ -38,7 +38,10 @@ async function draw() {
     ...(p.contactCards || []).map(c => c.name), ...(p.contactIds || []).map(id => byId.get(id)).filter(Boolean).map(c => store.displayName(c)),
     ...(senders.get(p.id) || [])].filter(Boolean).join(' ').toLowerCase();
   const words = S.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const seek = seekingKind(store.getPrefs());
+  if (seek && (S.filter === 'guy' || S.filter === 'girl')) S.filter = 'all';
   const list = people.filter(p => {
+    if (seek && p.kind && p.kind !== seek) return false;
     if (words.length && !words.every(w => searchText(p).includes(w))) return false;
     const l = latest.get(p.id) || {};
     if (S.filter === 'guy' || S.filter === 'girl') return p.kind === S.filter;
@@ -58,7 +61,7 @@ async function draw() {
     h('p', { class: 'note intro' }, 'Everyone suggested to you, one record each. Saving someone here is not a formal offer.'),
     h('div', { class: 'ct-search' }, ico('search'), search),
     h('div', { class: 'chips filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
-      FILTERS.map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
+      FILTERS.filter(([k]) => !seek || (k !== 'guy' && k !== 'girl')).map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
         onClick: () => { S.filter = k; draw(); } }, l))),
     drafts.length ? h('section', { class: 'section', 'data-id': 'people.drafts' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `Not saved yet · ${drafts.length}`)),

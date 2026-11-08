@@ -74,6 +74,7 @@ const PREF_DEFAULTS = {
   contactsLayout: 'a',       // phone view: a | split | rail | tabs | list | inbox (spec/contacts.md CT-13)
   contactsSort: 'recent',    // recent | oldest | name | city | language | community
   contactsSplit: 260,
+  iAm: '',                  // My Profile: 'guy' | 'girl' — Ideas then shows only the other
   personKind: 'guy',         // Add Person: last chosen Guy / Girl        // upper pane height (px) in the top/bottom split view
   shidduchimView: 'compact', // Shidduchim list: compact | expanded
   homeSuggestions: true,     // Home: Smart Suggestions dot (blue = on)
@@ -318,7 +319,7 @@ export function lastRecorded(c, latestEventAt) {
 export const CHOICE_DEFAULTS = {
   ages: ['30 and under'],
   communities: ['Chabad', 'Haredi', 'Litvish', 'Bukharian', 'Sephardi', 'Breslev', 'Dati Leumi', 'Modern Orthodox', 'Yeshivish'],
-  languages: ['English', 'Hebrew', 'Yiddish', 'French', 'Russian', 'Spanish'],
+  languages: ['English', 'Hebrew', 'Russian', 'Yiddish'],
   roles: ['shadchan', 'reference', 'friend', 'family', 'helper'],
 };
 export const CHOICE_NAMES = { ages: 'Ages they work with', communities: 'Religious groups', languages: 'Languages', roles: 'Roles' };
@@ -326,7 +327,7 @@ export const CHOICE_NAMES = { ages: 'Ages they work with', communities: 'Religio
 export const PERSON_CHOICE_DEFAULTS = {
   pStatus: ['Never been married', 'Divorced', 'Has children'],
   pReligious: ['Kohen', 'Prays 3× daily', 'Baal Teshuvah', 'Kosher for Kohen'],
-  pLevel: ['Light', 'Moderate', 'Strong'],
+  pLevel: ['Strong', 'Moderate', 'Light'],
   pTzniut: ['Light', 'Moderate', 'Strong'],
   pBackground: ['Chabad', 'Yeshivish', 'Breslev', 'Sephardi', 'Dati Leumi'],
   pTraits: ['Kind', 'Quiet', 'Outgoing', 'Athletic'],

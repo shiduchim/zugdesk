@@ -108,7 +108,8 @@
   --tab-active-bg:var(--selected-bg);
   --orig-pane-width:40%;            /* Basic Info: original on the left */
   --orig-pane-max:32dvh;            /* narrow phones: original stacked on top, this tall */
-  --jump-height:40px;
+  --jump-height:32px;
+  --tab-height:36px;
   --row-height:44px;                /* oval rows (Status, Religious, Know them) */
   --tick-size:20px;
 

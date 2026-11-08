@@ -59,7 +59,7 @@ export async function openShare({ contactId = null, source = null } = {}) {
     const choose = h('div', { class: 'field' }, h('label', {}, 'Also include — you choose (all off until you tick them)'));
     if (v.contact.phone) choose.append(tick(`My phone · ${v.contact.phone}`, S.phone, (x) => { S.phone = x; }, 'share.include-phone'));
     if (v.contact.email) choose.append(tick(`My email · ${v.contact.email}`, S.email, (x) => { S.email = x; }, 'share.include-email'));
-    for (const ref of v.references || []) choose.append(tick(`Reference · ${ref.name}${ref.relation ? ' (' + ref.relation + ')' : ''}`, S.refIds.includes(ref.id), (x) => { S.refIds = x ? [...S.refIds, ref.id] : S.refIds.filter(i => i !== ref.id); }, 'share.include-ref'));
+    for (const ref of (v.references || []).filter(r => (r.name || '').trim())) choose.append(tick(`Reference · ${ref.name}${ref.relation ? ' (' + ref.relation + ')' : ''}`, S.refIds.includes(ref.id), (x) => { S.refIds = x ? [...S.refIds, ref.id] : S.refIds.filter(i => i !== ref.id); }, 'share.include-ref'));
     for (const f of P.files) choose.append(tick(`File · ${f.name}`, S.fileIds.includes(f.id), (x) => { S.fileIds = x ? [...S.fileIds, f.id] : S.fileIds.filter(i => i !== f.id); }, 'share.include-file'));
     if (choose.children.length === 1) choose.append(h('p', { class: 'note' }, 'Nothing optional saved yet (own phone, email, references or files).'));
     body.append(choose);

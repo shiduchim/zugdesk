@@ -1,7 +1,7 @@
 // Service worker: makes ZugDesk installable and usable offline.
 // Strategy: network first (so updates arrive as soon as they are published),
 // cache fallback when offline. Bump CACHE when the shell changes shape.
-const CACHE = 'zugdesk-v7';
+const CACHE = 'zugdesk-v20';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/tokens.css', './css/base.css',
@@ -27,7 +27,8 @@ self.addEventListener('fetch', (e) => {
   const sameOrigin = url.origin === location.origin;
   if (!sameOrigin && !url.hostname.endsWith('gstatic.com') && !url.hostname.endsWith('googleapis.com')) return;
   e.respondWith(
-    fetch(req).then(res => {
+    // no-cache: always ask the server if the file changed (GitHub Pages lets phones keep files 10 min)
+    fetch(sameOrigin ? new Request(req, { cache: 'no-cache' }) : req).then(res => {
       if (res && res.ok && (sameOrigin || res.type === 'basic' || res.type === 'cors')) {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(req, copy));
