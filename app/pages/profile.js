@@ -94,8 +94,10 @@ function sec(title, id, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDIT : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), id, 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'), h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDIT = false; OPEN = null; draw(true); } }, 'Done'))
-      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; draw(true); })
+      facts && EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: () => cancelFacts() }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDIT = false; OPEN = null; SNAP = null; setTimeout(() => draw(true), 120); } }, 'Save'))
+      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; SNAP = structuredClone(P.me || null); draw(true); })
       : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
@@ -305,9 +307,15 @@ function editorFor(id) {
   return null;
 }
 // Quick "Add a fact": one line (name + value) right in the Facts list, no full edit screen.
-let ADDF = false;
+let ADDF = false, SNAP = null; // SNAP: profile as it was when Editing / Adding facts began (Cancel puts it back)
+async function cancelFacts() {
+  document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); // let a half-typed field finish first
+  EDIT = false; ADDF = false; OPEN = null;
+  if (SNAP) { P.me = await store.profile.save(SNAP); toast('Changes undone'); }
+  SNAP = null; draw(true);
+}
 function addFactRow() {
-  if (!ADDF && !EDIT) return h('button', { type: 'button', class: 'linkish mp-more-link', 'data-id': 'profile.fact-add-open', onClick: () => { ADDF = true; draw(true); setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30); } }, 'Add a fact');
+  if (!ADDF && !EDIT) return h('button', { type: 'button', class: 'linkish mp-more-link', 'data-id': 'profile.fact-add-open', onClick: () => { ADDF = true; SNAP = structuredClone(P.me || null); draw(true); setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30); } }, 'Add a fact');
   const lab = h('input', { class: 'input', dir: 'auto', placeholder: 'Name, e.g. Shul', 'aria-label': 'Fact name', 'data-id': 'profile.fact-add-label' });
   const val = h('input', { class: 'input', dir: 'auto', placeholder: 'Fact', 'aria-label': 'Fact', 'data-id': 'profile.fact-add-value',
     onKeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } });
@@ -323,7 +331,9 @@ function addFactRow() {
     h('div', { class: 'mp-add-fact-row' }, lab, val),
     h('div', { class: 'mp-add-fact-foot' },
       h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-save', onClick: add }, 'Add fact'),
-      !EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.fact-add-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Adding facts'), h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; draw(true); } }, 'Done')) : null,
+      !EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.fact-add-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Adding facts'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.fact-add-cancel', onClick: () => cancelFacts() }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; SNAP = null; draw(true); } }, 'Save')) : null,
       h('a', { class: 'linkish mp-add-fact-full', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Full edit screen')));
 }
 function tapFact(id, label, value, dataId) {

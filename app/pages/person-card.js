@@ -69,7 +69,7 @@ function setTab(k) {
 
 // Every pencil edits its section right here (owner request, tweak mode). Facts save as you go
 // (one Done); the other sections are a small Cancel / Save form. The top pencil opens the full form.
-let CH = {}, EDITF = false, SEC = null;
+let CH = {}, EDITF = false, SEC = null, SNAPF = null; // SNAPF: person as it was when Editing facts began (Cancel puts it back)
 const pencil = (label, dataId, onClick) => h('button', { type: 'button', class: 'icon-btn', 'aria-label': label, 'data-id': dataId, html: icon('edit'), onClick });
 const redraw = () => draw(B.p.id, true);
 const openSec = (key) => { SEC = key; EDITF = false; redraw(); };
@@ -77,8 +77,10 @@ function sec(title, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDITF : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDITF ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'), h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { EDITF = false; redraw(); } }, 'Done'))
-      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDITF = true; SEC = null; redraw(); })
+      facts && EDITF ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: async () => { document.activeElement?.blur(); EDITF = false; if (SNAPF) { B.p = await store.people.save(SNAPF); toast('Changes undone'); } SNAPF = null; redraw(); } }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDITF = false; SNAPF = null; setTimeout(redraw, 120); } }, 'Save'))
+      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDITF = true; SEC = null; SNAPF = structuredClone(B.p); redraw(); })
       : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
