@@ -98,3 +98,8 @@
 .new-cat .adder{align-self:stretch}
 .orig-item{display:flex;flex-direction:column;gap:6px;padding-bottom:12px;border-bottom:1px solid var(--border)}
 .orig-item:last-child{border-bottom:0}
+/* My Profile edit mode */
+.me-fact{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) auto;gap:6px;align-items:center}
+.me-item{display:flex;flex-direction:column;gap:8px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.me-item>.linkish,.me-add{align-self:flex-start}
+@media (max-width:420px){.me-fact{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.me-fact .linkish{grid-column:1/-1;justify-self:start}}

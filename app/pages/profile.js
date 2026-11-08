@@ -18,7 +18,7 @@ let lastDeleted = null;               // { version } for the inline Undo line
 let shareOpen = false;
 const W = { noteId: null, entryId: null, text: '', saveTimer: 0, savedAt: null }; // note being written
 
-export function destroy() { flushNote(); flushForm(); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
+export function destroy() { flushNote(); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
 
 export async function render(container, params) {
   root = container;
@@ -26,7 +26,7 @@ export async function render(container, params) {
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' || ch.store === 'meta') return;
-    if (W.busy || FB) return; // our own autosave: do not redraw under the typing finger
+    if (W.busy) return; // our own autosave: do not redraw under the typing finger
     clearTimeout(timer); timer = setTimeout(() => draw(true), 100);
   });
   await draw();
@@ -61,6 +61,7 @@ function header(v) {
   return h('div', { class: 'mp-head', 'data-id': 'profile.header' },
     h('h1', { dir: 'auto' }, v.name || 'My Profile'),
     h('span', { class: 'spacer' }),
+    h('a', { class: 'btn', href: '#/profile/edit', 'data-id': 'profile.edit' }, 'Edit profile'),
     h('button', { type: 'button', class: 'btn primary', 'data-id': 'profile.share', onClick: () => share() }, 'Share'));
 }
 async function share(opts) { if (shareOpen) return; shareOpen = true; try { await openShare(opts); } finally { shareOpen = false; } }
@@ -75,114 +76,57 @@ function sideNav(v, notesCount) {
     h('a', { href: '#/profile/short', class: 'mp-nav-item', 'aria-current': tab === 'short' ? 'page' : null }, 'Short versions', h('span', { class: 'mp-count' }, String(P.versions.length + 1))),
     h('a', { href: '#/profile/notes', class: 'mp-nav-item', 'aria-current': tab === 'notes' ? 'page' : null }, 'Notes', h('span', { class: 'mp-count' }, String(notesCount))),
     h('div', { class: 'mp-nav-foot' },
-      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.side-add-section', onClick: addSection }, 'Add section…'),
+      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.side-add-section', onClick: () => navigate('/profile/edit/me-sections') }, 'Add section…'),
       h('div', { class: 'stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet')));
 }
 function scrollToSec(id) { document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
 
 // ---------- Profile tab ----------
-// Profile tab = one screen you type into, like Add Person › Detailed Info (owner request, tweak mode).
-// Every field saves itself shortly after typing; no popups except Files (uploads).
-const M = { facts: [], contact: {}, references: [], sections: [] }; // working copies of the lists
-const F = {}; let fTimer = 0, FB = false;
-function queue(patch) { Object.assign(F, patch); clearTimeout(fTimer); fTimer = setTimeout(flushForm, 500); }
-async function flushForm() {
-  clearTimeout(fTimer);
-  const patch = { ...F }; for (const k in F) delete F[k];
-  if (!Object.keys(patch).length) return;
-  FB = true;
-  try {
-    P.me = await PD.saveProfile(P.me, lang, patch);
-    const s = root?.querySelector('[data-id="profile.saved-stamp"]'); if (s) s.textContent = 'Saved · updated ' + store.formatDate(P.me.updatedAt);
-  } finally { setTimeout(() => { FB = false; }, 300); }
+// Profile tab = how your profile reads (owner request, tweak mode). Editing happens in the
+// Add Person–style form at #/profile/edit; each pencil opens it at that section.
+const notYet = (what) => h('span', { class: 'muted' }, what || 'Not filled in yet');
+const editAt = (s) => '#/profile/edit' + (s ? '/' + s : '');
+function sec(title, id, dataId, editSec, ...kids) {
+  return h('section', { class: 'pc-sec', id, 'data-id': dataId },
+    h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
+      editSec ? h('a', { class: 'icon-btn', href: editAt(editSec), 'aria-label': 'Edit ' + title.toLowerCase(), 'data-id': dataId + '-edit', html: icon('edit') }) : null),
+    ...kids);
 }
-const redraw = async () => { await flushForm(); FB = false; draw(true); };
-const fIn = (label, value, dataId, onInput, extra = {}) => field(label, h('input', { class: 'input', dir: 'auto', value: value || '', 'data-id': dataId, ...extra, onInput: (e) => onInput(e.target.value) }));
-function fArea(label, value, dataId, onInput, placeholder = '') {
-  const t = h('textarea', { class: 'input grow', rows: 3, dir: 'auto', placeholder, 'data-id': dataId, onInput: (e) => { onInput(e.target.value); growT(e.target); } });
-  t.value = value || ''; setTimeout(() => growT(t), 0); setTimeout(() => growT(t), 400);
-  return field(label, t);
-}
-function growT(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 480) + 'px'; }
-const blk = (title, id, dataId, ...kids) => h('section', { class: 'ap-sec', id, 'data-sec': id, 'data-id': dataId }, h('h3', { class: 'ap-sec-title' }, title), ...kids);
-const rmBtn = (dataId, run) => h('button', { type: 'button', class: 'linkish danger-text', 'data-id': dataId, onClick: run }, 'Remove');
-
+const fact = (k, v, dataId, extra = null) => h('div', { class: 'fact', 'data-id': dataId }, h('dt', { dir: 'auto' }, k), h('dd', { dir: 'auto' }, v || notYet()), extra);
 function profileTab(v) {
   const l = PD.L(lang);
-  M.facts = v.facts.map(f => ({ ...f })); M.contact = { ...v.contact };
-  M.references = (v.references || []).map(r => ({ ...r })); M.sections = v.sections.map(s => ({ ...s }));
-  const jumps = [['mp-facts', 'Facts'], ['mp-about', 'About me'], ['mp-looking', 'Looking for'], ['mp-contact', 'Contact'], ['mp-refs', 'References'], ['mp-files', 'Files'], ...M.sections.map(s => ['mp-sec-' + s.id, s.title])];
-  const facts = () => queue({ facts: M.facts });
-  const refs = () => queue({ references: M.references.map(r => ({ ...r, phone: store.cleanPhone(r.phone) })) });
-  const secs = () => queue({ sections: M.sections });
+  const c = v.contact;
+  const iAm = store.getPrefs().iAm;
   return [
-    !P.me ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Just start typing; everything saves by itself and stays on this phone until you share it.') : null,
-    h('nav', { class: 'jumpnav mp-jumps', 'aria-label': 'Jump to section', 'data-id': 'profile.jumpnav' },
-      jumps.map(([k, t]) => h('button', { type: 'button', class: 'jump', 'data-id': 'profile.jump-' + k.replace('mp-', ''), onClick: () => scrollToSec(k) }, t))),
-    blk(l.facts, 'mp-facts', 'profile.facts',
-      h('div', { class: 'field' }, h('label', {}, 'I am a'),
-        h('div', { class: 'typepick mp-iam', role: 'group', 'aria-label': 'I am a', 'data-id': 'profile.i-am' },
-          [['guy', 'Guy'], ['girl', 'Girl']].map(([k, t]) => h('button', { type: 'button', 'aria-pressed': store.getPrefs().iAm === k ? 'true' : 'false', 'data-id': 'profile.i-am-' + k,
-            onClick: () => { store.setPref('iAm', k); toast(k === 'guy' ? 'Ideas will show only girls' : 'Ideas will show only guys'); draw(true); } }, t)))),
-      fIn('Name', v.name, 'profile.name', (x) => queue({ name: x.trim() }), { autocomplete: 'off' }),
-      h('div', { class: 'mp-two' },
-        fIn('Age', v.age, 'profile.age', (x) => queue({ age: x.trim() }), { inputmode: 'numeric' }),
-        fIn('City', v.city, 'profile.city', (x) => queue({ city: x.trim() }))),
-      fIn('Work / learning', v.occupation, 'profile.work', (x) => queue({ occupation: x.trim() })),
-      fArea('One-line introduction', v.intro, 'profile.intro', (x) => queue({ intro: x.trim() })),
-      ...M.facts.map(f => h('div', { class: 'mp-fact-row', 'data-id': 'profile.fact' },
-        h('input', { class: 'input', dir: 'auto', value: f.label, placeholder: 'What (e.g. Height)', 'aria-label': 'Fact name', 'data-id': 'profile.fact.label', onInput: (e) => { f.label = e.target.value; facts(); } }),
-        h('input', { class: 'input', dir: 'auto', value: f.value, placeholder: 'Answer', 'aria-label': 'Answer', 'data-id': 'profile.fact.value', onInput: (e) => { f.value = e.target.value; facts(); } }),
-        rmBtn('profile.fact.remove', () => { M.facts = M.facts.filter(x => x !== f); facts(); redraw(); }))),
-      h('button', { type: 'button', class: 'btn small mp-add', 'data-id': 'profile.add-fact', onClick: async () => {
-        M.facts.push({ id: store.newId('f'), label: '', value: '' }); facts(); await redraw();
-        const all = root?.querySelectorAll('[data-id="profile.fact.label"]'); all?.[all.length - 1]?.focus();
-      } }, 'Add a fact')),
-    blk(l.about, 'mp-about', 'profile.about', fArea(l.about, v.about, 'profile.about-text', (x) => queue({ about: x.trim() }), 'Personality, background, interests…')),
-    blk(l.looking, 'mp-looking', 'profile.looking', fArea(l.looking, v.looking, 'profile.looking-text', (x) => queue({ looking: x.trim() }), 'Describe what you are looking for…')),
-    blk('Contact', 'mp-contact', 'profile.contact',
-      h('p', { class: 'note' }, 'The inquiries contact is shared in your profile. Your own phone and email are only added when you tick them while sharing.'),
-      fIn('For inquiries — name', M.contact.inquiriesName, 'profile.inq-name', (x) => { M.contact.inquiriesName = x.trim(); queue({ contact: M.contact }); }, { placeholder: 'e.g. Mrs. Cohen (mother)' }),
-      fIn('For inquiries — phone', M.contact.inquiriesPhone, 'profile.inq-phone', (x) => { M.contact.inquiriesPhone = store.cleanPhone(x); queue({ contact: M.contact }); }, { inputmode: 'tel' }),
-      h('div', { class: 'mp-two' },
-        fIn('My phone (you choose)', M.contact.phone, 'profile.my-phone', (x) => { M.contact.phone = store.cleanPhone(x); queue({ contact: M.contact }); }, { inputmode: 'tel' }),
-        fIn('My email (you choose)', M.contact.email, 'profile.my-email', (x) => { M.contact.email = x.trim(); queue({ contact: M.contact }); }, { type: 'email', inputmode: 'email' }))),
-    blk('References', 'mp-refs', 'profile.references',
-      h('p', { class: 'note' }, 'You choose each time you share whether a reference is included. Private notes never are.'),
-      ...M.references.map(r => h('div', { class: 'mp-ref', 'data-id': 'profile.reference' },
-        h('div', { class: 'mp-two' },
-          fIn('Name', r.name, 'profile.reference.name', (x) => { r.name = x; refs(); }),
-          fIn('How they know me', r.relation, 'profile.reference.relation', (x) => { r.relation = x; refs(); })),
-        h('div', { class: 'mp-two' },
-          fIn('Phone', r.phone, 'profile.reference.phone', (x) => { r.phone = x; refs(); }, { inputmode: 'tel' }),
-          fIn('Private note — only me', r.privateNote, 'profile.reference.note', (x) => { r.privateNote = x; refs(); })),
-        rmBtn('profile.reference.remove', () => { M.references = M.references.filter(x => x !== r); refs(); redraw(); }))),
-      h('button', { type: 'button', class: 'btn small mp-add', 'data-id': 'profile.references.add', onClick: async () => {
-        M.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); refs(); await redraw();
-        const all = root?.querySelectorAll('[data-id="profile.reference.name"]'); all?.[all.length - 1]?.focus();
-      } }, 'Add a reference')),
-    blk('Files', 'mp-files', 'profile.files-sec',
+    !P.me ? h('div', { class: 'callout', 'data-id': 'profile.start' }, 'This is your own profile — the one you send to shadchanim. Tap “Edit profile” to fill it in. Everything stays on this phone until you choose to share it.') : null,
+    h('div', { class: 'pc-summary', 'data-id': 'profile.summary' },
+      h('div', { class: 'avatar lg' }, P.me?.name ? store.initials({ name: P.me.name }) : 'ME'),
+      h('div', { class: 'pc-summary-text' },
+        h('div', { class: 'pc-summary-line', dir: 'auto' }, PD.summaryLine(v) || notYet('Age · city · work')),
+        h('div', { class: 'muted', dir: 'auto' }, v.intro || 'A one-line introduction')),
+      h('a', { class: 'icon-btn', href: editAt('me-basic'), 'aria-label': 'Edit summary', 'data-id': 'profile.summary-edit', html: icon('edit') })),
+    sec(l.facts, 'mp-facts', 'profile.facts', 'personal',
+      h('dl', { class: 'facts' },
+        fact('I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
+        fact('Age', v.age, 'profile.fact-age'), fact('City', v.city, 'profile.fact-city'), fact('Work / learning', v.occupation, 'profile.fact-work'),
+        ...v.facts.map(f => fact(f.label, f.value, 'profile.fact')))),
+    sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
+    sec(l.looking, 'mp-looking', 'profile.looking', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
+    sec('Contact', 'mp-contact', 'profile.contact', 'me-contact',
+      h('dl', { class: 'facts mp-contact' },
+        fact(l.inquiries, c.inquiriesName || c.inquiriesPhone ? [c.inquiriesName, c.inquiriesName && c.inquiriesPhone ? h('br') : null, c.inquiriesPhone] : '', 'profile.fact-inquiries', h('span', { class: 'priv' }, 'shared')),
+        fact(l.phone, c.phone, 'profile.fact-phone', h('span', { class: 'priv' }, 'you choose')),
+        fact(l.email, c.email, 'profile.fact-email', h('span', { class: 'priv' }, 'you choose')))),
+    sec('References', 'mp-refs', 'profile.references', 'me-refs',
+      (v.references || []).length ? h('dl', { class: 'facts' }, v.references.map(r => fact(r.name, [r.relation, r.phone].filter(Boolean).join(' · '), 'profile.reference', h('span', { class: 'priv' }, 'you choose'))))
+        : h('p', {}, notYet('No references yet'))),
+    ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', 'me-sections',
+      h('p', { dir: 'auto', class: 'prewrap' }, s.text || notYet()),
+      s.share === false ? h('p', { class: 'note' }, 'Kept out of the full profile when sharing.') : null)),
+    sec('Files', 'mp-files', 'profile.files-sec', null,
       h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Photos and résumé'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)} · you choose`), ico('chevron'))),
-    ...M.sections.map(s => blk(s.title || 'Section', 'mp-sec-' + s.id, 'profile.section',
-      fIn('Title', s.title, 'profile.section.title', (x) => { s.title = x; secs(); }),
-      fArea('Text', s.text, 'profile.section.text', (x) => { s.text = x; secs(); }),
-      h('label', { class: 'share-tick' }, h('input', { type: 'checkbox', checked: s.share !== false || null, 'data-id': 'profile.section.share', onChange: (e) => { s.share = e.target.checked; secs(); } }), h('span', {}, 'Include in the full profile when sharing')),
-      rmBtn('profile.section.remove', async () => {
-        if (!(await confirmDialog({ title: 'Delete this section?', text: `“${s.title}” is removed from your profile.`, ok: 'Delete', danger: true, dataId: 'profile.section-delete-dialog' }))) return;
-        M.sections = M.sections.filter(x => x !== s); secs(); redraw();
-      }))),
-    h('div', { class: 'mp-form-foot' },
-      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.add-section', onClick: addSection }, 'Add section…'),
-      h('span', { class: 'stamp', 'data-id': 'profile.saved-stamp' }, P.me?.updatedAt ? 'Saves by itself · updated ' + store.formatDate(P.me.updatedAt) : 'Saves by itself as you type')),
+    h('div', { class: 'stamp pc-stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet'),
   ];
-}
-async function addSection() {
-  if (tab !== 'profile') setTab('profile');
-  const t = await promptText({ title: 'Add section', label: 'Title', ok: 'Add', dataId: 'profile.section-name' });
-  if (!t) return;
-  const id = store.newId('s');
-  M.sections.push({ id, title: t.trim(), text: '', share: true }); queue({ sections: M.sections }); await redraw();
-  setTimeout(() => { scrollToSec('mp-sec-' + id); root?.querySelector(`#mp-sec-${CSS.escape(id)} textarea`)?.focus(); }, 100);
 }
 
 const save = async (patch, msg = 'Saved') => { P.me = await PD.saveProfile(P.me, lang, patch); toast(msg); };

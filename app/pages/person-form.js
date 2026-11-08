@@ -5,6 +5,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
+import * as PD from './profile-data.js';
 import { seekingKind, KINDS, LISTS, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE, listType, listsOf, extract, managePersonForm, addChoice, dateOnly } from './people-data.js';
 
 const MAX_FILE = 5 * 1024 * 1024;
@@ -17,7 +18,7 @@ let root = null, gen = 0, d = null, ctx = null;
 export function destroy() { root = null; gen++; }
 // Ideas lists unsaved drafts so nothing typed is ever lost.
 export function openDrafts() {
-  return [...drafts.values()].filter(x => x.dirty).map(x => ({ key: x.key, href: x.href, name: x.p.name || (x.sourceText || '').trim().split('\n')[0] || 'Untitled', editing: !!x.personId }));
+  return [...drafts.values()].filter(x => x.dirty && !x.me).map(x => ({ key: x.key, href: x.href, name: x.p.name || (x.sourceText || '').trim().split('\n')[0] || 'Untitled', editing: !!x.personId }));
 }
 export function dropDraft(key) { drafts.delete(key); }
 
@@ -25,10 +26,11 @@ export async function render(container, params = {}, path = '') {
   root = container;
   root.classList.add('person-form-page');
   const token = ++gen;
+  const me = path.startsWith('/profile/edit');
   const editing = !!params.id;
-  const key = editing ? 'edit:' + params.id : params.sourceId ? 'from:' + params.sourceId : params.contactId ? 'by:' + params.contactId : 'new';
+  const key = me ? 'me' : editing ? 'edit:' + params.id : params.sourceId ? 'from:' + params.sourceId : params.contactId ? 'by:' + params.contactId : 'new';
   if (!drafts.has(key)) {
-    const fresh = await makeDraft({ key, editing, params, path });
+    const fresh = me ? await makeMeDraft() : await makeDraft({ key, editing, params, path });
     if (!fresh) { root.append(h('p', { class: 'empty' }, 'This person or original no longer exists.'), h('a', { class: 'btn', href: '#/people' }, 'Back to Ideas')); return; }
     drafts.set(key, fresh);
   }
@@ -89,6 +91,7 @@ function paint({ keepScroll = false } = {}) {
   if (!root) return;
   const y = window.scrollY;
   root.innerHTML = '';
+  if (d.me) { paintMe(); if (keepScroll) window.scrollTo(0, y); return; }
   const title = d.personId ? `Edit ${d.p.name || 'person'}` : `Add ${d.kind === 'girl' ? 'Girl' : d.kind === 'guy' ? 'Guy' : 'Person'}`;
   root.append(
     h('div', { class: 'page-head' },
@@ -666,4 +669,128 @@ async function save({ then }) {
     if (location.hash === `#/people/${encodeURIComponent(saved.id)}/edit`) { d = next; ctx.people = await store.people.list(); paint(); window.scrollTo(0, 0); }
     else navigate(`/people/${encodeURIComponent(saved.id)}/edit`, { replace: true });
   } else navigate('/people/' + encodeURIComponent(saved.id));
+}
+
+// ---------- My Profile mode (#/profile/edit) ----------
+// The same Detailed Info form, tailored to the owner's own profile (owner request, tweak mode):
+// no Paste / Basic tabs, no "Know them", no sender or shadchan; adds my Contact, References,
+// extra facts and extra sections. Saves into the one profile record (store.profile "me").
+async function makeMeDraft() {
+  const prof = await PD.loadProfile();
+  const v = PD.view(prof.me, prof.me?.lang || 'en');
+  const clone = (x) => JSON.parse(JSON.stringify(x ?? null));
+  return {
+    key: 'me', me: true, href: '#/profile/edit', personId: null, tab: 'details', kind: store.getPrefs().iAm || '', dirty: false,
+    sourceText: '', sender: '', senderContactId: null, files: [], existingSources: [], existingAtts: [], newAtts: [], removedAttIds: [],
+    rec: prof.me,
+    p: { name: v.name || '', age: v.age || '', city: v.city || '', occupation: v.occupation || '', intro: v.intro || '',
+      languages: clone(v.languages) || [], about: v.about || '', looking: v.looking || '', maxAge: v.maxAge || '',
+      answers: clone(v.answers) || {}, answerLabels: clone(v.answerLabels) || {}, religiousOther: v.religiousOther || '', contactCards: [],
+      facts: clone(v.customFacts) || [], contact: clone(v.contact), references: clone(v.references) || [], sections: clone(v.sections) || [] },
+  };
+}
+
+const ME_SKIP = new Set(['contacts', 'known']);
+function paintMe() {
+  const visible = ctx.cats.filter(c => !c.hidden && !ME_SKIP.has(c.key));
+  const jumps = [['me-basic', 'Basics'], ...visible.map(c => [c.key, c.key === 'about' ? 'About me' : (c.jump || c.name)]),
+    ['me-facts', 'More facts'], ['me-contact', 'Contact'], ['me-refs', 'References'], ['me-sections', 'Sections']];
+  root.append(
+    h('div', { class: 'page-head' },
+      h('a', { class: 'icon-btn', href: '#/profile', 'aria-label': 'Back to My Profile', 'data-id': 'me-form.back', html: icon('back') }),
+      h('h1', {}, 'Edit my profile')),
+    h('p', { class: 'note intro' }, 'Your own profile — what you send to shadchanim. Fill in what you want; it stays on this phone until you share it.'),
+    h('div', { class: 'field' }, h('label', {}, 'I am a'),
+      h('div', { class: 'typepick', role: 'group', 'aria-label': 'I am a', 'data-id': 'me-form.i-am' },
+        ...KINDS.map(([k, l]) => h('button', { type: 'button', 'aria-pressed': d.kind === k ? 'true' : 'false', 'data-id': 'me-form.i-am-' + k, onClick: () => {
+          d.kind = k; touch(); store.setPref('iAm', k); paint({ keepScroll: true });
+        } }, l)))),
+    h('div', { class: 'ap-body', 'data-id': 'me-form.body' },
+      h('div', { class: 'details-top' },
+        h('nav', { class: 'jumpnav', 'aria-label': 'Jump to section', 'data-id': 'me-form.jumpnav' },
+          jumps.map(([k, l]) => h('button', { type: 'button', class: 'jump', 'data-id': 'me-form.jump-' + k, onClick: () => jump(k) }, l)))),
+      block({ key: 'me-basic', name: 'Basics' },
+        textField('Name', 'name', { autocomplete: 'off', placeholder: 'Full name' }, 'me-form.name'),
+        textField('Age', 'age', { inputmode: 'numeric', class: 'input short' }, 'me-form.age'),
+        areaField('One-line introduction', 'intro', 'e.g. An architect who loves good conversations…', 'me-form.intro')),
+      ...visible.map(c => c.key === 'about' ? meAbout(c) : section(c)),
+      meFacts(), meContact(), meRefs(), meSections(),
+      newCategory(),
+      h('div', { class: 'form-foot', 'data-id': 'me-form.footer' },
+        h('button', { type: 'button', class: 'linkish manage', 'data-id': 'me-form.manage-choices', onClick: async () => {
+          if (await managePersonForm()) { [ctx.choices, ctx.cats] = await Promise.all([store.getChoices(), store.getPersonCategories()]); paint({ keepScroll: true }); }
+        } }, 'Manage categories & choices'),
+        h('span', { class: 'spacer' }),
+        h('button', { type: 'button', class: 'btn', 'data-id': 'me-form.cancel', onClick: async () => {
+          if (d.dirty && !(await confirmDialog({ title: 'Leave without saving?', text: 'Your changes on this page are lost.', ok: 'Leave', danger: true, dataId: 'me-form.leave-dialog' }))) return;
+          drafts.delete('me'); navigate('/profile');
+        } }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn primary', 'data-id': 'me-form.save', onClick: saveMe }, 'Save profile'))));
+  if (d.jumpTo) { const id = d.jumpTo; d.jumpTo = null; setTimeout(() => jump(id), 60); }
+}
+function meAbout(cat) {
+  return block(cat,
+    areaField('About me', 'about', 'Personality, background, interests…', 'me-form.about'),
+    areaField('What I’m looking for', 'looking', 'Describe who you are looking for…', 'me-form.looking'),
+    h('div', { class: 'inline-field' }, h('label', { for: 'ap-maxAge' }, 'Up to what age?'),
+      h('input', { class: 'input tiny', id: 'ap-maxAge', type: 'number', min: 18, max: 120, inputmode: 'numeric', value: d.p.maxAge || '', placeholder: 'Age', 'data-id': 'me-form.max-age', onInput: (e) => { d.p.maxAge = e.target.value; touch(); } })));
+}
+const mIn = (label, obj, k, dataId, extra = {}) => h('div', { class: 'field' }, h('label', {}, label),
+  h('input', { class: 'input', dir: 'auto', value: obj[k] || '', 'data-id': dataId, ...extra, onInput: (e) => { obj[k] = e.target.value; touch(); } }));
+const mRemove = (dataId, run) => h('button', { type: 'button', class: 'linkish danger-text', 'data-id': dataId, onClick: () => { run(); touch(); paint({ keepScroll: true }); } }, 'Remove');
+function meFacts() {
+  return block({ key: 'me-facts', name: 'More facts' },
+    h('p', { class: 'note' }, 'Anything not asked above — e.g. Height, Family, Learning.'),
+    ...d.p.facts.map(f => h('div', { class: 'me-fact', 'data-id': 'me-form.fact' },
+      h('input', { class: 'input', dir: 'auto', value: f.label, placeholder: 'What (e.g. Height)', 'aria-label': 'Fact name', 'data-id': 'me-form.fact-label', onInput: (e) => { f.label = e.target.value; touch(); } }),
+      h('input', { class: 'input', dir: 'auto', value: f.value, placeholder: 'Answer', 'aria-label': 'Answer', 'data-id': 'me-form.fact-value', onInput: (e) => { f.value = e.target.value; touch(); } }),
+      mRemove('me-form.fact-remove', () => { d.p.facts = d.p.facts.filter(x => x !== f); }))),
+    h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-fact', onClick: () => { d.p.facts.push({ id: store.newId('f'), label: '', value: '' }); paint({ keepScroll: true }); const a = root.querySelectorAll('[data-id="me-form.fact-label"]'); a[a.length - 1]?.focus(); } }, 'Add a fact'));
+}
+function meContact() {
+  const c = d.p.contact;
+  return block({ key: 'me-contact', name: 'Contact' },
+    h('p', { class: 'note' }, 'The inquiries contact is shared in your profile. Your own phone and email are only added when you tick them while sharing.'),
+    mIn('For inquiries — name', c, 'inquiriesName', 'me-form.inq-name', { placeholder: 'e.g. Mrs. Cohen (mother)' }),
+    mIn('For inquiries — phone', c, 'inquiriesPhone', 'me-form.inq-phone', { inputmode: 'tel' }),
+    mIn('My phone (you choose)', c, 'phone', 'me-form.my-phone', { inputmode: 'tel' }),
+    mIn('My email (you choose)', c, 'email', 'me-form.my-email', { type: 'email', inputmode: 'email' }));
+}
+function meRefs() {
+  return block({ key: 'me-refs', name: 'References' },
+    h('p', { class: 'note' }, 'You choose each time you share whether a reference is included. Private notes never are.'),
+    ...d.p.references.map(r => h('div', { class: 'me-item', 'data-id': 'me-form.reference' },
+      mIn('Name', r, 'name', 'me-form.reference-name'), mIn('How they know me', r, 'relation', 'me-form.reference-relation'),
+      mIn('Phone', r, 'phone', 'me-form.reference-phone', { inputmode: 'tel' }), mIn('Private note — only me', r, 'privateNote', 'me-form.reference-note'),
+      mRemove('me-form.reference-remove', () => { d.p.references = d.p.references.filter(x => x !== r); }))),
+    h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-reference', onClick: () => { d.p.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); paint({ keepScroll: true }); const a = root.querySelectorAll('[data-id="me-form.reference-name"]'); a[a.length - 1]?.focus(); } }, 'Add a reference'));
+}
+function meSections() {
+  return block({ key: 'me-sections', name: 'Your own sections' },
+    h('p', { class: 'note' }, 'Extra paragraphs with your own title, e.g. “My family”.'),
+    ...d.p.sections.map(s => h('div', { class: 'me-item', 'data-id': 'me-form.section' },
+      mIn('Title', s, 'title', 'me-form.section-title'),
+      h('div', { class: 'field' }, h('label', {}, 'Text'), (() => { const t = h('textarea', { class: 'input grow', rows: 3, dir: 'auto', 'data-id': 'me-form.section-text', onInput: (e) => { s.text = e.target.value; touch(); grow(e.target); } }, s.text || ''); setTimeout(() => grow(t), 0); return t; })()),
+      h('label', { class: 'share-tick' }, h('input', { type: 'checkbox', checked: s.share !== false || null, 'data-id': 'me-form.section-share', onChange: (e) => { s.share = e.target.checked; touch(); } }), h('span', {}, 'Include in the full profile when sharing')),
+      mRemove('me-form.section-remove', () => { d.p.sections = d.p.sections.filter(x => x !== s); }))),
+    h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-section', onClick: () => { d.p.sections.push({ id: store.newId('s'), title: '', text: '', share: true }); paint({ keepScroll: true }); const a = root.querySelectorAll('[data-id="me-form.section-title"]'); a[a.length - 1]?.focus(); } }, 'Add a section'));
+}
+async function saveMe() {
+  const p = d.p;
+  if (!p.name.trim()) { toast('Write your name first'); jump('me-basic'); root?.querySelector('#ap-name')?.focus(); return; }
+  const answerLabels = { ...(p.answerLabels || {}) };
+  for (const cat of ctx.cats) for (const k of listsOf(cat)) if (!LISTS[k]) answerLabels[k] = cat.key === k ? cat.name : `${cat.name} · ${(cat.subs || []).find(s => s.key === k)?.name || ''}`;
+  const t = (x) => String(x ?? '').trim();
+  await PD.saveProfile(d.rec, d.rec?.lang || 'en', {
+    name: t(p.name).replace(/\s+/g, ' '), age: t(p.age), city: t(p.city), occupation: t(p.occupation), intro: t(p.intro),
+    about: t(p.about), looking: t(p.looking), maxAge: t(p.maxAge), languages: p.languages || [], answers: p.answers || {}, answerLabels,
+    religiousOther: t(p.religiousOther),
+    facts: p.facts.filter(f => t(f.label)).map(f => ({ ...f, label: t(f.label), value: t(f.value) })),
+    contact: { inquiriesName: t(p.contact.inquiriesName), inquiriesPhone: store.cleanPhone(t(p.contact.inquiriesPhone)), phone: store.cleanPhone(t(p.contact.phone)), email: t(p.contact.email) },
+    references: p.references.filter(r => t(r.name)).map(r => ({ ...r, name: t(r.name), phone: store.cleanPhone(t(r.phone)) })),
+    sections: p.sections.filter(s => t(s.title) || t(s.text)).map(s => ({ ...s, title: t(s.title) || 'Section', text: t(s.text) })),
+  });
+  drafts.delete('me');
+  toast('Profile saved');
+  navigate('/profile');
 }
