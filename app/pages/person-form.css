@@ -130,3 +130,10 @@ body.focus-mode [data-id="person.body-type"] .bubble{width:100%;justify-content:
 .me-group{border:1px solid var(--border);border-radius:var(--radius);padding:10px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
 .me-group .me-sub{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .me-hint{font-weight:400;font-size:var(--font-sm);color:var(--muted)}
+
+.me-photos{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.me-photo{margin:0;display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.me-photo img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--radius);border:1px solid var(--border)}
+.me-doc{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.me-doc .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.me-doc svg,.me-add svg{width:18px;height:18px;flex:none}

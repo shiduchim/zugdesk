@@ -682,7 +682,7 @@ async function makeMeDraft() {
   return {
     key: 'me', me: true, href: '#/profile/edit', personId: null, tab: 'details', kind: store.getPrefs().iAm || '', dirty: false,
     sourceText: '', sender: '', senderContactId: null, files: [], existingSources: [], existingAtts: [], newAtts: [], removedAttIds: [],
-    rec: prof.me,
+    rec: prof.me, myFiles: prof.files, myNew: [], myRemoved: [],
     p: { name: v.name || '', age: v.age || '', city: v.city || '', occupation: v.occupation || '', intro: v.intro || '',
       languages: clone(v.languages) || [], about: v.about || '', looking: v.looking || '', maxAge: v.maxAge || '',
       answers: clone(v.answers) || {}, answerLabels: clone(v.answerLabels) || {}, religiousOther: v.religiousOther || '', contactCards: [],
@@ -694,7 +694,7 @@ const ME_SKIP = new Set(['contacts', 'known']);
 function paintMe() {
   const visible = ctx.cats.filter(c => !c.hidden && !ME_SKIP.has(c.key));
   const jumps = [['me-basic', 'Basics'], ...visible.map(c => [c.key, c.key === 'about' ? 'About me' : (c.jump || c.name)]),
-    ['me-facts', 'More facts'], ['me-refs', 'Inquiries · References'], ['me-sections', 'Sections']];
+    ['me-facts', 'More facts'], ['me-refs', 'Inquiries · References'], ['me-files', 'Photos · Files'], ['me-sections', 'Sections']];
   const cancel = async () => {
     if (d.dirty && !(await confirmDialog({ title: 'Leave without saving?', text: 'Your changes on this page are lost.', ok: 'Leave', danger: true, dataId: 'me-form.leave-dialog' }))) return;
     drafts.delete('me'); navigate('/profile');
@@ -720,7 +720,7 @@ function paintMe() {
         textField('Age', 'age', { inputmode: 'numeric', class: 'input short' }, 'me-form.age'),
         areaField('One-line introduction', 'intro', 'e.g. An architect who loves good conversations…', 'me-form.intro')),
       ...visible.map(c => c.key === 'about' ? meAbout(c) : section(c)),
-      meFacts(), meRefs(), meSections(),
+      meFacts(), meRefs(), meFiles(), meSections(),
       newCategory(),
       h('div', { class: 'me-foot', 'data-id': 'me-form.footer' },
         h('button', { type: 'button', class: 'linkish manage', 'data-id': 'me-form.manage-choices', onClick: async () => {
@@ -767,6 +767,27 @@ function meRefs() {
         d.p.references.push({ id: store.newId('ref'), name: '', relation: '', phone: '', privateNote: '' }); paint({ keepScroll: true });
         const a = root.querySelectorAll('[data-id="me-form.reference-name"]'); a[a.length - 1]?.focus(); } }, 'Add another reference')));
 }
+// Photos and files you may send with your profile. Kept on this phone; added for real on Save.
+function meFiles() {
+  const all = [...d.myFiles.filter(f => !d.myRemoved.includes(f.id)), ...d.myNew];
+  const picker = h('input', { type: 'file', multiple: true, class: 'hidden', accept: 'image/*,application/pdf', 'data-id': 'me-form.files-input', onChange: async (e) => {
+    for (const f of e.target.files) {
+      if (f.size > MAX_FILE) { toast(`${f.name} is larger than 5 MB`); continue; }
+      d.myNew.push({ name: f.name, type: f.type, size: f.size, dataUrl: await readAsDataURL(f) });
+    }
+    touch(); paint({ keepScroll: true });
+  } });
+  const remove = (f) => { if (f.id) d.myRemoved.push(f.id); else d.myNew = d.myNew.filter(x => x !== f); touch(); paint({ keepScroll: true }); };
+  const photos = all.filter(f => /^image\//.test(f.type || '')), docs = all.filter(f => !/^image\//.test(f.type || ''));
+  return block({ key: 'me-files', name: 'Photos and files' },
+    photos.length ? h('div', { class: 'me-photos' }, photos.map(f => h('figure', { class: 'me-photo', 'data-id': 'me-form.photo' },
+      h('img', { src: f.dataUrl, alt: f.name }),
+      h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'me-form.photo-remove', onClick: () => remove(f) }, 'Remove')))) : null,
+    ...docs.map(f => h('div', { class: 'me-doc', 'data-id': 'me-form.file' }, ico('file'), h('span', { class: 'grow', dir: 'auto' }, f.name),
+      h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'me-form.file-remove', onClick: () => remove(f) }, 'Remove'))),
+    picker,
+    h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-files', onClick: () => picker.click() }, ico('upload'), 'Add photos or files'));
+}
 function meSections() {
   return block({ key: 'me-sections', name: 'Your own sections' },
     ...d.p.sections.map(s => h('div', { class: 'me-item', 'data-id': 'me-form.section' },
@@ -791,6 +812,8 @@ async function saveMe() {
     references: p.references.filter(r => t(r.name)).map(r => ({ ...r, name: t(r.name), phone: store.cleanPhone(t(r.phone)) })),
     sections: p.sections.filter(s => t(s.title) || t(s.text)).map(s => ({ ...s, title: t(s.title) || 'Section', text: t(s.text) })),
   });
+  for (const id of d.myRemoved) await store.attachments.remove(id);
+  for (const f of d.myNew) await store.attachments.save({ ...f, profileFile: true, personId: null, contactId: null });
   drafts.delete('me');
   toast('Profile saved');
   navigate('/profile');
