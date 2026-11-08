@@ -96,14 +96,14 @@ export function sheet({ title, dataId, body, actions = [], className = '' }) {
   return new Promise((resolve) => {
     let done = false;
     const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
-    // Close sits at the bottom next to Save, where a thumb can reach it (owner request, Stage 8).
+    // Close sits at the bottom right, after the other buttons, where a thumb can reach it (owner request).
     const closeBtn = h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.close', onClick: () => finish(null) }, 'Close');
     const dlg = h('dialog', { class: 'sheet form-sheet ' + className, 'data-id': dataId },
       h('div', { class: 'sheet-head' }, h('h2', {}, title)),
       h('div', { class: 'sheet-body' }, body),
-      h('div', { class: 'btn-row sheet-actions' }, closeBtn, actions.map(a =>
+      h('div', { class: 'btn-row sheet-actions' }, actions.map(a =>
         h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger' : ''), type: 'button', 'data-id': dataId + '.' + a.id,
-          onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label))));
+          onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label)), closeBtn));
     dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
     dlg.addEventListener('close', () => finish(null));
     document.body.append(dlg);

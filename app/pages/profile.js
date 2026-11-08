@@ -123,7 +123,7 @@ function profileTab(v) {
       h('p', { dir: 'auto', class: 'prewrap' }, s.text || notYet()),
       s.share === false ? h('p', { class: 'note' }, 'Kept out of the full profile when sharing.') : null)),
     sec('Files', 'mp-files', 'profile.files-sec', null,
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Photos and résumé'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)}`), ico('chevron'))),
+      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'profile.files', onClick: () => filesSheet() }, ico('folder'), h('span', { class: 'grow' }, 'Photos and docs'), h('span', { class: 'priv' }, `${PD.filesSummary(P.files)}`), ico('chevron'))),
     h('div', { class: 'stamp pc-stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet'),
   ];
 }
@@ -138,7 +138,7 @@ async function filesSheet() {
   const picker = h('input', { type: 'file', multiple: true, class: 'hidden', accept: 'image/*,application/pdf', 'data-id': 'profile.files.input' });
   const drawFiles = () => {
     list.innerHTML = '';
-    if (!P.files.length) list.append(h('p', { class: 'note' }, 'No files yet. Photos or a PDF résumé you may want to send.'));
+    if (!P.files.length) list.append(h('p', { class: 'note' }, 'No files yet. Photos or documents you may want to send.'));
     for (const f of P.files) list.append(h('div', { class: 'mp-file', 'data-id': 'profile.file' },
       h('a', { class: 'att-row', href: f.dataUrl, download: f.name }, ico('file'), h('span', { dir: 'auto' }, f.name), h('span', { class: 'priv' }, PD.fileKind(f))),
       h('button', { type: 'button', class: 'linkish danger-text', onClick: async () => {
