@@ -33,12 +33,17 @@
   --selected-bg:#36332E;
   --selected-edge:#ECEAE4;
 
+  /* tabs: the chosen tab clearly lighter than the bar */
+  --tab-on-bg:#55524A;  --tab-on-text:#FFFFFF;  --tab-on-edge:#77736A;
+  --tab-active-bg:#55524A;
+  --fu-tab-bg:#2F4166;
+
   /* Shidduchim */
   --sh-seg-empty:#3A3C44;
   --sh-seg-past:#6E737E;
   --sh-seg-past-empty:#33353B;
-  --sh-tab-gradient:linear-gradient(110deg,#1F3A34 0%,#2A2D4A 57%,#3D2636 100%);
-  --sh-tab-text:#9FD8D0;
+  --sh-tab-gradient:linear-gradient(110deg,#2C5A50 0%,#3C4277 57%,#633A57 100%);
+  --sh-tab-text:#FFFFFF;
   --sh-yes-bg:#1C3A30;  --sh-yes-text:#7FD8BF;  --sh-yes-edge:#2F6150;
   --sh-no-bg:#3D2619;   --sh-no-text:#F2A584;   --sh-no-edge:#6A3D28;
   --sh-think-bg:#3A3018;--sh-think-text:#E8C66E;--sh-think-edge:#62512A;
@@ -47,12 +52,13 @@
   --sh-heart-bg:#3D2230;--sh-heart-text:#F08DBA;
   --sh-calendar-bg:#2C2848;--sh-calendar-text:#B7A6F0;
 
-  /* Home */
-  --note-blue-bg:#1F2A3D;    --note-blue-edge:#33445F;
-  --note-yellow-bg:#36301A;  --note-yellow-edge:#544A2A;
-  --note-peach-bg:#3A2A20;   --note-peach-edge:#5A4132;
-  --note-green-bg:#1F3224;   --note-green-edge:#34503A;
-  --note-lilac-bg:#2E2840;   --note-lilac-edge:#463D5E;
+  /* Home — plain notes look like a dim sticky note */
+  --note-plain-bg:#3B3522;  --note-plain-edge:#5C5232;
+  --note-blue-bg:#263650;    --note-blue-edge:#3A5078;
+  --note-yellow-bg:#4A401C;  --note-yellow-edge:#6E5F2C;
+  --note-peach-bg:#4A3324;   --note-peach-edge:#6E4C36;
+  --note-green-bg:#263F2C;   --note-green-edge:#3A5E42;
+  --note-lilac-bg:#3A3152;   --note-lilac-edge:#564A78;
   --note-hover-edge:#5A5750;
   --fu-bg:#1F2633;  --fu-edge:#323C4E;  --fu-title:#9DB9EA;  --fu-sub:#8E9BB2;  --fu-line:#2C3546;
   --fu-dot-edge:#4A5A75;

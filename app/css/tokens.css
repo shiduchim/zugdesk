@@ -110,6 +110,10 @@
   --original-font:var(--font-mono);
   --original-size:12.5px;
   --tab-active-bg:var(--selected-bg);
+  --tab-on-bg:var(--surface);      /* selected tab in a tab bar */
+  --tab-on-text:var(--text);
+  --tab-on-edge:transparent;
+  --fu-tab-bg:var(--fu-bg);
   --orig-pane-width:40%;            /* Basic Info: original on the left */
   --orig-pane-max:32dvh;            /* narrow phones: original stacked on top, this tall */
   --jump-height:32px;
