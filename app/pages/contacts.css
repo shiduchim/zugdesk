@@ -6,10 +6,6 @@
 .ct-search{position:relative}
 .ct-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);pointer-events:none}
 .ct-search .input{padding-left:38px}
-.chip-row{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
-.chip-row::-webkit-scrollbar{display:none}
-.fchip{flex-shrink:0;min-height:var(--chip-height);padding:0 12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);font-size:var(--font-sm);color:var(--text)}
-.fchip[aria-pressed="true"]{background:var(--selected-bg);border-color:var(--selected-edge);font-weight:600}
 .ct-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .ct-sort{display:flex;align-items:center;gap:6px;flex:1 1 170px;min-width:0;font-size:var(--font-sm);color:var(--muted)}
 .ct-sort select.input{min-height:var(--btn-small-height);padding:4px 8px;font-size:var(--font-sm);flex:1;min-width:0}

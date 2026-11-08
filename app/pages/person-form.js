@@ -211,7 +211,14 @@ function phoneCard(c) {
 function detailsTab() {
   const visible = ctx.cats.filter(c => !c.hidden);
   const jumps = [...visible.flatMap(c => c.key === 'contacts' ? [[c.key, c.jump || c.name], ['references', 'References']] : [[c.key, c.jump || c.name]]), ['attachments', 'Attached items']];
+  // Same name and phone data as Basic Info (shared records), shown at the top so it carries over.
+  let phoneRows = d.p.contactCards.filter(c => c.number || !c.name);
+  if (!phoneRows.length) { d.p.contactCards.push(card({})); phoneRows = d.p.contactCards.slice(-1); }
   return h('div', { class: 'ap-body', 'data-id': 'person.details' },
+    h('section', { class: 'form-pane', 'data-id': 'person.details-basics' },
+      textField('Name', 'name', { autocomplete: 'off', placeholder: 'Full name' }, 'person.details-name'),
+      h('div', { class: 'field' }, h('label', {}, 'Phone numbers'),
+        h('div', { class: 'phone-cards' }, phoneRows.map(c => phoneCard(c))))),
     h('div', { class: 'details-top', 'data-id': 'person.details-top' },
       h('div', { class: 'details-title' }, h('h2', {}, 'Detailed Info'),
         hasOriginal() ? h('button', { type: 'button', class: 'btn small', 'data-id': 'person.view-original', onClick: viewOriginal }, ico('file'), 'View Original') : null),

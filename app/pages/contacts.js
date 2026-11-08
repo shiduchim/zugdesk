@@ -5,7 +5,7 @@
 // Switching views changes presentation only; selection, search, sort and filters
 // live in contacts-data.js `S` and survive every switch.
 import * as store from '../js/store.js';
-import { h, icon, dock } from '../js/ui.js';
+import { h, icon } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { S, D, load, visible, extraFilterCount, anyFilter, clearFilters, ensureSelection, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel } from './contacts-data.js';
 import { personBlock, quickFacts, nameLine, statusText, filtersSheet, viewSheet, shortDate, eventItem } from './contacts-panels.js';
@@ -91,9 +91,9 @@ function draw() {
 
 // ---------- shared toolbar ----------
 const addBtn = (cls) => h('button', { class: 'btn primary ' + cls, type: 'button', 'data-id': 'contacts.add-btn', onClick: () => navigate('/contacts/new') }, 'Add Shadchan');
-// Phone: Add Shadchan sits in the dock at the bottom; computer: next to the heading.
-function head(desk = false) {
-  return h('div', { class: 'page-head ct-head' }, h('h1', {}, 'Contacts'), desk ? addBtn('') : null);
+// Add Shadchan sits top right, next to the heading, on phone and computer (owner request).
+function head() {
+  return h('div', { class: 'page-head ct-head' }, h('h1', {}, 'Contacts'), addBtn(''));
 }
 
 function tools() {
@@ -216,8 +216,7 @@ function select(c, scope, panes) {
 // ---------- phone views ----------
 function drawPhone(lay) {
   root.classList.add('lay-' + lay);
-  root.append(head(), tools(), phoneBody(lay),
-    dock('contacts.dock', addBtn('wide')));
+  root.append(head(), tools(), phoneBody(lay));
   restoreScrolls();
   if (lay === 'list' || lay === 'inbox') requestAnimationFrame(() => window.scrollTo(0, S.pageScroll || 0));
   if (lay === 'tabs') requestAnimationFrame(() => root.querySelector('.dir-row[aria-current="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' }));
@@ -339,7 +338,7 @@ function deskBody() {
   deskPick = (p) => select(p, root.querySelector('.d-explorer'), fill);
   const dir = directory(v, 'desk', deskPick);
   dir.dataset.keep = 'd-dir';
-  const explorer = h('div', { class: 'd-explorer', 'data-id': 'contacts.explorer' }, head(true), tools(), dir);
+  const explorer = h('div', { class: 'd-explorer', 'data-id': 'contacts.explorer' }, head(), tools(), dir);
   fill();
   return h('div', { class: 'ct-body body-desk' }, explorer, record);
 }

@@ -24,7 +24,7 @@ export async function loadNotes() {
 // Names a note is linked to, as { label, href } (shortcuts into the same records).
 export function linksOf(n, D) {
   const out = [];
-  if (n.me) out.push({ label: 'Me', href: '#/profile/notes' });
+  if (n.me) out.push({ label: 'Me', href: '#/profile' });
   for (const id of n.contactIds || []) { const c = D.contactsById.get(id); if (c) out.push({ label: store.displayName(c), href: `#/contacts/${encodeURIComponent(id)}` }); }
   for (const id of n.personIds || []) { const p = D.peopleById.get(id); if (p) out.push({ label: store.personName(p), href: `#/people/${encodeURIComponent(id)}/notes` }); }
   return out;

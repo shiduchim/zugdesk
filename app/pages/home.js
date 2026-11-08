@@ -2,7 +2,7 @@
 // New Note on top; Existing Notes (Pinned / Other) and History on the left, Follow Ups on the
 // right on a computer; one column on a phone: New Note → Notes → Follow Ups → History.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, promptText } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, promptText, swipeTabs } from '../js/ui.js';
 import * as N from './notes-data.js';
 import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from './home-data.js';
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
@@ -20,9 +20,10 @@ let U = { expanded: null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), 
 let drafts = {};
 const els = {};
 
-export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
+export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
 
 export async function render(container, params) {
+  swipeTabs(container, { keys: () => PHONE.matches ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
   root = container;
   root.classList.add('home-page', 'wide');
   U = { expanded: params.noteId || null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
@@ -37,13 +38,10 @@ export async function render(container, params) {
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
   els.grid = h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
   root.append(h('div', { class: 'home-wrap' },
-    h('header', { class: 'home-head', 'data-id': 'home.head' },
-      // Slim icon bar has no top bar: Settings lives here, top right of Home (owner request).
-      store.getPrefs().shellStyle === 'slim' ? h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') }) : null,
-      h('div', { class: 'eyebrow' }, 'Single Mode'),
-      h('h1', {}, 'Home'),
-      h('p', { class: 'muted' }, 'Write anything. Keep the things that matter close.')),
-    els.search, els.results, els.composer, tabRow(), els.grid));
+    // Title and tagline removed to save phone screen space (owner request); tabs go first.
+    // Phone has no top bar; Settings sits at the end of the tab row, using no extra space (owner request).
+    h('div', { class: 'home-tabline' }, tabRow(),
+      h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') })), els.search, els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key !== 'homeSuggestions') return;
@@ -346,7 +344,7 @@ async function save(key) {
   const msg = (key === 'new' && !d.targetNoteId ? 'Note saved' : 'Dated update added') + (d.followUp ? ' · Follow Up added' : '') + (d.answer ? ' · answer updated' : '');
   delete drafts[key]; persist();
   if (key === 'new') drawComposer(); else U.expanded = note.id;
-  toast(msg);
+  toast(msg + (!U.allNotes && aboutPerson(note) && U.expanded !== note.id ? ' · find it on the person’s Notes tab or under All' : ''), 4000);
 }
 
 function drawComposer() { if (!root) return; els.composer.innerHTML = ''; els.composer.append(composer('new')); }
@@ -380,16 +378,24 @@ function applySection() {
 function showSection(k) { section = k; applySection(); }
 function tabCounts() {
   if (!els.tabs) return;
-  const c = { notes: D.notes.length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
+  const c = { notes: shownNotes().length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
   els.tabs.querySelectorAll('[data-count]').forEach(el => { el.textContent = String(c[el.dataset.count] ?? ''); });
 }
 
 // ---------- Existing Notes ----------
+// Home shows MY notes by default: notes not about a person (owner request, tweak mode).
+// Notes about a person live on that person's Notes tab; "All" shows them here too.
+const aboutPerson = (n) => (n.personIds || []).length > 0;
+function shownNotes() { return U.allNotes ? D.notes : D.notes.filter(n => !aboutPerson(n) || n.id === U.expanded); }
 function drawNotes() {
-  const pinned = D.notes.filter(n => n.pinned), other = D.notes.filter(n => !n.pinned);
+  const list = shownNotes(), people = D.notes.filter(aboutPerson).length;
+  const pinned = list.filter(n => n.pinned), other = list.filter(n => !n.pinned);
   els.notes.innerHTML = '';
-  els.notes.append(secHead('Notes', 'Existing Notes', D.notes.length, 'home.notes-head'));
-  if (!D.notes.length) { els.notes.append(h('p', { class: 'note home-empty' }, 'No notes yet. Write one above — a title is optional.')); return; }
+  els.notes.append(secHead('Notes', U.allNotes ? 'All Notes' : 'My Notes', list.length, 'home.notes-head'));
+  if (people) els.notes.append(h('div', { class: 'notes-filter', role: 'group', 'aria-label': 'Which notes', 'data-id': 'home.notes-filter' },
+    [[false, 'My notes', 'home.notes-mine'], [true, `All (with ${people} about people)`, 'home.notes-all']].map(([v, l, id]) =>
+      h('button', { type: 'button', class: 'notes-filter-btn', 'aria-pressed': !!U.allNotes === v ? 'true' : 'false', 'data-id': id, onClick: () => { U.allNotes = v; drawNotes(); tabCounts(); } }, l))));
+  if (!list.length) { els.notes.append(h('p', { class: 'note home-empty' }, D.notes.length ? 'No notes of your own yet. Notes about a person are on their Notes tab.' : 'No notes yet. Write one above — a title is optional.')); return; }
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
   if (other.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))), h('div', { class: 'note-list' }, other.map(noteCard)));
 }
@@ -399,7 +405,7 @@ function noteCard(n) {
   const links = N.linksOf(n, D);
   const pin = h('button', { type: 'button', class: 'pin-text corner', 'aria-pressed': n.pinned ? 'true' : 'false', 'data-id': 'home.note-pin',
     onClick: async (e) => { e.stopPropagation(); await N.togglePin(n); toast(n.pinned ? 'Unpinned' : 'Pinned'); } }, n.pinned ? 'Unpin' : 'Pin');
-  const linkRow = links.length ? h('span', { class: 'note-links' }, links.map((l, i) => [i ? ', ' : '', h('a', { href: l.href, dir: 'auto', onClick: (e) => e.stopPropagation() }, l.label)])) : h('span', { class: 'note-links muted' }, 'Note');
+  const linkRow = links.length ? h('span', { class: 'note-links' }, links.map((l, i) => [i ? ', ' : '', h('a', { href: l.href, dir: 'auto', onClick: (e) => e.stopPropagation() }, l.label)])) : null;
   if (!open) {
     const card = h('article', { class: `note-card tone-${n.color || 'plain'}`, 'data-note': n.id, 'data-id': 'home.note',
       onClick: (e) => { if (!fine() || e.target.closest('a,button')) return; expand(n.id); } },

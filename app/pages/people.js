@@ -1,7 +1,7 @@
 // Ideas — every saved person (one record each), originals saved for later,
 // and unsaved Add Person drafts. A saved idea is not a formal shidduch offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, confirmDialog, dock } from '../js/ui.js';
+import { h, icon, toast, confirmDialog, swipeTabs } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
 import { kindLabel, dateOnly, seekingKind } from './people-data.js';
 import { ideaStatus, latestByPerson } from './idea-flow.js';
@@ -9,15 +9,16 @@ import { ideaStatus, latestByPerson } from './idea-flow.js';
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const S = { q: '', filter: 'active' };   // survives leaving the page
 // Active = new + waiting; Closed (not for me / they said no) is hidden unless chosen (owner request).
-const filters = (seek) => [['active', 'Active'], ['waiting', seek === 'guy' ? 'Waiting for him' : seek === 'girl' ? 'Waiting for her' : 'Waiting'],
-  ['closed', 'Closed'], ['all', 'All'], ...(seek ? [] : [['guy', 'Guys'], ['girl', 'Girls']])];
+// Three tabs only (owner request): Active = interested or in a shidduch, Open = nobody decided yet, Closed.
+const filters = () => [['active', 'Active'], ['open', 'Open'], ['closed', 'Closed']];
 
 let root = null, gen = 0, unsub = null, timer = 0;
-export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container) {
   root = container;
   root.classList.add('people-page');
+  swipeTabs(root, { keys: () => filters(seekingKind(store.getPrefs())).map(f => f[0]), current: () => S.filter, go: (k) => { S.filter = k; draw(); } });
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs') { clearTimeout(timer); timer = setTimeout(draw, 80); } });
   await draw();
@@ -44,9 +45,9 @@ async function draw() {
     if (seek && p.kind && p.kind !== seek) return false;
     if (words.length && !words.every(w => searchText(p).includes(w))) return false;
     const st = status.get(p.id).key;
-    if (S.filter === 'guy' || S.filter === 'girl') return p.kind === S.filter;
-    if (S.filter === 'active') return st === 'new' || st === 'waiting';
-    if (S.filter === 'waiting' || S.filter === 'closed') return st === S.filter;
+    if (S.filter === 'active') return st === 'waiting' || st === 'shidduch';
+    if (S.filter === 'open') return st === 'new';
+    if (S.filter === 'closed') return st === 'closed';
     return true;
   }).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
 
@@ -56,10 +57,11 @@ async function draw() {
 
   root.innerHTML = '';
   root.append(...[
-    h('div', { class: 'page-head' }, h('h1', {}, 'Ideas')),
+    // Add Person sits top right, next to the title, so it never moves (owner request).
+    h('div', { class: 'page-head' }, h('h1', {}, 'Ideas'), h('a', { class: 'btn primary', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
     h('div', { class: 'ct-search' }, ico('search'), search),
-    h('div', { class: 'chips filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
-      filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'bubble', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
+    h('div', { class: 'chip-row filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
+      filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'fchip', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
         onClick: () => { S.filter = k; draw(); } }, l))),
     drafts.length ? h('section', { class: 'section', 'data-id': 'people.drafts' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `Not saved yet · ${drafts.length}`)),
@@ -86,10 +88,9 @@ async function draw() {
     h('section', { class: 'section', 'data-id': 'people.list' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `People · ${list.length}${list.length !== people.length ? ' of ' + people.length : ''}`)),
       list.length ? list.map(p => personRow(p, status.get(p.id), byId))
-        : h('div', { class: 'empty' }, people.length ? 'Nobody matches. ' : 'No people saved yet. ',
-            people.length ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; S.filter = 'all'; draw(); } }, 'Show everyone')
+        : h('div', { class: 'empty' }, people.length ? (S.q ? 'Nobody matches. ' : `Nobody here right now.`) : 'No people saved yet. ',
+            people.length ? (S.q ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; draw(); } }, 'Clear search') : null)
               : h('a', { href: '#/people/new' }, 'Add the first person'))),
-    dock('people.dock', h('a', { class: 'btn primary wide', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
   ].filter(Boolean));
 }
 
@@ -103,8 +104,8 @@ function personRow(p, st, byId) {
     h('div', { class: 'row-main' },
       h('div', { class: 'row-title', dir: 'auto' }, store.personName(p)),
       h('div', { class: 'row-sub', dir: 'auto' }, sub),
-      from.length || p.sender ? h('div', { class: 'row-sub', dir: 'auto' }, 'via ' + (from.length ? from.join(', ') : p.sender)) : null),
-    h('div', { class: 'row-tags' },
-      p.kind ? h('span', { class: 'chip' }, kindLabel(p.kind)) : null,
-      st.label !== 'New' ? h('span', { class: 'chip st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null));
+      from.length || p.sender ? h('div', { class: 'row-sub', dir: 'auto' }, 'via ' + (from.length ? from.join(', ') : p.sender)) : null,
+      // Status sits on its own line under the details, so it never covers the work or city (owner request).
+      st.label !== 'New' ? h('span', { class: 'chip row-status st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null),
+    p.kind ? h('div', { class: 'row-tags' }, h('span', { class: 'chip' }, kindLabel(p.kind))) : null);
 }

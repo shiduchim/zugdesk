@@ -49,16 +49,6 @@ select.mp-lang-pick{width:auto;flex:0 0 auto;min-height:var(--btn-small-height);
 textarea.mono{font-family:var(--mp-text-font);font-size:var(--mp-text-size);line-height:1.6}
 
 /* private notes */
-.mp-notes{display:flex;flex-direction:column;gap:14px;padding:6px 0 12px}
-.mp-note{display:flex;gap:10px;align-items:flex-start}
-.mp-note-ico svg{width:18px;height:18px;color:var(--muted);margin-top:3px}
-.mp-note-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.mp-note-main p.prewrap{font-size:var(--font-lg)}
-.mp-note-links{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);overflow-wrap:anywhere}
-.mp-note-links a{color:var(--link);text-decoration:none}
-.mp-note-links .linkish.inline{color:var(--link);text-decoration:none;font-family:inherit}
-.mp-compose{display:flex;flex-direction:column;gap:6px;padding-bottom:var(--gap-lg)}
-textarea.mp-composer{min-height:var(--btn-height);resize:none;overflow:hidden}
 .mp-share-log summary{display:flex;align-items:center;gap:10px;min-height:var(--touch-min);cursor:pointer;list-style:none;border-top:1px solid var(--border)}
 .mp-share-log summary::-webkit-details-marker{display:none}
 .mp-share-log summary svg{width:16px;height:16px;color:var(--muted);transition:transform .15s}
