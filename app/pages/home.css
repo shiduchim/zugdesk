@@ -27,7 +27,7 @@
 .ed-head .spacer{flex:1}
 .ed-title{border:0;background:transparent;padding:2px 0;font-weight:600;font-size:var(--font-base);color:var(--text);min-height:32px;width:100%}
 .ed-title::placeholder{color:var(--muted);font-weight:500}
-.ed-title:focus{outline:none;border-bottom:1px solid var(--border)}
+.ed-title:focus{outline:none}
 .ed-wrap{position:relative;border:0;border-radius:var(--radius);background:transparent}
 .ed-box{font:inherit;font-size:var(--font-base);line-height:1.6;padding:10px 12px;margin:0;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;letter-spacing:normal}
 .ed-mirror{position:absolute;inset:0;color:transparent;pointer-events:none;overflow:hidden;border:1px solid transparent}
@@ -37,7 +37,7 @@
 .ed-mirror .hl-time{background:var(--hl-time)}
 .ed-mirror .hl-status{background:var(--hl-status)}
 .ed-text{position:relative;display:block;width:100%;min-height:var(--ed-min);resize:none;overflow:hidden;border:1px solid transparent;border-radius:var(--radius);background:transparent;color:var(--text)}
-.ed-text:focus{outline:2px solid var(--focus);outline-offset:1px}
+.ed-text:focus{outline:none}
 .ed-target{font-size:var(--font-sm);color:var(--muted)}
 .ed-target:empty{display:none}
 .ed-foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
