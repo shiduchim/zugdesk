@@ -38,13 +38,11 @@ export async function render(container, params) {
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
   els.grid = h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
   root.append(h('div', { class: 'home-wrap' },
-    h('header', { class: 'home-head', 'data-id': 'home.head' },
-      // Slim icon bar has no top bar: Settings lives here, top right of Home (owner request).
-      store.getPrefs().shellStyle === 'slim' ? h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') }) : null,
-      h('div', { class: 'eyebrow' }, 'Single Mode'),
-      h('h1', {}, 'Home'),
-      h('p', { class: 'muted' }, 'Write anything. Keep the things that matter close.')),
-    els.search, els.results, els.composer, tabRow(), els.grid));
+    // Title and tagline removed to save phone screen space (owner request); tabs go first.
+    // Slim icon bar has no top bar: Settings stays here, top right of Home.
+    store.getPrefs().shellStyle === 'slim' ? h('header', { class: 'home-head', 'data-id': 'home.head' },
+      h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') })) : null,
+    tabRow(), els.search, els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key !== 'homeSuggestions') return;

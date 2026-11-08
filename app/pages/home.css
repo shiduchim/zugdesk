@@ -209,3 +209,7 @@
 .notes-filter{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
 .notes-filter-btn{border:1px solid var(--border);background:var(--surface);color:var(--muted);font-size:var(--font-sm);font-weight:600;min-height:32px;padding:4px 12px;border-radius:var(--radius-pill)}
 .notes-filter-btn[aria-pressed="true"]{background:var(--surface-2);color:var(--text);border-color:var(--text)}
+
+/* Phone: the tab already names the section, so hide the repeated heading (owner request) */
+@media (max-width:899px){.home-notes>.home-sec-head,.home-followups>.home-sec-head,.home-history>.home-sec-head{display:none}}
+.home-head .home-settings{position:static;align-self:flex-end}
