@@ -139,3 +139,4 @@ body.focus-mode [data-id="person.body-type"] .bubble{width:100%;justify-content:
 .me-doc svg,.me-add svg{width:18px;height:18px;flex:none}
 body.focus-mode main.content:has(.me-foot){padding-bottom:0}
 .me-body:has(> .me-foot:last-child){padding-bottom:0}
+.me-foot.plain{position:static;border-top:0}
