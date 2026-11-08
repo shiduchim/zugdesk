@@ -104,10 +104,10 @@ const firstSentence = (s) => { const m = (s || '').trim().match(/^[\s\S]*?[.!?](
 export function suggestedText(me, lang) {
   const v = view(me, lang), l = L(lang);
   const ids = v.shortFacts && v.shortFacts.length ? v.shortFacts : v.facts.slice(0, 5).map(f => f.id);
-  const facts = ids.map(id => v.facts.find(f => f.id === id)).filter(f => f && f.value);
+  const facts = ids.map(id => v.facts.find(f => f.id === id)).filter(f => f && (f.value || f.label));
   const lines = [v.name || ''];
   if (summaryLine(v)) lines.push('• ' + summaryLine(v));
-  for (const f of facts) lines.push('• ' + f.value);
+  for (const f of facts) lines.push('• ' + (f.value || f.label));
   if (v.intro) lines.push('', v.intro);
   if (v.looking) lines.push('', `${l.lookingShort}: ${firstSentence(v.looking)}`);
   const inq = [v.contact.inquiriesName, v.contact.inquiriesPhone].filter(Boolean).join(', ');
@@ -121,8 +121,8 @@ export function fullText(me, lang, { phone = false, email = false, refIds = [] }
   const out = [v.name || ''];
   if (summaryLine(v)) out.push(summaryLine(v));
   if (v.intro) out.push(v.intro);
-  const facts = v.facts.filter(f => f.value);
-  if (facts.length) out.push('', l.facts + ':', ...facts.map(f => `${f.label}: ${f.value}`));
+  const facts = v.facts.filter(f => f.value || f.label);
+  if (facts.length) out.push('', l.facts + ':', ...facts.map(f => f.value ? `${f.label}: ${f.value}` : f.label));
   if (v.about) out.push('', l.about + ':', v.about);
   if (v.looking) out.push('', l.looking + ':', v.looking);
   for (const s of v.sections.filter(s => s.share !== false && s.text)) out.push('', s.title + ':', s.text);

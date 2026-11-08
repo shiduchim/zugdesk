@@ -694,7 +694,7 @@ const ME_SKIP = new Set(['contacts', 'known']);
 function paintMe() {
   const visible = ctx.cats.filter(c => !c.hidden && !ME_SKIP.has(c.key));
   const jumps = [['me-basic', 'Basics'], ...visible.map(c => [c.key, c.key === 'about' ? 'About me' : (c.jump || c.name)]),
-    ['me-facts', 'More facts'], ['me-refs', 'Inquiries · References'], ['me-files', 'Photos · Files'], ['me-sections', 'Sections']];
+    ['me-facts', 'Facts'], ['me-refs', 'Inquiries · References'], ['me-files', 'Photos · Files'], ['me-sections', 'Sections']];
   const cancel = async () => {
     if (d.dirty && !(await confirmDialog({ title: 'Leave without saving?', text: 'Your changes on this page are lost.', ok: 'Leave', danger: true, dataId: 'me-form.leave-dialog' }))) return;
     drafts.delete('me'); navigate('/profile');
@@ -741,10 +741,10 @@ const mIn = (label, obj, k, dataId, extra = {}) => h('div', { class: 'field' }, 
   h('input', { class: 'input', dir: 'auto', value: obj[k] || '', 'data-id': dataId, ...extra, onInput: (e) => { obj[k] = e.target.value; touch(); } }));
 const mRemove = (dataId, run) => h('button', { type: 'button', class: 'linkish danger-text', 'data-id': dataId, onClick: () => { run(); touch(); paint({ keepScroll: true }); } }, 'Remove');
 function meFacts() {
-  return block({ key: 'me-facts', name: 'More facts' },
+  return block({ key: 'me-facts', name: 'Facts' },
     ...d.p.facts.map(f => h('div', { class: 'me-fact', 'data-id': 'me-form.fact' },
       h('input', { class: 'input', dir: 'auto', value: f.label, placeholder: 'What (e.g. Height)', 'aria-label': 'Fact name', 'data-id': 'me-form.fact-label', onInput: (e) => { f.label = e.target.value; touch(); } }),
-      h('input', { class: 'input', dir: 'auto', value: f.value, placeholder: 'Answer', 'aria-label': 'Answer', 'data-id': 'me-form.fact-value', onInput: (e) => { f.value = e.target.value; touch(); } }),
+      h('input', { class: 'input', dir: 'auto', value: f.value, placeholder: 'Answer (optional)', 'aria-label': 'Answer', 'data-id': 'me-form.fact-value', onInput: (e) => { f.value = e.target.value; touch(); } }),
       mRemove('me-form.fact-remove', () => { d.p.facts = d.p.facts.filter(x => x !== f); }))),
     h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'me-form.add-fact', onClick: () => { d.p.facts.push({ id: store.newId('f'), label: '', value: '' }); paint({ keepScroll: true }); const a = root.querySelectorAll('[data-id="me-form.fact-label"]'); a[a.length - 1]?.focus(); } }, 'Add a fact'));
 }

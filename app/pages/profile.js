@@ -110,7 +110,7 @@ function profileTab(v) {
       h('dl', { class: 'facts' },
         fact('I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
         fact('Age', v.age, 'profile.fact-age'), fact('City', v.city, 'profile.fact-city'), fact('Work / learning', v.occupation, 'profile.fact-work'),
-        ...v.facts.map(f => fact(f.label, f.value, 'profile.fact')))),
+        ...v.facts.map(f => f.value ? fact(f.label, f.value, 'profile.fact') : h('div', { class: 'fact fact-line', 'data-id': 'profile.fact' }, h('dd', { dir: 'auto' }, f.label))))),
     sec(l.about, 'mp-about', 'profile.about', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.about || notYet())),
     sec(l.looking, 'mp-looking', 'profile.looking', 'about', h('p', { dir: 'auto', class: 'prewrap' }, v.looking || notYet())),
     sec('Inquiries and references', 'mp-refs', 'profile.refs', 'me-refs',

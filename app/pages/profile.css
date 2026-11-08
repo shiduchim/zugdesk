@@ -120,3 +120,6 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 .mp-files .me-doc .grow{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mp-files svg{width:18px;height:18px;flex:none}
 .mp-files .me-add{margin-top:6px}
+
+.fact-line dd{grid-column:1/-1;margin:0}
+.pc-sec .facts .fact.fact-line{grid-template-columns:minmax(0,1fr)}
