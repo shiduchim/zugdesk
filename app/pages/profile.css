@@ -123,3 +123,5 @@ dialog.share-sheet .sheet-actions .btn{flex:1}
 
 .fact-line dd{grid-column:1/-1;margin:0}
 .pc-sec .facts .fact.fact-line{grid-template-columns:minmax(0,1fr)}
+
+.mp-more{display:flex;flex-direction:column;gap:2px}
