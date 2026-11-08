@@ -100,7 +100,7 @@ function personCard(m, side) {
     const me = M.all.me;
     if (me && me.name) { const parts = me.name.trim().split(/\s+/); first = parts[0]; last = parts.slice(1).join(' '); initials = store.initials(me); }
     meta1 = [me?.age, me?.city].filter(Boolean).join(' · ') || 'My Profile';
-    meta2 = me?.occupation || (me ? '' : 'Details come with Stage 7');
+    meta2 = me?.occupation || (me ? '' : 'Fill in My Profile to show your details here');
   } else if (m.person) {
     const parts = sh.personName(m).trim().split(/\s+/); first = parts[0]; last = parts.slice(1).join(' ');
     meta1 = [m.person.age, m.person.city].filter(Boolean).join(' · ') || 'Age and city not recorded';

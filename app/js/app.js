@@ -21,6 +21,7 @@ const NAV = {
 };
 
 route('/home', () => import('../pages/home.js'));
+route('/home/note/:noteId', () => import('../pages/home.js'));
 route('/contacts', () => import('../pages/contacts.js'));
 route('/contacts/new', () => import('../pages/contact-form.js'));
 route('/contacts/:id/edit', () => import('../pages/contact-form.js'));
@@ -38,6 +39,7 @@ route('/shidduchim', () => import('../pages/shidduchim.js'));
 route('/shidduchim/:id', () => import('../pages/shidduch-detail.js'));
 route('/shidduchim/:id/:tab', () => import('../pages/shidduch-detail.js'));
 route('/profile', () => import('../pages/profile.js'));
+route('/profile/:tab', () => import('../pages/profile.js'));
 route('/settings', () => import('../pages/settings.js'));
 
 const $ = (s) => document.querySelector(s);

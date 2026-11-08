@@ -3,11 +3,11 @@
 // `demo: true` marks fictional seed records so Settings can remove them
 // without touching anything the owner typed.
 import { idb, tx, STORES, DB_VERSION, deleteDatabase } from './db.js';
-import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim } from './seed.js';
+import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim, makeDemoNotes, makeDemoProfile } from './seed.js';
 
 export const SCHEMA_VERSION = DB_VERSION;
-export const APP_VERSION = '0.5.0';
-export const STAGE = 5; // last finished stage (shown in Settings → About)
+export const APP_VERSION = '0.7.0';
+export const STAGE = 7; // last finished stage (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -61,9 +61,10 @@ export const profile         = collection('profile', 'me');
 export const profileVersions = collection('profileVersions', 'pv');
 export const shares          = collection('shares', 'sh');
 export const attachments     = collection('attachments', 'att');
+export const activity        = collection('activity', 'act');
 
 const ALL = [contacts, people, notes, events, followUps, folders, sources, interests, offers,
-  tries, stageEvents, dateEvents, profile, profileVersions, shares, attachments];
+  tries, stageEvents, dateEvents, profile, profileVersions, shares, attachments, activity];
 
 // ---------- presentation preferences (small, separate from records) ----------
 const PREF_KEY = 'zugdesk.prefs';
@@ -75,6 +76,8 @@ const PREF_DEFAULTS = {
   contactsSplit: 260,
   personKind: 'guy',         // Add Person: last chosen Guy / Girl        // upper pane height (px) in the top/bottom split view
   shidduchimView: 'compact', // Shidduchim list: compact | expanded
+  homeSuggestions: true,     // Home: Smart Suggestions dot (blue = on)
+  profileLang: 'en',         // My Profile: language being viewed / edited
 };
 export function getPrefs() {
   try { return { ...PREF_DEFAULTS, ...(JSON.parse(localStorage.getItem(PREF_KEY) || '{}')) }; }
@@ -117,7 +120,50 @@ export async function init() {
     if ((await people.list()).some(p => p.demo)) await loadDemoShidduchim();
     await setMeta('demoShidduchimV1', { at: now() });
   }
+  // Stage 6: a few fictional Home notes linked to the demo contacts and people.
+  if (!(await getMeta('demoNotesV1'))) {
+    if ((await contacts.list()).some(c => c.demo)) await loadDemoNotes();
+    await setMeta('demoNotesV1', { at: now() });
+  }
+  // Stage 7: a fictional example owner profile (only while demo data is in use; never over a real one).
+  if (!(await getMeta('demoProfileV1'))) {
+    if ((await contacts.list()).some(c => c.demo)) await loadDemoProfile();
+    await setMeta('demoProfileV1', { at: now() });
+  }
   await setMeta('schemaVersion', SCHEMA_VERSION);
+}
+
+export async function loadDemoNotes() {
+  const d = makeDemoNotes();
+  let added = 0;
+  for (const [col, rows] of [[notes, d.notes], [events, d.events], [followUps, d.followUps], [activity, d.activity]]) {
+    const ids = new Set((await col.list()).map(r => r.id));
+    const fresh = rows.filter(r => !ids.has(r.id));
+    if (fresh.length) { await col.saveMany(fresh); added += fresh.length; }
+  }
+  return added;
+}
+
+export async function loadDemoProfile() {
+  if (await profile.get('me')) return 0; // the owner's own profile is never replaced
+  const d = makeDemoProfile();
+  await profile.save(d.profile);
+  const ids = new Set((await profileVersions.list()).map(r => r.id));
+  const fresh = d.versions.filter(r => !ids.has(r.id));
+  if (fresh.length) await profileVersions.saveMany(fresh);
+  const nIds = new Set((await notes.list()).map(r => r.id));
+  if (d.notes.some(n => !nIds.has(n.id))) { await notes.saveMany(d.notes.filter(n => !nIds.has(n.id))); await events.saveMany(d.events); }
+  const sIds = new Set((await shares.list()).map(r => r.id));
+  const fs = d.shares.filter(r => !sIds.has(r.id));
+  if (fs.length) await shares.saveMany(fs);
+  return 1;
+}
+
+// ---------- History lines for changes with no record of their own ----------
+// (e.g. a note's colour changed, a contact linked). Everything else in Home → History is
+// read straight from the source record (notes, conversations, follow-ups, shidduch steps).
+export function logActivity({ what, text = '', noteId = null, contactIds = [], personIds = [], href = null }) {
+  return activity.save({ at: now(), what, text, noteId, contactIds, personIds, href });
 }
 
 export async function loadDemoShidduchim() {

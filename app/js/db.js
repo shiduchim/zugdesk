@@ -1,6 +1,6 @@
 // Tiny IndexedDB wrapper. Only store.js should import this.
 export const DB_NAME = 'zugdesk';
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 // Every record lives in one of these object stores, keyed by `id`.
 // Keep this list in sync with spec/build-handoff.md section C.
@@ -21,6 +21,7 @@ export const STORES = {
   profileVersions: { indexes: ['createdAt'] },                                  // ProfileVersion (short versions)
   shares:          { indexes: ['createdAt'] },                                  // ShareSnapshot
   attachments:     { indexes: ['personId', 'contactId'] },                      // Attachment
+  activity:        { indexes: ['at'] },                                         // History lines for changes that have no record of their own (v2)
   meta:            { indexes: [] },                                             // schema version, seed state
 };
 
@@ -45,8 +46,10 @@ export function openDB() {
 // Migration strategy: each schema version adds its changes in order.
 // Never delete a store with user data; add new stores/indexes only.
 function upgrade(db, oldVersion) {
-  if (oldVersion < 1) {
+  if (oldVersion < 2) {
+    // v1 created every store; v2 adds `activity`. Creating only what is missing covers both.
     for (const [name, def] of Object.entries(STORES)) {
+      if (db.objectStoreNames.contains(name)) continue;
       const os = db.createObjectStore(name, { keyPath: 'id' });
       for (const idx of def.indexes) {
         const multi = idx.endsWith('*');
@@ -55,7 +58,7 @@ function upgrade(db, oldVersion) {
       }
     }
   }
-  // if (oldVersion < 2) { ... next migration goes here ... }
+  // if (oldVersion < 3) { ... next migration goes here ... }
 }
 
 function reqToPromise(req) {
