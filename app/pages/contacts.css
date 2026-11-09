@@ -6,10 +6,10 @@
 .ct-search{position:relative}
 .ct-search svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted);pointer-events:none}
 .ct-search .input{padding-left:38px}
-.ct-bar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-.ct-sort{display:flex;align-items:center;gap:6px;flex:1 1 170px;min-width:0;font-size:var(--font-sm);color:var(--muted)}
+.ct-bar{display:flex;align-items:center;gap:6px}
+.ct-sort{display:flex;align-items:center;gap:6px;flex:1 1 0;min-width:0;font-size:var(--font-sm);color:var(--muted)}
 .ct-sort select.input{min-height:var(--btn-small-height);padding:4px 8px;font-size:var(--font-sm);flex:1;min-width:0}
-.ct-count{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);white-space:nowrap;margin-left:auto}
+.ct-bar .icon-only{flex:none;padding:0 10px;gap:4px}
 .ftags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ftag{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:0 6px 0 10px;border-radius:var(--radius-pill);border:1px solid var(--selected-edge);background:var(--selected-bg);font-size:12px;max-width:100%}
 .ftag-x{font-size:10.5px;color:var(--muted);font-family:var(--font-mono)}
@@ -45,7 +45,10 @@
 .person-title{flex:1;min-width:0}
 .person-title h2{font-size:20px;overflow-wrap:anywhere}
 .person-title .sub,.a-quick .sub{color:var(--muted);font-size:var(--font-sm);overflow-wrap:anywhere}
-.person-actions{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:14px}
+.person-actions{display:flex;flex-direction:column;gap:2px;padding-bottom:14px}
+.pa-main{display:flex;flex-wrap:wrap;gap:6px}
+.pa-links{display:flex;flex-wrap:wrap;column-gap:12px}
+.ct-pin{flex:none}
 .psec{border-top:1px solid var(--border);padding:14px 0;display:flex;flex-direction:column;gap:8px;min-width:0}
 .psec h3.eyebrow{font-weight:400}
 .quick-facts{margin:0;display:flex;flex-direction:column}
@@ -60,7 +63,7 @@
 .fu-check{flex:1;display:flex;align-items:center;gap:10px;min-width:0;cursor:pointer}
 .fu-check input{width:20px;height:20px;flex-shrink:0;accent-color:var(--text)}
 .fu-check span{overflow-wrap:anywhere}
-.composer .composer-foot{display:flex;gap:8px;align-items:center}
+.composer .composer-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .composer .input.date{flex:1;min-width:0}
 .timeline{list-style:none;margin:0;padding:0}
 .tl-item{padding:10px 0;border-bottom:1px solid var(--border)}
@@ -86,13 +89,6 @@
 .a-quick .qf dt{font-size:11px}
 .a-activity{padding-top:16px}
 
-/* B — top/bottom split */
-.s-wrap{display:flex;flex-direction:column;height:var(--pane-height);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
-.s-upper{flex:none;overflow-y:auto;overscroll-behavior:contain;min-height:120px}
-.s-bar{flex:none;height:22px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);cursor:row-resize;touch-action:none}
-.s-bar i{width:44px;height:4px;border-radius:var(--radius-xs);background:var(--muted);opacity:.5}
-.s-bar.drag i{opacity:1}
-.s-lower{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:12px;min-height:0}
 
 /* narrow left sidebar */
 .r-wrap{display:grid;grid-template-columns:var(--rail-width) minmax(0,1fr);height:var(--pane-height);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
@@ -122,7 +118,6 @@
 .pv{flex:none;width:44px;height:64px;border:1.5px solid var(--muted);border-radius:var(--radius-md);display:grid;gap:2px;padding:3px;background:var(--bg)}
 .pv i{display:block;background:var(--avatar);border-radius:var(--radius-xs)}
 .pv-a{grid-template:1fr 1.3fr/1fr 1fr}.pv-a .pv-bottom{grid-column:1/-1}
-.pv-split{grid-template-rows:1fr 3px 1.4fr}.pv-split .pv-bar{background:var(--muted)}
 .pv-rail{grid-template-columns:10px 1fr}
 .pv-tabs{grid-template-rows:8px 1fr}
 .pv-list{grid-template-rows:6px 18px 6px 6px;align-content:start}.pv-list .pv-open{background:var(--muted);opacity:.45}
@@ -150,3 +145,7 @@
 /* phone: leave room for the Add Shadchan dock under the panes */
 .contacts-page{--dock-space:58px;--pane-height:calc(100dvh - var(--topbar-height) - var(--safe-top) - var(--nav-height) - var(--safe-bottom) - var(--dock-space) - 12px)}
 @media (min-width:1024px){.contacts-page{--dock-space:0px}}
+.ct-bar .ct-sort > span{display:none}
+.ct-first{display:flex;flex-direction:column;align-items:flex-start;gap:var(--gap);padding:var(--gap-lg) 0}
+.composer .composer-type{flex:1 1 100%;min-width:0}
+@media (min-width:1024px){.composer .composer-type{flex:1 1 0}}

@@ -21,6 +21,7 @@
   --label-bg:#2F56B0;
   --label-text:#FFFFFF;
   --focus:#2F56B0;
+  --exp-edge:var(--link);       /* outline of experimental things (My Profile → Suggested) */
 
   /* type */
   --font:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
@@ -53,8 +54,6 @@
   --topbar-height:48px;
   --nav-height:60px;
   --slim-nav:48px;              /* Slim icon bar height */
-  --shell-bar:44px;             /* Claude-style top bar height */
-  --drawer-width:280px;         /* Claude-style side menu width */
   --nav-icon:22px;
   --nav-font:11px;
   --content-max:720px;

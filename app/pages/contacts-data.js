@@ -22,7 +22,6 @@ export const ACTIVITY = [['all', 'All'], ['waiting', 'Waiting'], ['follow-up', '
 export const STATUS_LABEL = { none: '', waiting: 'Waiting', 'follow-up': 'Follow-up', active: 'Active' };
 export const LAYOUTS = [
   ['a', 'A — Outlook summary at top', 'Names upper left, quick facts upper right, full-width activity below.'],
-  ['split', 'B — Top/bottom split', 'Names in the upper pane, the selected person below. Drag the bar to change the split.'],
   ['rail', 'Narrow left sidebar', 'A slim column of names on the left; the selected person uses the rest.'],
   ['tabs', 'Horizontal name tabs', 'Swipe names left and right across the top; the person fills the screen.'],
   ['list', 'Expanded list', 'One list. Tap a name to open their details right inside the list.'],

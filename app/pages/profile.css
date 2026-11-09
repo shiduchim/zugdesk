@@ -33,6 +33,7 @@
 .mp-file .att-row span[dir]{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* short versions */
+.mp-exp-tag{margin-inline-start:8px;padding:1px 6px;border:1px solid var(--exp-edge);border-radius:var(--radius);color:var(--exp-edge);font-family:var(--font-mono);font-size:var(--font-xs);font-weight:500;vertical-align:middle}
 .mp-short-head{padding:var(--gap-lg) 0 6px}
 .mp-cards{display:flex;flex-direction:column;gap:12px}
 .mp-card{border:1px solid var(--mp-card-edge);background:var(--mp-card-bg);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
@@ -165,3 +166,4 @@ body:has(.mp-form-bar){scroll-padding-top:calc(var(--safe-top) + 76px)}
 
 .mp-fact-inplace{display:flex;align-items:center;gap:8px}
 .mp-fact-inplace .input{flex:1;min-width:0;background:var(--surface)}
+.mp-card.mp-card-exp{border:2px solid var(--exp-edge)} /* Suggested: clearly not a regular saved version */

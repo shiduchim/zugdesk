@@ -49,8 +49,8 @@ export function nameLine(c) {
 // opts: { facts: bool (include quick facts), historyLimit: n|null, historyLink: bool, compactHead: bool }
 export function personBlock(c, opts = {}) {
   if (!c) return h('p', { class: 'empty', 'data-id': 'contact.none' }, 'No contact selected. Pick a name, or change the search and filters.');
-  const pinBtn = h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.pin-btn', 'aria-pressed': c.pinned ? 'true' : 'false',
-    onClick: () => togglePin(c) }, ico('pin'), c.pinned ? 'Unpin' : 'Pin');
+  const pinBtn = h('button', { class: 'icon-btn ct-pin', type: 'button', 'data-id': 'contact.pin-btn', 'aria-pressed': c.pinned ? 'true' : 'false',
+    'aria-label': c.pinned ? 'Unpin' : 'Pin', title: c.pinned ? 'Unpin' : 'Pin', onClick: () => togglePin(c) }, ico('pin'));
   return h('div', { class: 'person', 'data-id': 'contact.panel' },
     h('div', { class: 'person-head', 'data-id': 'contact.name' },
       h('div', { class: 'avatar' }, store.initials(c)),
@@ -69,13 +69,17 @@ export function personBlock(c, opts = {}) {
     h('div', { class: 'stamp', 'data-id': 'contact.stamp' }, `added ${shortDate(c.createdAt)} · updated ${shortDate(c.updatedAt)}${c.demo ? ' · demo record' : ''}`));
 }
 
+// Two real buttons; the rest are quiet text links (owner request: fewer bubbles).
 function actions(c) {
+  const link = (id, label, run) => h('button', { class: 'linkish', type: 'button', 'data-id': id, onClick: run }, label);
   return h('div', { class: 'person-actions', 'data-id': 'contact.actions' },
-    h('button', { class: 'btn small primary', type: 'button', 'data-id': 'contact.record-btn', onClick: (e) => focusComposer(e.target) }, ico('message'), 'Record conversation'),
-    h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.followup-btn', onClick: () => followUpSheet(c) }, ico('clock'), 'Set follow-up'),
-    h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.folder-btn', onClick: () => folderSheet(c) }, ico('folder'), 'Move to folder'),
-    h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.edit-btn', onClick: () => navigate(`/contacts/${encodeURIComponent(c.id)}/edit`) }, ico('edit'), 'Edit contact'),
-    h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.share-btn', onClick: async () => { const m = await import('./profile-share.js'); m.openShare({ contactId: c.id }); } }, ico('send'), 'Send my profile'));
+    h('div', { class: 'pa-main' },
+      h('button', { class: 'btn small primary', type: 'button', 'data-id': 'contact.record-btn', onClick: (e) => focusComposer(e.target) }, ico('message'), 'Record conversation'),
+      h('button', { class: 'btn small', type: 'button', 'data-id': 'contact.followup-btn', onClick: () => followUpSheet(c) }, ico('clock'), 'Follow-up')),
+    h('div', { class: 'pa-links' },
+      link('contact.edit-btn', 'Edit', () => navigate(`/contacts/${encodeURIComponent(c.id)}/edit`)),
+      link('contact.folder-btn', 'Move to folder', () => folderSheet(c)),
+      link('contact.share-btn', 'Send my profile', async () => { const m = await import('./profile-share.js'); m.openShare({ contactId: c.id }); })));
 }
 
 function focusComposer(from) {
@@ -128,12 +132,14 @@ function composer(c) {
   const d = S.drafts[c.id] || (S.drafts[c.id] = { text: '', type: '_unknown', date: today() });
   const text = h('textarea', { class: 'input grow', rows: 2, dir: 'auto', placeholder: 'What was said? A quick note is fine.', 'data-id': 'contact.composer.text',
     onInput: (e) => { d.text = e.target.value; autoGrow(e.target); } }, d.text);
-  const type = bubbles({ options: TYPE_OPTS, selected: [d.type], multi: false, dataId: 'contact.composer.type', onChange: (v) => { d.type = v || '_unknown'; } });
+  // one small menu instead of six bubbles (owner request)
+  const type = h('select', { class: 'input composer-type', 'aria-label': 'How did you talk?', 'data-id': 'contact.composer.type', onChange: (e) => { d.type = e.target.value; } },
+    TYPE_OPTS.map(([v, l]) => h('option', { value: v, selected: d.type === v || null }, v === '_unknown' ? 'How? (not sure)' : l)));
   const date = h('input', { class: 'input date', type: 'date', value: d.date, 'data-id': 'contact.composer.date', 'aria-label': 'Date', onChange: (e) => { d.date = e.target.value; } });
   return h('section', { class: 'psec composer', 'data-id': 'contact.composer' },
     h('h3', { class: 'eyebrow' }, 'Record a conversation or note'),
-    text, type,
-    h('div', { class: 'composer-foot' }, date,
+    text,
+    h('div', { class: 'composer-foot' }, type, date,
       h('button', { class: 'btn primary', type: 'button', 'data-id': 'contact.composer.save', onClick: async () => {
         if (!d.text.trim()) { toast('Write a few words first'); text.focus(); return; }
         await store.recordEvent({ contactIds: [c.id], type: d.type === '_unknown' ? '' : d.type, text: d.text, at: atFromDate(d.date) });
@@ -298,7 +304,6 @@ export function viewPreview(id) {
   const b = (cls) => h('i', { class: cls });
   const shapes = {
     a: [b('pv-l'), b('pv-r'), b('pv-bottom')],
-    split: [b('pv-top'), b('pv-bar'), b('pv-bottom2')],
     rail: [b('pv-rail'), b('pv-main')],
     tabs: [b('pv-tabs'), b('pv-full')],
     list: [b('pv-row'), b('pv-open'), b('pv-row'), b('pv-row')],

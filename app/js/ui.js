@@ -164,7 +164,7 @@ export function swipeTabs(el, cfg) {
   el.addEventListener('touchstart', (e) => {
     const t = e.touches[0], tg = e.target;
     sx = null;
-    if (!el.__swipe || e.touches.length > 1 || t.clientX < 30 || document.body.classList.contains('drawer-open')) return;
+    if (!el.__swipe || e.touches.length > 1 || t.clientX < 30) return;
     if (tg.closest('input, textarea, select, [contenteditable], dialog, .sheet, [data-noswipe]')) return;
     for (let n = tg; n && n !== el; n = n.parentElement) if (n.scrollWidth > n.clientWidth + 2 && /(auto|scroll)/.test(getComputedStyle(n).overflowX)) return;
     sx = t.clientX; sy = t.clientY; st = Date.now();

@@ -70,22 +70,27 @@ const ALL = [contacts, people, notes, events, followUps, folders, sources, inter
 const PREF_KEY = 'zugdesk.prefs';
 const PREF_DEFAULTS = {
   showLabels: false,
-  theme: 'light',            // 'light' | 'dark' | 'auto' (match phone)
-  shellStyle: 'tabs',        // 'tabs' = top bar + bottom menu; 'claude' = menu icon top-left, no bottom menu (being tested)
-  navArrangement: 'three',   // 'three' = Home/Contacts/Shidduchim (+Profile); 'four' adds People & Ideas
-  contactsLayout: 'a',       // phone view: a | split | rail | tabs | list | inbox (spec/contacts.md CT-13)
+  theme: 'dark',             // 'light' | 'dark' | 'auto' (match phone) — dark is the default (owner choice)
+  contactsLayout: 'a',       // phone view: a | rail | tabs | list | inbox (spec/contacts.md CT-13)
   contactsSort: 'recent',    // recent | oldest | name | city | language | community
-  contactsSplit: 260,
   iAm: '',                  // My Profile: 'guy' | 'girl' — Ideas then shows only the other
-  personKind: 'guy',         // Add Person: last chosen Guy / Girl        // upper pane height (px) in the top/bottom split view
+  personKind: 'guy',         // Add Person: last chosen Guy / Girl
   shidduchimView: 'compact', // Shidduchim list: compact | expanded
   homeSuggestions: true,     // Home: Smart Suggestions dot (blue = on)
   profileLang: 'en',         // My Profile: language being viewed / edited
 };
 export function getPrefs() {
-  try { return { ...PREF_DEFAULTS, ...(JSON.parse(localStorage.getItem(PREF_KEY) || '{}')) }; }
-  catch { return { ...PREF_DEFAULTS }; }
+  let p;
+  try { p = { ...PREF_DEFAULTS, ...(JSON.parse(localStorage.getItem(PREF_KEY) || '{}')) }; }
+  catch { p = { ...PREF_DEFAULTS }; }
+  if (p.contactsLayout === 'split') p.contactsLayout = 'a'; // the top/bottom split view was removed
+  return p;
 }
+// One time: dark becomes the default on phones that already chose light (owner request).
+try {
+  const raw = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+  if (!raw.darkDefaultV1) { raw.theme = 'dark'; raw.darkDefaultV1 = true; delete raw.shellStyle; delete raw.navArrangement; delete raw.contactsSplit; localStorage.setItem(PREF_KEY, JSON.stringify(raw)); }
+} catch {}
 export function setPref(key, value) {
   const p = { ...getPrefs(), [key]: value };
   try { localStorage.setItem(PREF_KEY, JSON.stringify(p)); } catch {}
@@ -97,17 +102,11 @@ export function setPref(key, value) {
 async function getMeta(key) { const r = await idb.get('meta', key); return r ? r.value : undefined; }
 async function setMeta(key, value) { await idb.put('meta', { id: key, value }); }
 
-// ---------- init + first-run seed (about 20 fictional contacts) ----------
-export const FIRST_RUN_SEED = 20;
+// ---------- init: a new phone starts empty; the demo is one button in Settings ----------
 export const FULL_DEMO_SEED = 200;
 
 export async function init() {
-  const seeded = await getMeta('seeded');
-  if (!seeded) {
-    const count = await contacts.count();
-    if (count === 0) await loadDemoContacts(FIRST_RUN_SEED);
-    await setMeta('seeded', { at: now(), count: FIRST_RUN_SEED });
-  }
+  if (!(await getMeta('seeded'))) await setMeta('seeded', { at: now(), count: 0 });
   // Stage 2: demo contacts loaded before conversations existed get their fictional history once.
   if (!(await getMeta('demoActivityV1'))) {
     await addDemoActivity((await contacts.list()).filter(c => c.demo));
@@ -134,6 +133,14 @@ export async function init() {
     await setMeta('demoProfileV1', { at: now() });
   }
   await setMeta('schemaVersion', SCHEMA_VERSION);
+}
+
+// Settings → "Try the demo": 200 fictional contacts plus people, shidduchim, notes and an example profile.
+export async function loadFullDemo() {
+  const added = await loadDemoContacts(FULL_DEMO_SEED);
+  await loadDemoPeople(); await loadDemoShidduchim(); await loadDemoNotes(); await loadDemoProfile();
+  emit({ store: '*', type: 'import', total: added });
+  return added;
 }
 
 export async function loadDemoNotes() {

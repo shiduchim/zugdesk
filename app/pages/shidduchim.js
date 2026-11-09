@@ -50,11 +50,6 @@ async function draw(keepScroll = false) {
   root.append(
     h('div', { class: 'page-head sh-head', 'data-id': 'shidduchim.head' },
       h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'), h('p', { class: 'note' }, 'Every shidduch, from first offer to what happens next.'))),
-    // Ideas link only when Ideas has no button of its own in the bottom bar ('' — never the word null).
-    prefs.navArrangement !== 'four' && prefs.shellStyle !== 'slim' ? h('a', { class: 'row-link sh-people-link', href: '#/people', 'data-id': 'shidduchim.people-link' },
-      h('div', { class: 'avatar', html: icon('idea') }),
-      h('div', { class: 'row-main' }, h('div', { class: 'row-title' }, `Ideas · ${all.people.length}`)),
-      ico('chevron')) : '',
     h('div', { class: 'sh-tabbar', role: 'tablist', 'aria-label': 'Shidduchim lanes', 'data-id': 'shidduchim.lanes' },
       sh.LANES.map(([k, l]) => h('button', { type: 'button', role: 'tab', class: 'sh-tab', 'aria-selected': S.lane === k ? 'true' : 'false', 'data-id': 'shidduchim.lane-' + k,
         onClick: () => { S.lane = k; S.menu = null; S.updateId = null; draw(); } }, l, h('span', { class: 'sh-num' }, counts[k])))),

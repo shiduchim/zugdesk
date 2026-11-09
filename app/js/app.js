@@ -1,25 +1,18 @@
-// App bootstrap: shell, top bar, bottom navigation (or the Claude-style menu drawer), router, labels, service worker.
+// App bootstrap: shell, slim bottom icon bar, router, labels, service worker.
 import * as store from './store.js';
 import { route, start, currentPath } from './router.js';
 import { h, icon, toast } from './ui.js';
 import { setLabels } from './labels.js';
 import { watchDates } from './calendar.js';
 
-const NAV = {
-  three: [
-    { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
-    { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
-    { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
-    { path: '/profile', label: 'My Profile', icon: 'profile', id: 'nav.profile' },
-  ],
-  four: [
-    { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
-    { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
-    { path: '/people', label: 'Ideas', icon: 'idea', id: 'nav.people' },
-    { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
-    { path: '/profile', label: 'My Profile', icon: 'profile', id: 'nav.profile' },
-  ],
-};
+// One bottom bar for everything: the slim icon bar (owner choice). Settings is the gear on Home.
+const NAV = [
+  { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
+  { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
+  { path: '/people', label: 'Ideas', icon: 'idea', id: 'nav.people' },
+  { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
+  { path: '/profile', label: 'My Profile', icon: 'profile', id: 'nav.profile' },
+];
 
 route('/home', () => import('../pages/home.js'));
 route('/home/note/:noteId', () => import('../pages/home.js'));
@@ -48,88 +41,25 @@ route('/settings', () => import('../pages/settings.js'));
 const $ = (s) => document.querySelector(s);
 
 function renderNav() {
-  const prefs = store.getPrefs();
-  const slim = prefs.shellStyle === 'slim';
-  // Slim icon bar: every section one tap away, icons only (owner request). Settings is on Home.
-  const items = slim ? NAV.four : (NAV[prefs.navArrangement] || NAV.three); // slim: Settings is on Home, top right
   const inner = $('#nav .inner');
   inner.innerHTML = '';
-  let path = currentPath();
-  // Three-destination layout: Ideas lives inside Shidduchim.
-  if (!slim && prefs.navArrangement !== 'four' && (path === '/people' || path.startsWith('/people/'))) path = '/shidduchim';
-  for (const it of items) {
+  const path = currentPath();
+  for (const it of NAV) {
     const active = path === it.path || path.startsWith(it.path + '/');
-    inner.append(h('a', { href: '#' + it.path, 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': slim ? it.label : null, title: slim ? it.label : null },
+    inner.append(h('a', { href: '#' + it.path, 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': it.label, title: it.label },
       h('span', { class: 'ico', html: icon(it.icon) }).firstChild, h('span', {}, it.label)));
   }
 }
 
-// ---------- Claude-style shell (Settings → Screen layout; being tested) ----------
-// Menu icon top-left opens a drawer; no bottom menu; the top bar slides away while scrolling down.
-const DRAWER = [
-  { path: '/home', label: 'Home', icon: 'home', id: 'drawer.home' },
-  { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'drawer.contacts' },
-  { path: '/people', label: 'Ideas', icon: 'idea', id: 'drawer.people' },
-  { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'drawer.shidduchim' },
-  { path: '/profile', label: 'My Profile', icon: 'profile', id: 'drawer.profile' },
-  { path: '/settings', label: 'Settings', icon: 'settings', id: 'drawer.settings' },
-];
-const claude = () => store.getPrefs().shellStyle === 'claude';
-const hides = () => ['claude', 'slim'].includes(store.getPrefs().shellStyle); // bars slide away while scrolling down
-function applyShell() {
-  document.body.classList.toggle('shell-claude', claude());
-  document.body.classList.toggle('shell-slim', store.getPrefs().shellStyle === 'slim');
-  document.body.classList.toggle('shell-tabs', !['slim', 'claude'].includes(store.getPrefs().shellStyle)); // phone: no top bar (owner request)
-  renderNav();
-  document.body.classList.remove('bar-hidden');
-  if (!claude()) closeDrawer();
-}
-function renderDrawer() {
-  const d = $('#drawer'), path = currentPath();
-  d.innerHTML = '';
-  d.append(h('div', { class: 'drawer-head' }, h('span', { class: 'drawer-brand' }, 'ZugDesk'),
-    h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Close menu', 'data-id': 'drawer.close', html: icon('back'), onClick: closeDrawer })));
-  for (const it of DRAWER) {
-    const active = path === it.path || path.startsWith(it.path + '/');
-    d.append(h('a', { href: '#' + it.path, class: 'drawer-item', 'data-id': it.id, 'aria-current': active ? 'page' : null, onClick: closeDrawer },
-      h('span', { class: 'ico', html: icon(it.icon) }).firstChild, h('span', {}, it.label)));
-  }
-}
-function openDrawer() {
-  renderDrawer();
-  $('#drawer').hidden = false; $('#drawer-backdrop').hidden = false;
-  requestAnimationFrame(() => document.body.classList.add('drawer-open'));
-  $('#menu-btn').setAttribute('aria-expanded', 'true');
-  setTimeout(() => $('#drawer [aria-current="page"]')?.focus(), 50);
-}
-function closeDrawer() {
-  if (!document.body.classList.contains('drawer-open')) return;
-  document.body.classList.remove('drawer-open');
-  $('#menu-btn').setAttribute('aria-expanded', 'false');
-  setTimeout(() => { if (!document.body.classList.contains('drawer-open')) { $('#drawer').hidden = true; $('#drawer-backdrop').hidden = true; } }, 200);
-}
+// The slim bar slides away while scrolling down and comes back on any scroll up.
 function wireShell() {
-  $('#menu-btn').addEventListener('click', openDrawer);
-  $('#drawer-backdrop').addEventListener('click', closeDrawer);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeDrawer(); });
-  // swipe in from the left edge opens the menu; swipe left closes it
-  let sx = null, sy = 0;
-  document.addEventListener('touchstart', (e) => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
-  document.addEventListener('touchend', (e) => {
-    if (sx == null || !claude()) return;
-    const t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
-    if (sx < 24 && dx > 60 && dy < 50) openDrawer();
-    else if (document.body.classList.contains('drawer-open') && dx < -60 && dy < 50) closeDrawer();
-    sx = null;
-  }, { passive: true });
-  // top bar hides while scrolling down, comes back on any scroll up
+  document.body.classList.add('shell-slim');
   let lastY = window.scrollY, ticking = false;
   window.addEventListener('scroll', () => {
     if (ticking) return; ticking = true;
     requestAnimationFrame(() => {
       ticking = false;
       const y = window.scrollY, dy = y - lastY;
-      if (!hides() || document.body.classList.contains('drawer-open')) { lastY = y; return; }
       if (y < 40 || dy < -6) document.body.classList.remove('bar-hidden');
       else if (dy > 6) document.body.classList.add('bar-hidden');
       if (Math.abs(dy) > 6) lastY = y;
@@ -153,13 +83,11 @@ async function boot() {
   applyTheme(); matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
   store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key === 'showLabels') setLabels(ch.value);
-    if (ch.store === 'prefs' && ch.key === 'navArrangement') renderNav();
-    if (ch.store === 'prefs' && ch.key === 'shellStyle') applyShell();
     if (ch.store === 'prefs' && ch.key === 'theme') applyTheme();
   });
-  applyShell(); wireShell(); watchDates();
+  wireShell(); renderNav(); watchDates();
 
-  await start($('#content'), (path) => { renderNav(); setTitle(path); closeDrawer(); document.body.classList.remove('bar-hidden'); document.body.classList.toggle('focus-mode', path.startsWith('/profile/edit')); });
+  await start($('#content'), (path) => { renderNav(); setTitle(path); document.body.classList.remove('bar-hidden'); document.body.classList.toggle('focus-mode', path.startsWith('/profile/edit')); });
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -177,7 +105,7 @@ boot();
 
 // Dark mode (Settings → Appearance): the colours live in css/theme-dark.css.
 function applyTheme() {
-  let t = store.getPrefs().theme || 'light';
+  let t = store.getPrefs().theme || 'dark';
   if (t === 'auto') t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
   document.documentElement.dataset.theme = t;
   const meta = document.querySelector('meta[name="theme-color"]');
