@@ -1,11 +1,11 @@
 // Contacts — Stage 2. One workspace, many presentations (spec/contacts.md):
-//   phone views: a (Outlook summary top) · split (top/bottom) · rail (narrow sidebar)
+//   phone views: a (Outlook summary top) · rail (narrow sidebar)
 //                tabs (horizontal names) · list (expanded inline) · inbox (drill-down)
 //   wide screens: desktop three-area view (app nav · directory · record).
 // Switching views changes presentation only; selection, search, sort and filters
 // live in contacts-data.js `S` and survive every switch.
 import * as store from '../js/store.js';
-import { h, icon } from '../js/ui.js';
+import { h, icon, toast } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { S, D, load, visible, extraFilterCount, anyFilter, clearFilters, ensureSelection, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel } from './contacts-data.js';
 import { personBlock, quickFacts, nameLine, statusText, filtersSheet, viewSheet, shortDate, eventItem } from './contacts-panels.js';
@@ -98,26 +98,29 @@ function head() {
 
 function tools() {
   const v = visible();
-  const count = h('span', { class: 'ct-count', 'data-id': 'contacts.count' }, `${v.total} shown`);
   const search = h('div', { class: 'ct-search' }, ico('search'),
     h('input', { class: 'input', type: 'search', value: S.q, placeholder: 'Find a name, city or conversation…', 'aria-label': 'Search contacts', 'data-id': 'contacts.search', dir: 'auto',
       onInput: (e) => { S.q = e.target.value; redrawBody(); } }));
-  const chipRow = (opts, cur, dataId, set) => h('div', { class: 'chip-row', role: 'group', 'data-id': dataId },
-    opts.map(([v, l]) => h('button', { type: 'button', class: 'fchip', 'aria-pressed': cur === v ? 'true' : 'false', onClick: () => { set(v); refresh(); } }, l)));
   const nExtra = extraFilterCount();
   const prefs = store.getPrefs();
+  // One "Show" menu instead of two rows of bubbles (owner request: fewer bubbles).
+  const showVal = S.role !== 'all' ? 'role:' + S.role : S.activity !== 'all' ? 'act:' + S.activity : 'all';
+  const show = h('label', { class: 'ct-sort', 'data-id': 'contacts.show' }, h('span', {}, 'Show'),
+    h('select', { class: 'input', 'aria-label': 'Show', onChange: (e) => {
+      const [k, v] = e.target.value.split(':'); S.role = k === 'role' ? v : 'all'; S.activity = k === 'act' ? v : 'all'; refresh(); } },
+      h('option', { value: 'all', selected: showVal === 'all' || null }, 'Everyone'),
+      h('optgroup', { label: 'Who' }, ROLE_TABS.slice(1).map(([v, l]) => h('option', { value: 'role:' + v, selected: showVal === 'role:' + v || null }, l))),
+      h('optgroup', { label: 'Status' }, ACTIVITY.slice(1).map(([v, l]) => h('option', { value: 'act:' + v, selected: showVal === 'act:' + v || null }, l)))));
   return h('div', { class: 'ct-tools', 'data-id': 'contacts.tools' },
     search,
-    chipRow(ROLE_TABS, S.role, 'contacts.role-chips', v => { S.role = v; }),
-    chipRow(ACTIVITY, S.activity, 'contacts.activity-chips', v => { S.activity = v; }),
     h('div', { class: 'ct-bar' },
+      show,
       h('label', { class: 'ct-sort', 'data-id': 'contacts.sort' }, h('span', {}, 'Sort'),
         h('select', { class: 'input', 'aria-label': 'Sort contacts', onChange: (e) => store.setPref('contactsSort', e.target.value) },
           SORTS.map(([v, l]) => h('option', { value: v, selected: prefs.contactsSort === v || null }, l)))),
-      h('button', { class: 'btn small', type: 'button', 'data-id': 'contacts.filter-btn', 'aria-pressed': nExtra ? 'true' : 'false', onClick: async () => { await filtersSheet(); refresh(); } },
-        ico('filter'), nExtra ? `Filters · ${nExtra}` : 'Filters'),
-      DESK.matches ? null : h('button', { class: 'btn small', type: 'button', 'data-id': 'contacts.view-btn', onClick: () => viewSheet() }, ico('layout'), 'View'),
-      count),
+      h('button', { class: 'btn small icon-only', type: 'button', 'data-id': 'contacts.filter-btn', 'aria-label': nExtra ? `Filters, ${nExtra} on` : 'Filters', title: 'Filters', 'aria-pressed': nExtra ? 'true' : 'false', onClick: async () => { await filtersSheet(); refresh(); } },
+        ico('filter'), nExtra ? String(nExtra) : null),
+      DESK.matches ? null : h('button', { class: 'btn small icon-only', type: 'button', 'data-id': 'contacts.view-btn', 'aria-label': 'View', title: 'View', onClick: () => viewSheet() }, ico('layout'))),
     activeFilters());
 }
 
@@ -216,6 +219,8 @@ function select(c, scope, panes) {
 // ---------- phone views ----------
 function drawPhone(lay) {
   root.classList.add('lay-' + lay);
+  if (!D.contacts.length) { root.append(head(), firstRun()); return; } // a new phone starts empty
+
   root.append(head(), tools(), phoneBody(lay));
   restoreScrolls();
   if (lay === 'list' || lay === 'inbox') requestAnimationFrame(() => window.scrollTo(0, S.pageScroll || 0));
@@ -240,15 +245,6 @@ function phoneBody(lay) {
     const dir = directory(v, 'dir', (p) => select(p, dir, fill));
     dir.dataset.keep = 'a-dir';
     body.append(h('div', { class: 'a-upper' }, dir, quick), lower);
-    fill();
-  } else if (lay === 'split') {
-    ensureSelection(v.all);
-    const lowerPane = h('div', { class: 's-lower', 'data-keep': 's-lower', 'data-id': 'contacts.split-lower' });
-    const fill = () => { lowerPane.innerHTML = ''; lowerPane.append(personBlock(D.byId.get(S.selectedId), { facts: true })); lowerPane.scrollTop = 0; };
-    const dir = directory(v, 'dir', (p) => select(p, dir, fill));
-    dir.dataset.keep = 's-dir';
-    const upper = h('div', { class: 's-upper', style: `height:${store.getPrefs().contactsSplit}px` }, dir);
-    body.append(h('div', { class: 's-wrap' }, upper, splitter(upper), lowerPane));
     fill();
   } else if (lay === 'rail') {
     ensureSelection(v.all);
@@ -284,20 +280,13 @@ function phoneBody(lay) {
   return body;
 }
 
-// Drag (or arrow keys) to change the top/bottom split; remembered on this phone.
-function splitter(upper) {
-  const bar = h('div', { class: 's-bar', role: 'separator', tabindex: '0', 'aria-orientation': 'horizontal', 'aria-label': 'Drag to resize', 'data-id': 'contacts.split-bar' }, h('i'));
-  const clamp = (n) => Math.max(120, Math.min(window.innerHeight * 0.7, n));
-  let startY = 0, startH = 0;
-  const save = () => store.setPref('contactsSplit', Math.round(upper.offsetHeight));
-  bar.addEventListener('pointerdown', (e) => { startY = e.clientY; startH = upper.offsetHeight; bar.setPointerCapture(e.pointerId); bar.classList.add('drag'); });
-  bar.addEventListener('pointermove', (e) => { if (bar.classList.contains('drag')) upper.style.height = clamp(startH + e.clientY - startY) + 'px'; });
-  const end = () => { if (bar.classList.contains('drag')) { bar.classList.remove('drag'); save(); } };
-  bar.addEventListener('pointerup', end); bar.addEventListener('pointercancel', end);
-  bar.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); upper.style.height = clamp(upper.offsetHeight + (e.key === 'ArrowUp' ? -24 : 24)) + 'px'; save(); }
-  });
-  return bar;
+// No contacts at all yet: one clear message instead of empty panes.
+function firstRun() {
+  return h('div', { class: 'ct-first', 'data-id': 'contacts.first-run' },
+    h('p', {}, 'No contacts yet. Tap “Add Shadchan” to add your first one.'),
+    h('p', { class: 'note' }, 'Want to look around first? Load 200 fictional demo contacts. You can remove them any time in Settings.'),
+    h('button', { class: 'btn', type: 'button', 'data-id': 'contacts.try-demo', onClick: async (e) => {
+      e.currentTarget.disabled = true; const n = await store.loadFullDemo(); toast(`Demo loaded: ${n} contacts`); } }, 'Try the demo'));
 }
 
 // ---------- inbox drill-down levels ----------

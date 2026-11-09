@@ -225,7 +225,6 @@
 .home-tabline{display:flex;align-items:center;gap:4px}
 .home-tabline .home-tabs{flex:1;margin-top:0}
 .home-settings{flex:none;color:var(--muted)}
-@media (min-width:900px){body:not(.shell-slim) .home-settings{display:none}.home-tabline{justify-content:flex-end}}
 .home-tabline .home-tab{white-space:nowrap;gap:4px;padding:0 4px}
 
 /* ---- History: compact, two rows per entry, like a command prompt ----

@@ -183,12 +183,13 @@ function langPick(value, dataId, onChange) {
 function shortTab(v) {
   const sLang = store.getPrefs().profileLang || lang;
   const sugg = PD.suggestedText(P.me, sLang);
-  const cards = [card({ title: 'Suggested', sub: 'auto · always up to date', text: sugg, dataId: 'profile.short-suggested', lang: sLang,
+  const suggested = card({ title: 'Suggested', sub: 'auto · always up to date', experimental: true, text: sugg, dataId: 'profile.short-suggested', lang: sLang,
     langPick: langPick(sLang, 'profile.short-suggested.lang', (k) => { store.setPref('profileLang', k); draw(true); toast(`Suggested shown in ${PD.langName(k)}`); }),
     menu: (a) => N.openMenu(a, 'profile.short-menu', (panel) => panel.append(
     N.menuItem('Save as a new version', 'keeps this text', async () => { N.closeMenu(); const t = await promptText({ title: 'Save as a new version', label: 'Name (e.g. who it is for)', ok: 'Save', dataId: 'profile.version-name' }); if (t) { await store.profileVersions.save({ title: t, lang: sLang, text: sugg, savedAt: store.now() }); toast('Saved'); } }, { dataId: 'profile.short-menu.save' }),
     N.menuItem('Share this text', '', () => { N.closeMenu(); share({ source: 'suggested' }); }, { dataId: 'profile.short-menu.share' }),
-    N.menuItem('Choose what goes in it', '', () => { N.closeMenu(); shortSettings(); }, { dataId: 'profile.short-menu.settings' }))) })];
+    N.menuItem('Choose what goes in it', '', () => { N.closeMenu(); shortSettings(); }, { dataId: 'profile.short-menu.settings' }))) });
+  const cards = [];
   for (const x of P.versions) cards.push(card({ title: x.title || 'Saved version', sub: `saved ${store.formatDate(x.savedAt || x.createdAt)}`, text: x.text, dataId: 'profile.short-version', edit: () => versionSheet(x), lang: x.lang || 'en',
     langPick: langPick(x.lang || 'en', 'profile.short-version.lang', async (k) => { await store.profileVersions.save({ ...x, lang: k }); toast(`Marked as ${PD.langName(k)}`); }),
     menu: (a) => N.openMenu(a, 'profile.version-menu', (panel) => panel.append(
@@ -198,6 +199,7 @@ function shortTab(v) {
         N.closeMenu(); await store.profileVersions.remove(x.id); lastDeleted = x;
         toast(`“${x.title}” deleted`, 5000, { label: 'Undo', run: undoDelete });
       }, { cls: 'danger-text', dataId: 'profile.version-menu.delete' }))) }));
+  cards.push(suggested); // Suggested sits last, outlined and marked Experimental (owner request)
   return [
     h('div', { class: 'pc-sec-head mp-short-head' }, h('h2', { class: 'eyebrow' }, 'Short versions'),
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Choose what goes in Suggested', title: 'Choose what goes in Suggested', 'data-id': 'profile.short-settings', html: icon('settings'), onClick: () => shortSettings() })),
@@ -214,10 +216,10 @@ function shortTab(v) {
   ];
 }
 async function undoDelete() { if (!lastDeleted) return; const x = lastDeleted; lastDeleted = null; await store.profileVersions.save(x); toast('Restored'); }
-function card({ title, sub, text, dataId, edit, menu, lang: cardLang = 'en', langPick: pick = null }) {
-  return h('article', { class: 'mp-card', 'data-id': dataId, dir: PD.isRtl(cardLang) ? 'rtl' : null },
+function card({ title, sub, text, dataId, edit, menu, lang: cardLang = 'en', langPick: pick = null, experimental = false }) {
+  return h('article', { class: 'mp-card' + (experimental ? ' mp-card-exp' : ''), 'data-id': dataId, dir: PD.isRtl(cardLang) ? 'rtl' : null },
     h('div', { class: 'mp-card-head' },
-      h('div', { class: 'mp-card-title' }, h('strong', { dir: 'auto' }, title), h('span', { class: 'stamp' }, sub)),
+      h('div', { class: 'mp-card-title' }, h('strong', { dir: 'auto' }, title, experimental ? h('span', { class: 'mp-exp-tag', 'data-id': dataId + '.experimental' }, 'Experimental') : null), h('span', { class: 'stamp' }, sub)),
       h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '.copy', onClick: async () => { if (await copy(text)) toast('Copied. Copying is not sending — use Share to log a send.'); } }, 'Copy'),
       edit ? h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Edit ' + title, 'data-id': dataId + '.edit', html: icon('edit'), onClick: edit }) : null,
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'More for ' + title, 'aria-haspopup': 'menu', 'aria-expanded': 'false', 'data-id': dataId + '.more', html: icon('more'), onClick: (e) => menu(e.currentTarget) })),

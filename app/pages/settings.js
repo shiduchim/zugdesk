@@ -1,4 +1,4 @@
-// Settings — Show labels, navigation arrangement, demo data, backup/restore, reset.
+// Settings — appearance, Show labels, Contacts view, demo data, backup/restore, reset.
 import * as store from '../js/store.js';
 import { h, icon, section, toast, confirmDialog } from '../js/ui.js';
 import { LAYOUTS, SORTS, load as loadData } from './contacts-data.js';
@@ -35,26 +35,13 @@ export async function render(root) {
 
     section('Appearance', 'settings.appearance',
       h('div', { class: 'radio-list', 'data-id': 'settings.theme-choice' },
-        radio('theme', 'light', 'Light', 'Warm light colours', prefs.theme || 'light', (v) => store.setPref('theme', v)),
-        radio('theme', 'dark', 'Dark', 'Dark background, light text — easier at night', prefs.theme || 'light', (v) => store.setPref('theme', v)),
-        radio('theme', 'auto', 'Match my phone', 'Switches with your phone’s own light / dark setting', prefs.theme || 'light', (v) => store.setPref('theme', v)))),
+        radio('theme', 'light', 'Light', 'Warm light colours', prefs.theme || 'dark', (v) => store.setPref('theme', v)),
+        radio('theme', 'dark', 'Dark', 'Dark background, light text — easier at night', prefs.theme || 'dark', (v) => store.setPref('theme', v)),
+        radio('theme', 'auto', 'Match my phone', 'Switches with your phone’s own light / dark setting', prefs.theme || 'dark', (v) => store.setPref('theme', v)))),
 
     section('Help Claude edit the app', 'settings.labels',
       toggle('settings.show-labels', 'Show labels', 'Overlays every element’s name. Tap a label to copy it, then paste it in your request (e.g. “contacts.add-btn bigger”).',
         prefs.showLabels, (v) => { store.setPref('showLabels', v); toast(v ? 'Labels on — tap one to copy its name' : 'Labels off'); })),
-
-    section('Screen layout (test)', 'settings.shell',
-      h('p', { class: 'note' }, 'Try each one on your phone. Nothing in your data changes.'),
-      h('div', { class: 'radio-list', 'data-id': 'settings.shell-choice' },
-        radio('shell', 'tabs', 'Bottom menu', 'Top bar with the app name, and a menu bar at the bottom', prefs.shellStyle || 'tabs', (v) => store.setPref('shellStyle', v)),
-        radio('shell', 'slim', 'Slim icon bar', 'No top bar. One thin row of icons at the bottom: every section is one tap away. It slides away while you scroll down and comes back when you scroll up. Settings is the gear at the top right of Home.', prefs.shellStyle || 'tabs', (v) => store.setPref('shellStyle', v)),
-        radio('shell', 'claude', 'Claude style', 'Menu icon at the top left, no bottom bar. The top bar hides while you scroll down and comes back when you scroll up. Swipe in from the left edge to open the menu.', prefs.shellStyle || 'tabs', (v) => store.setPref('shellStyle', v)))),
-
-    section('Navigation', 'settings.nav',
-      h('p', { class: 'note' }, 'Still being compared. Changing this moves nothing in your data.'),
-      h('div', { class: 'radio-list', 'data-id': 'settings.nav-choice' },
-        radio('nav', 'three', 'Three destinations', 'Home · Contacts · Shidduchim (Ideas lives inside Shidduchim) · My Profile', prefs.navArrangement, (v) => store.setPref('navArrangement', v)),
-        radio('nav', 'four', 'Four destinations', 'Home · Contacts · Ideas · Shidduchim · Profile', prefs.navArrangement, (v) => store.setPref('navArrangement', v)))),
 
     section('Contacts view', 'settings.contacts-layout',
       h('p', { class: 'note' }, `Phone view now: ${(LAYOUTS.find(l => l[0] === prefs.contactsLayout) || LAYOUTS[0])[1]}. Also changeable from the View button on Contacts. On a computer, Contacts always uses the three-area view.`),
@@ -65,17 +52,18 @@ export async function render(root) {
 
     section('Demo data', 'settings.demo',
       h('p', { class: 'note', 'data-id': 'settings.demo-count' },
-        `${demoCount} fictional demo contacts and ${ownCount} of your own on this phone. Demo records are marked and can be removed without touching yours.`),
+        demoCount ? `${demoCount} fictional demo contacts and ${ownCount} of your own on this phone. Demo records are marked and can be removed without touching yours.`
+          : 'Want to try the app first? Load 200 fictional shadchanim with made-up ideas, shidduchim and notes. Remove them any time; your own records stay.'),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn', 'data-id': 'settings.load-demo-btn', disabled: demoCount >= store.FULL_DEMO_SEED || null, onClick: async () => {
-          const added = await store.loadDemoContacts(store.FULL_DEMO_SEED);
-          toast(added ? `Added ${added} demo contacts` : 'All 200 demo contacts are already loaded');
-        } }, `Load ${store.FULL_DEMO_SEED} demo contacts`),
-        h('button', { class: 'btn danger', 'data-id': 'settings.remove-demo-btn', disabled: demoCount === 0 || null, onClick: async () => {
-          if (await confirmDialog({ title: 'Remove all demo data?', text: `Removes ${demoCount} fictional demo contacts (and any other demo records). Everything you typed yourself stays.`, ok: 'Remove demo data', danger: true, dataId: 'settings.remove-demo-dialog' })) {
+          const added = await store.loadFullDemo();
+          toast(added ? `Demo loaded: ${added} contacts` : 'The demo is already loaded');
+        } }, `Try the demo (${store.FULL_DEMO_SEED} contacts)`),
+        demoCount ? h('button', { class: 'btn danger', 'data-id': 'settings.remove-demo-btn', onClick: async () => {
+          if (await confirmDialog({ title: 'Remove all demo data?', text: `Removes ${demoCount} fictional demo contacts and the other demo records. Everything you typed yourself stays.`, ok: 'Remove demo data', danger: true, dataId: 'settings.remove-demo-dialog' })) {
             const n = await store.removeDemoData(); toast(`Removed ${n} demo records`);
           }
-        } }, h('span', { html: icon('trash') }).firstChild, 'Remove all demo data'))),
+        } }, h('span', { html: icon('trash') }).firstChild, 'Remove all demo data') : null)),
 
     section('Backup', 'settings.backup',
       h('p', { class: 'note' }, 'Everything lives only on this phone. Export saves one file you can keep or move to a new phone. Import brings it back.'),
@@ -89,10 +77,10 @@ export async function render(root) {
         fileInput)),
 
     section('Reset', 'settings.reset',
-      h('p', { class: 'note' }, 'Deletes everything on this phone and starts again with the 20 starter demo contacts. Export first if you want to keep anything.'),
+      h('p', { class: 'note' }, 'Deletes everything on this phone and starts again empty. Export first if you want to keep anything.'),
       h('button', { class: 'btn danger', 'data-id': 'settings.reset-btn', onClick: async () => {
         if (await confirmDialog({ title: 'Reset everything?', text: 'All contacts, people, notes and settings on this phone will be deleted. This cannot be undone.', ok: 'Reset everything', danger: true, dataId: 'settings.reset-dialog' })) {
-          await store.resetAll({ reseed: true }); toast('Reset done — starter data loaded'); location.hash = '#/home';
+          await store.resetAll({ reseed: true }); toast('Reset done — the app is empty'); location.hash = '#/home';
         }
       } }, 'Reset everything')),
 

@@ -5,7 +5,7 @@
 // with inline Add note and expandable previous tries. The quick-choice panel from the list
 // is deliberately NOT repeated here.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, dock } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, dock, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import * as sh from './shidduch-data.js';
 import { bar, endDialog } from './shidduchim.js';
@@ -16,12 +16,14 @@ let root = null, gen = 0, unsub = null, timer = 0, M = null, tab = 'overview';
 const U = { dateEdit: null, noteOpen: false, noteText: '', reporter: null, confirmTry: false }; // UI state, reset per record
 let currentId = null;
 
-export function destroy() { root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('sh-page', 'sh-detail-page');
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'overview';
+  // swipe left / right moves between Overview · Dates · History (owner request)
+  swipeTabs(root, { keys: () => TABS.map(t => t[0]), current: () => tab, go: (k) => navigate(`/shidduchim/${encodeURIComponent(params.id)}${k === 'overview' ? '' : '/' + k}`, { replace: true }) });
   if (currentId !== params.id) { currentId = params.id; Object.assign(U, { dateEdit: null, noteOpen: false, noteText: '', reporter: null, confirmTry: false }); }
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
