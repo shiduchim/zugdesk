@@ -101,3 +101,20 @@ Future requirement as requested: ALL pages must eventually offer at least TWO co
 At that later stage, ensure My Profile also has a warmer variant while the original Claude version remains untouched as its visual baseline. Keep theme choice separate from spacing choices Compact, Standard and Roomy; presentational changes must never mutate records, navigation history or drafts. The Game and Neon examples and original appearance-menu screenshot are illustrative references only. Do not create speculative theme recreations now.
 
 Status: recorded for future phase. No second app-wide skin, no Game/Neon recreated screens, and no theme picker are requested for the current Single Mode working prototype.
+
+
+---
+
+## Session handoff
+_Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
+
+_Last updated: 2026-11-11_
+
+### In progress
+- (nothing)
+
+### Next steps
+- Owner has not made the PR yet for branch claude/tweaks-ended-shidduch (say "make the PR").
+
+### Notes / blockers
+- 
