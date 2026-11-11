@@ -575,7 +575,8 @@ function movedToast(o) {
 }
 function statusStrip(b) {
   const p = b.p, P = pron(p), l = latestByPerson(b.ints).get(p.id) || {};
-  const st = ideaStatus(p, l, b.offers.length > 0);
+  const live = b.offers.filter(o => o.status !== 'ended'), endedOnly = !live.length && b.offers.length > 0;
+  const st = ideaStatus(p, l, live.length > 0, endedOnly);
   const quick = (label, dataId, rec, primary) => h('button', { type: 'button', class: 'btn small' + (primary ? ' primary' : ''), 'data-id': dataId, onClick: async () => {
     const o = await recordInterest(p.id, rec);
     if (o) movedToast(o); else toast('Saved');
@@ -583,15 +584,16 @@ function statusStrip(b) {
   const strip = (...kids) => h('div', { class: 'pc-status pc-status-' + st.key, 'data-id': 'person-card.status' }, ...kids);
   const label = h('span', { class: 'pc-status-label' }, st.label);
   if (st.key === 'shidduch') {
-    const o = b.offers[0];
+    const o = live[0];
     return strip(h('a', { class: 'pc-status-link', href: `#/shidduchim/${encodeURIComponent(o.id)}`, 'data-id': 'person-card.status-open' }, label, h('span', { class: 'note' }, 'Open'), ico('chevron')));
   }
-  if (st.key === 'closed') return strip(label, h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.status-reopen', onClick: async () => { await reopen(p.id, l); toast('Reopened'); } }, 'Reopen'));
+  if (st.key === 'closed') return strip(label, h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.status-reopen', onClick: async () => { await reopen(p.id, l, endedOnly); toast('Reopened'); } }, 'Reopen'));
   if (st.key === 'waiting') return strip(label, h('div', { class: 'pc-status-btns' },
     quick(`${P.He} said yes`, 'person-card.status-yes', { side: 'theirs', value: 'Yes, interested' }, true),
     quick(`${P.He} said no`, 'person-card.status-no', { side: 'theirs', value: 'No' }),
     quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
   return strip(label, h('div', { class: 'pc-status-btns' },
     quick('I’m interested', 'person-card.status-interested', { side: 'mine', value: 'Interested' }, true),
+    quick(`${P.He} is not interested`, 'person-card.status-no', { side: 'theirs', value: 'No' }),
     quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
 }

@@ -22,9 +22,10 @@ export function latestByPerson(ints) {
   return out;
 }
 
-export function ideaStatus(p, l = {}, hasOffer = false) {
+export function ideaStatus(p, l = {}, hasOffer = false, endedOffer = false) {
   const P = pron(p), mine = l.mine?.value, theirs = l.theirs?.value;
   if (hasOffer) return { key: 'shidduch', label: 'In a shidduch' };
+  if (endedOffer) return { key: 'closed', label: 'Shidduch ended' };
   if (MINE_NO.includes(mine)) return { key: 'closed', label: 'Not for me' };
   if (THEIRS_NO.includes(theirs)) return { key: 'closed', label: `${P.He} said no` };
   if (MINE_YES.includes(mine)) return { key: 'waiting', label: `Waiting for ${P.him}` };
@@ -40,7 +41,7 @@ export async function recordInterest(personId, rec) {
 }
 export async function maybeStart(personId) {
   const [ints, offers] = await Promise.all([store.interestsForPerson(personId), store.offers.byIndex('personId', personId)]);
-  if (offers.length) return null;
+  if (offers.some(o => o.status !== 'ended')) return null;
   const l = latestByPerson(ints).get(personId) || {};
   if (!MINE_YES.includes(l.mine?.value) || !THEIRS_YES.includes(l.theirs?.value)) return null;
   const p = await store.people.get(personId);
@@ -48,7 +49,12 @@ export async function maybeStart(personId) {
 }
 
 // Reopen a closed idea: new records put both sides back to "not decided"; history stays.
-export async function reopen(personId, l = {}) {
+export async function reopen(personId, l = {}, endedOffer = false) {
+  if (endedOffer) {
+    await store.interests.save({ personId, side: 'mine', value: 'Not sure yet', reason: 'Reopened', at: store.now() });
+    await store.interests.save({ personId, side: 'theirs', value: 'Not asked yet', reason: 'Reopened', at: store.now() });
+    return;
+  }
   if (MINE_NO.includes(l.mine?.value)) await store.interests.save({ personId, side: 'mine', value: 'Not sure yet', reason: 'Reopened', at: store.now() });
   if (THEIRS_NO.includes(l.theirs?.value)) await store.interests.save({ personId, side: 'theirs', value: 'Not asked yet', reason: 'Reopened', at: store.now() });
 }
