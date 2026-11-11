@@ -3,8 +3,8 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, confirmDialog, swipeTabs } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
-import { kindLabel, dateOnly, seekingKind } from './people-data.js';
-import { ideaStatus, latestByPerson } from './idea-flow.js';
+import { kindLabel, dateOnly, seekingKind, pron } from './people-data.js';
+import { ideaStatus, latestByPerson, recordInterest } from './idea-flow.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const S = { q: '', filter: 'active' };   // survives leaving the page
@@ -31,8 +31,9 @@ async function draw() {
   if (token !== gen || !root) return;
   const byId = new Map(contacts.map(c => [c.id, c]));
   const latest = latestByPerson(ints);
-  const withOffer = new Set(offers.map(o => o.personId));
-  const status = new Map(people.map(p => [p.id, ideaStatus(p, latest.get(p.id), withOffer.has(p.id))]));
+  const withOffer = new Set(offers.filter(o => o.status !== 'ended').map(o => o.personId));
+  const endedOnly = new Set(offers.filter(o => o.status === 'ended').map(o => o.personId));
+  const status = new Map(people.map(p => [p.id, ideaStatus(p, latest.get(p.id), withOffer.has(p.id), endedOnly.has(p.id))]));
   const senders = new Map();
   for (const s of srcs) if (s.personId && s.sender) (senders.get(s.personId) || senders.set(s.personId, new Set()).get(s.personId)).add(s.sender);
   const searchText = (p) => [p.name, p.city, p.occupation, p.about, p.looking, p.sender, ...(p.languages || []),
@@ -99,7 +100,7 @@ function firstLine(t) { return (t || '').trim().split('\n').find(l => l.trim())?
 function personRow(p, st, byId) {
   const from = (p.contactIds || []).map(id => byId.get(id)).filter(Boolean).map(c => store.displayName(c));
   const sub = [p.age, p.city, p.occupation].filter(Boolean).join(' · ') || 'Details not recorded';
-  return h('a', { class: 'row-link person-row' + (st.key === 'closed' ? ' closed' : ''), href: `#/people/${encodeURIComponent(p.id)}`, 'data-id': 'people.row' },
+  const link = h('a', { class: 'row-link person-row' + (st.key === 'closed' ? ' closed' : ''), href: `#/people/${encodeURIComponent(p.id)}`, 'data-id': 'people.row' },
     h('div', { class: 'avatar' }, store.initials(p)),
     h('div', { class: 'row-main' },
       h('div', { class: 'row-title', dir: 'auto' }, store.personName(p)),
@@ -108,4 +109,12 @@ function personRow(p, st, byId) {
       // Status sits on its own line under the details, so it never covers the work or city (owner request).
       st.label !== 'New' ? h('span', { class: 'chip row-status st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null),
     p.kind ? h('div', { class: 'row-tags' }, h('span', { class: 'chip' }, kindLabel(p.kind))) : null);
+  if (st.key !== 'new') return link;
+  // Open tab: answer "not interested" without opening the card (owner request).
+  const P = pron(p);
+  const quick = (label, dataId, rec) => h('button', { type: 'button', class: 'btn small', 'data-id': dataId, onClick: async () => { await recordInterest(p.id, rec); toast('Saved'); } }, label);
+  return h('div', { class: 'person-row-wrap', 'data-id': 'people.row-wrap' }, link,
+    h('div', { class: 'pc-status-btns person-row-btns', 'data-id': 'people.row-btns' },
+      quick('I’m not interested', 'people.row-pass', { side: 'mine', value: 'Not interested' }),
+      quick(`${P.He} is not interested`, 'people.row-no', { side: 'theirs', value: 'No' })));
 }
