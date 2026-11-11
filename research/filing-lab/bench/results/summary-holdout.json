@@ -1,0 +1,623 @@
+{
+ "C-rules-holdout.jsonl": {
+  "rows": [
+   {
+    "id": "X1",
+    "cat": "A",
+    "set": "holdout",
+    "ms": 15.3,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 1,
+    "notes": [
+     "activity call: right type, wrong details"
+    ]
+   },
+   {
+    "id": "X2",
+    "cat": "E",
+    "set": "holdout",
+    "ms": 6.78,
+    "blame": "engine (misunderstood)",
+    "understood": false,
+    "filed": false,
+    "taps": 3,
+    "notes": [
+     "missed waiting for Mrs Levin/she",
+     "filing missing: {\"act\":\"waiting\",\"on\":\"esther_levin\"}"
+    ]
+   },
+   {
+    "id": "X3",
+    "cat": "B",
+    "set": "holdout",
+    "ms": 3.35,
+    "blame": "engine (misunderstood)",
+    "understood": false,
+    "filed": false,
+    "taps": 3,
+    "notes": [
+     "missed reminder for rabbi stein",
+     "filing missing: {\"act\":\"reminder\",\"on\":\"yossi_stein\",\"due\":[\"2026-10-13\"],\"tier\":\"auto\"}"
+    ]
+   },
+   {
+    "id": "X4",
+    "cat": "I",
+    "set": "holdout",
+    "ms": 7.88,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 1,
+    "notes": [
+     "activity request by Leah's parents: not found"
+    ]
+   },
+   {
+    "id": "X5",
+    "cat": "D",
+    "set": "holdout",
+    "ms": 1.12,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 3,
+    "notes": []
+   },
+   {
+    "id": "X6",
+    "cat": "J",
+    "set": "holdout",
+    "ms": 1.56,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 1,
+    "notes": [
+     "role of \"Rivka Adler\": said other, expected shadchan",
+     "activity suggestion by Rivka Adler: not found"
+    ]
+   },
+   {
+    "id": "X7",
+    "cat": "B",
+    "set": "holdout",
+    "ms": 1.13,
+    "blame": "engine (misunderstood)",
+    "understood": false,
+    "filed": false,
+    "taps": 3,
+    "notes": [
+     "missed reminder for Mrs. Feld",
+     "filing missing: {\"act\":\"reminder\",\"on\":\"tova_feld\",\"due\":[\"2026-10-13\"]}"
+    ]
+   },
+   {
+    "id": "X8",
+    "cat": "E",
+    "set": "holdout",
+    "ms": 0.55,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 3,
+    "notes": []
+   },
+   {
+    "id": "X9",
+    "cat": "I",
+    "set": "holdout",
+    "ms": 1.75,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X10",
+    "cat": "H",
+    "set": "holdout",
+    "ms": 1.18,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X11",
+    "cat": "B",
+    "set": "holdout",
+    "ms": 0.66,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X12",
+    "cat": "J",
+    "set": "holdout",
+    "ms": 0.43,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X13",
+    "cat": "D",
+    "set": "holdout",
+    "ms": 0.51,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 3,
+    "notes": []
+   },
+   {
+    "id": "X14",
+    "cat": "C",
+    "set": "holdout",
+    "ms": 0.92,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X15",
+    "cat": "I",
+    "set": "holdout",
+    "ms": 1.04,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X16",
+    "cat": "F",
+    "set": "holdout",
+    "ms": 0.61,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 2,
+    "notes": []
+   },
+   {
+    "id": "X17",
+    "cat": "K",
+    "set": "holdout",
+    "ms": 1.1,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 2,
+    "notes": []
+   },
+   {
+    "id": "X18",
+    "cat": "U",
+    "set": "holdout",
+    "ms": 0.67,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 2,
+    "notes": []
+   },
+   {
+    "id": "X19",
+    "cat": "B",
+    "set": "holdout",
+    "ms": 0.91,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 3,
+    "notes": []
+   },
+   {
+    "id": "X20",
+    "cat": "L",
+    "set": "holdout",
+    "ms": 0.32,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X21",
+    "cat": "U",
+    "set": "holdout",
+    "ms": 0.83,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 1,
+    "notes": [
+     "activity note/promise/request by Yossi Stein: not found"
+    ]
+   },
+   {
+    "id": "X22",
+    "cat": "F",
+    "set": "holdout",
+    "ms": 1.11,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 2,
+    "notes": [
+     "role of \"Tziporah\": said other, expected single",
+     "missed answer: Tziporah = yes"
+    ]
+   },
+   {
+    "id": "X23",
+    "cat": "A",
+    "set": "holdout",
+    "ms": 0.35,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X24",
+    "cat": "D",
+    "set": "holdout",
+    "ms": 0.73,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X25",
+    "cat": "G",
+    "set": "holdout",
+    "ms": 1.54,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X26",
+    "cat": "H",
+    "set": "holdout",
+    "ms": 0.48,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 2,
+    "notes": []
+   },
+   {
+    "id": "X27",
+    "cat": "D",
+    "set": "holdout",
+    "ms": 1.35,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 2,
+    "notes": [
+     "role of \"Rivka\": said other, expected shadchan",
+     "answer source: said \"null\", expected Rivka or she"
+    ]
+   },
+   {
+    "id": "X28",
+    "cat": "U",
+    "set": "holdout",
+    "ms": 0.35,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 2,
+    "notes": []
+   },
+   {
+    "id": "X29",
+    "cat": "L",
+    "set": "holdout",
+    "ms": 0.66,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 1,
+    "notes": []
+   },
+   {
+    "id": "X30",
+    "cat": "D",
+    "set": "holdout",
+    "ms": 1.03,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 1,
+    "notes": [
+     "missed answer: Rachel = yes"
+    ]
+   },
+   {
+    "id": "X31",
+    "cat": "I",
+    "set": "holdout",
+    "ms": 0.42,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 1,
+    "notes": [
+     "role of \"Leah Katz's shadchan\": said single, expected shadchan/family/other"
+    ]
+   },
+   {
+    "id": "X32",
+    "cat": "K",
+    "set": "holdout",
+    "ms": 0.5,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 2,
+    "notes": []
+   },
+   {
+    "id": "X33",
+    "cat": "B",
+    "set": "holdout",
+    "ms": 0.79,
+    "blame": "engine (misunderstood)",
+    "understood": false,
+    "filed": false,
+    "taps": 4,
+    "notes": [
+     "missed reminder for Michael",
+     "filing missing: {\"act\":\"reminder\",\"on\":\"michael_gold\"}"
+    ]
+   },
+   {
+    "id": "X34",
+    "cat": "G",
+    "set": "holdout",
+    "ms": 0.82,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 2,
+    "notes": [
+     "role of \"Bracha\": said reference, expected single/family"
+    ]
+   },
+   {
+    "id": "X35",
+    "cat": "G",
+    "set": "holdout",
+    "ms": 1.34,
+    "blame": null,
+    "understood": true,
+    "filed": true,
+    "taps": 2,
+    "notes": []
+   },
+   {
+    "id": "X36",
+    "cat": "M",
+    "set": "holdout",
+    "ms": 0.94,
+    "blame": "engine error, filing still right",
+    "understood": false,
+    "filed": true,
+    "taps": 1,
+    "notes": [
+     "missed person \"מרת לוין\"",
+     "missed answer: רחל = yes"
+    ]
+   },
+   {
+    "id": "X37",
+    "cat": "M",
+    "set": "holdout",
+    "ms": 2.36,
+    "blame": "engine (misunderstood)",
+    "understood": false,
+    "filed": false,
+    "taps": 3,
+    "notes": [
+     "missed answer: Дина = yes",
+     "filing missing: {\"act\":\"answer\",\"idea\":\"idea_dina\",\"value\":\"yes\",\"tier\":\"confirm\"}"
+    ]
+   }
+  ],
+  "english": {
+   "n": 35,
+   "understoodFully": 63,
+   "activity": 84,
+   "peopleRoles": 86,
+   "negation": 100,
+   "reminders": 56,
+   "noFalseReminder": 100,
+   "multiple": 40,
+   "source": 50,
+   "inventedPerCase": 0,
+   "casesWithInvented": 0,
+   "filedRight": 89,
+   "oneTap": 49,
+   "avgTaps": 1.77,
+   "blameEngine": 4,
+   "blameFiling": 0,
+   "absorbed": 9,
+   "medianMs": 0.91,
+   "p90Ms": 3.35,
+   "crashes": 0
+  },
+  "given": {
+   "n": 0,
+   "understoodFully": null,
+   "activity": null,
+   "peopleRoles": null,
+   "negation": null,
+   "reminders": null,
+   "noFalseReminder": null,
+   "multiple": null,
+   "source": null,
+   "inventedPerCase": null,
+   "casesWithInvented": null,
+   "filedRight": null,
+   "oneTap": null,
+   "avgTaps": null,
+   "blameEngine": 0,
+   "blameFiling": 0,
+   "absorbed": 0,
+   "medianMs": null,
+   "p90Ms": null,
+   "crashes": 0
+  },
+  "variants": {
+   "n": 0,
+   "understoodFully": null,
+   "activity": null,
+   "peopleRoles": null,
+   "negation": null,
+   "reminders": null,
+   "noFalseReminder": null,
+   "multiple": null,
+   "source": null,
+   "inventedPerCase": null,
+   "casesWithInvented": null,
+   "filedRight": null,
+   "oneTap": null,
+   "avgTaps": null,
+   "blameEngine": 0,
+   "blameFiling": 0,
+   "absorbed": 0,
+   "medianMs": null,
+   "p90Ms": null,
+   "crashes": 0
+  },
+  "unseen": {
+   "n": 0,
+   "understoodFully": null,
+   "activity": null,
+   "peopleRoles": null,
+   "negation": null,
+   "reminders": null,
+   "noFalseReminder": null,
+   "multiple": null,
+   "source": null,
+   "inventedPerCase": null,
+   "casesWithInvented": null,
+   "filedRight": null,
+   "oneTap": null,
+   "avgTaps": null,
+   "blameEngine": 0,
+   "blameFiling": 0,
+   "absorbed": 0,
+   "medianMs": null,
+   "p90Ms": null,
+   "crashes": 0
+  },
+  "holdout": {
+   "n": 37,
+   "understoodFully": 59,
+   "activity": 84,
+   "peopleRoles": 84,
+   "negation": 100,
+   "reminders": 56,
+   "noFalseReminder": 100,
+   "multiple": 40,
+   "source": 50,
+   "inventedPerCase": 0,
+   "casesWithInvented": 0,
+   "filedRight": 86,
+   "oneTap": 49,
+   "avgTaps": 1.78,
+   "blameEngine": 5,
+   "blameFiling": 0,
+   "absorbed": 10,
+   "medianMs": 0.92,
+   "p90Ms": 3.35,
+   "crashes": 0
+  },
+  "multilingual": {
+   "n": 2,
+   "understoodFully": 0,
+   "activity": null,
+   "peopleRoles": 50,
+   "negation": null,
+   "reminders": null,
+   "noFalseReminder": 100,
+   "multiple": null,
+   "source": null,
+   "inventedPerCase": 0,
+   "casesWithInvented": 0,
+   "filedRight": 50,
+   "oneTap": 50,
+   "avgTaps": 2,
+   "blameEngine": 1,
+   "blameFiling": 0,
+   "absorbed": 1,
+   "medianMs": 2.36,
+   "p90Ms": 2.36,
+   "crashes": 0
+  },
+  "goldPlanOK": {
+   "X1": true,
+   "X2": true,
+   "X3": true,
+   "X4": true,
+   "X5": true,
+   "X6": true,
+   "X7": true,
+   "X8": true,
+   "X9": true,
+   "X10": true,
+   "X11": true,
+   "X12": true,
+   "X13": true,
+   "X14": true,
+   "X15": true,
+   "X16": true,
+   "X17": true,
+   "X18": true,
+   "X19": true,
+   "X20": true,
+   "X21": true,
+   "X22": true,
+   "X23": true,
+   "X24": true,
+   "X25": true,
+   "X26": true,
+   "X27": true,
+   "X28": true,
+   "X29": true,
+   "X30": true,
+   "X31": true,
+   "X32": true,
+   "X33": true,
+   "X34": true,
+   "X35": true,
+   "X36": true,
+   "X37": true
+  }
+ }
+}

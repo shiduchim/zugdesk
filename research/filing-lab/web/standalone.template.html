@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZivugMatch Filing Lab</title>
+<style>
+/* Layout: one working column (note → engines → results) beside a narrow reference column of the made-up contacts. */
+:root {
+  --bg: #f6f5f2; --card: #ffffff; --text: #19324a; --muted: #66747e; --line: #e0dfdc; --accent: #315b78;
+  --accent-soft: #e8f1f7; --auto: #2f7d4f; --auto-bg: #e7f4ec; --choice: #8a5a00; --choice-bg: #fff1cf;
+  --confirm: #9b3b36; --confirm-bg: #fbe9e7; --info: #55626b; --info-bg: #eef1f3; --hl-person: #dfeef9;
+  --hl-time: #fff1cf; --hl-answer: #e7f4ec; --err: #9b3b36;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans Hebrew", sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12181d; --card: #1b232a; --text: #e3eaf0; --muted: #9aa7b1; --line: #2c3740; --accent: #7fb1d6;
+    --accent-soft: #223241; --auto: #7fd19f; --auto-bg: #183325; --choice: #f0c46a; --choice-bg: #3a2e12;
+    --confirm: #f0948d; --confirm-bg: #3b1f1d; --info: #b4c0c8; --info-bg: #232d34; --hl-person: #22384a;
+    --hl-time: #3a2e12; --hl-answer: #183325; --err: #f0948d; color-scheme: dark;
+  }
+}
+/*CSS*/
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">ZivugMatch <span>Filing lab</span></div>
+  <div class="status" id="status">Checking this browser…</div>
+  <nav class="tabs" role="tablist">
+    <button class="tab on" data-tab="try" role="tab">Try it</button>
+    <button class="tab" data-tab="bench" role="tab">Benchmark</button>
+    <button class="tab" data-tab="findings" role="tab">Findings</button>
+  </nav>
+</header>
+
+<main>
+  <section id="tab-try" class="tabpane">
+    <div class="layout">
+      <div class="col-main">
+        <div class="card entry">
+          <label for="note" class="big-label">What happened?</label>
+          <textarea id="note" rows="3" dir="auto" placeholder="e.g. Rivka told me Leah agreed to go out." autocomplete="off" spellcheck="true"></textarea>
+          <div class="row ctx">
+            <label for="context">Typing from</label>
+            <select id="context"></select>
+            <span class="hint">Pick a person to test typing on their page.</span>
+          </div>
+          <div class="engines" role="radiogroup" aria-label="Engine">
+            <button class="eng" data-eng="A" role="radio"><b>Engine A</b><small id="lblA">tiny AI model</small></button>
+            <button class="eng" data-eng="B" role="radio"><b>Engine B</b><small id="lblB">small AI model</small></button>
+            <button class="eng" data-eng="C" role="radio"><b>Engine C</b><small>No AI · rules + your contacts</small></button>
+            <button class="eng" data-eng="ALL" role="radio"><b>Compare</b><small>Same note, all three</small></button>
+          </div>
+          <div class="row models">
+            <label for="modelA">A model</label><select id="modelA"></select>
+            <label for="modelB">B model</label><select id="modelB"></select>
+          </div>
+          <button id="analyze" class="primary">Analyze</button>
+          <p class="hint first-use">First use of A or B downloads that model once (0.4–1 GB; the 1.7B model needs about 2 GB of graphics memory) and keeps it in this browser. After that it works without internet. Your notes never leave this computer.</p>
+        </div>
+
+        <div class="examples card">
+          <div class="ex-head"><b>Try an example</b><span class="hint">or type anything of your own</span>
+            <button id="randomEx" class="small">Random unseen note</button></div>
+          <div id="examples" class="chips"></div>
+        </div>
+
+        <div id="results" class="results"></div>
+      </div>
+
+      <aside class="col-side card">
+        <h2>Fictional contacts</h2>
+        <p class="hint">Made-up test data. Note the <b>two Mrs. Cohens</b> and the <b>two Rivkas</b>.</p>
+        <ul id="people" class="plist"></ul>
+        <h2>Shidduchim</h2>
+        <ul id="ideas" class="plist"></ul>
+        <button id="unload" class="small">Free AI memory</button>
+      </aside>
+    </div>
+  </section>
+
+  <section id="tab-bench" class="tabpane" hidden>
+    <div class="card">
+      <h2>Benchmark</h2>
+      <p>Every engine gets the same made-up notes. Two questions are scored separately:
+        <b>did the engine understand the note?</b> and <b>did the note end up in the right place?</b>
+        The filing step was also run on the <i>correct</i> understanding of every note (130 of 130 filed right), so a mistake here belongs to the engine.</p>
+      <div class="row">
+        <label for="benchSet">Test set</label>
+        <select id="benchSet">
+          <option value="holdout">Holdout · 37 notes written later, no engine tuned on them</option>
+          <option value="dev">Development · 93 notes, the no-AI rules were tuned on these</option>
+        </select>
+      </div>
+      <div class="row">
+        <button id="runLive" class="small strong">Run now on this computer</button>
+        <label class="inline"><input type="checkbox" id="liveA" checked> A</label>
+        <label class="inline"><input type="checkbox" id="liveB" checked> B</label>
+        <label class="inline"><input type="checkbox" id="liveC" checked> C</label>
+        <button id="loadSaved" class="small">Show saved results only</button>
+      </div>
+      <p class="hint" id="benchProgress">A and B take roughly 2–10 seconds per note on a normal PC, so the holdout set takes a few minutes per model.</p>
+      <div id="benchSummary"></div>
+      <div id="benchRows"></div>
+    </div>
+  </section>
+
+  <section id="tab-findings" class="tabpane" hidden>
+    <div class="card prose">
+      <h2>What I found</h2>
+      <p class="lead">Typing a note and having it filed in the right place is mostly an <b>organising</b> problem, not an AI problem.
+        Once a note is understood correctly, ordinary app logic files it right: 130 of 130 test notes, including “which Mrs. Cohen?”,
+        “the Sarah you met last year”, “Leah’s reference”, and never touching your own answer.</p>
+
+      <h3>The three engines in this file</h3>
+      <ul>
+        <li><b>A · a tiny AI model</b> (Qwen3 0.6B by default) and <b>B · a small AI model</b> (Qwen3 1.7B), both running on this computer’s
+          graphics card, with the same instructions and the same forced output format. Comparing them answers “is tiny enough, or is a bit bigger clearly better?”.
+          Other sizes are in the model menus.</li>
+        <li><b>C · no AI</b>: word lists, a few sentence rules and your saved contacts. Instant, nothing to download, works on any phone.</li>
+        <li><b>GLiNER2.5</b> (a 74M-parameter extraction model, my first-choice tiny AI) has no browser version yet, so it is only in the PC kit.</li>
+      </ul>
+
+      <h3>Measured so far: Engine C on notes it had never seen</h3>
+      <div class="tablewrap"><table class="small-table">
+        <tbody>
+        <tr><td>Filed right (35 English notes)</td><td class="num"><b>89%</b></td></tr>
+        <tr><td>Understood completely</td><td class="num">63%</td></tr>
+        <tr><td>“Not yet / hasn’t answered” handled</td><td class="num">100%</td></tr>
+        <tr><td>Notes with an invented name, answer or date</td><td class="num"><b>0%</b></td></tr>
+        <tr><td>Taps per note (Save + choices + OKs + fixes)</td><td class="num">1.8</td></tr>
+        <tr><td>Time per note</td><td class="num">under 1 ms</td></tr>
+        </tbody></table></div>
+      <p>Holdout notes, written after its rules were frozen. Counting the 2 Hebrew/Russian notes too, filed right is 86% (the Benchmark tab shows all 37). When it is wrong it leaves something out
+        (“gotta call rabbi stein back tmrw” gave no reminder); it never made anything up. The A and B numbers come from
+        pressing <b>Run now</b> on the Benchmark tab. I could not run them myself because my workspace blocks the model downloads.</p>
+
+      <h3>The best design without AI</h3>
+      <ol>
+        <li><b>Write where it happened.</b> On Leah’s page, or in the “Call ended: what happened?” card. The destination is then known.
+          The same note “Reference didn’t answer, call tomorrow” needs a question from Home, but is one tap on Leah’s page (try it with <i>Typing from</i>).</li>
+        <li><b>Names become chips as you type</b>, like @-mentions. Two Mrs. Cohens appear as two chips with city and last call, so it is settled while typing.</li>
+        <li><b>Dates are recognised as you type</b> (“in two days” → Wed). Vague words ask for a day instead of inventing one.</li>
+        <li><b>Buttons from the record’s state.</b> Leah, waiting for her answer: <i>She said yes · She said no · Still thinking</i>.
+          Mrs. Cohen, looking for me: <i>Has an idea · Nothing yet · Will call me</i>.</li>
+        <li><b>Open loops instead of categories.</b> Nearly every note updates something already open (waiting for Leah, Mrs. Cohen working on it,
+          references to call). Filing becomes “which of this person’s one to three open items does this advance?”.</li>
+      </ol>
+
+      <h3>Recommendation</h3>
+      <p>Build ZivugMatch’s filing on the no-AI design above, with the shared filing step deciding what is saved with one tap and what needs your OK.
+        Add an AI engine later only as an optional “smart reading” helper, and only if, on the holdout set, it beats Engine C’s 89% by about 5 points or more,
+        invents no more than C, and is small and fast enough for your phone. On the phone, only a tiny model such as GLiNER2.5 Small (about 0.1 GB) is realistic;
+        a 1.7B model is 1 GB and takes seconds per note.</p>
+
+      <h3>Getting better over time without collecting conversations</h3>
+      <ul>
+        <li>Your corrections (“Rivky” is Rivka Adler, “shayach” means yes) become personal word-list entries, stored only on your device.</li>
+        <li>A tiny model can be trained on thousands of <i>made-up</i> notes, then shipped as a small update that must pass this benchmark first.</li>
+        <li>Optional sharing, if ever: only the pattern of a phrase with names removed, which you read before sending.</li>
+      </ul>
+
+      <h3>Requirements for this file</h3>
+      <p>Chrome or Edge on Windows (WebGPU), internet for the first use of each AI model, and about 2 GB of free graphics memory for the 1.7B model.
+        Engine C, the examples and the saved results work in any browser, offline.</p>
+    </div>
+  </section>
+</main>
+<script type="module">
+/*JS*/
+</script>
+</body>
+</html>

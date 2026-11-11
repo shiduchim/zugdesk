@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZivugMatch Filing Lab</title>
+<link rel="stylesheet" href="/web/style.css">
+<script type="module" src="/web/js/app.js"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">ZivugMatch <span>Filing lab</span></div>
+  <div class="status" id="status">Checking engines…</div>
+  <nav class="tabs" role="tablist">
+    <button class="tab on" data-tab="try" role="tab">Try it</button>
+    <button class="tab" data-tab="bench" role="tab">Benchmark</button>
+    <button class="tab" data-tab="about" role="tab">How it works</button>
+  </nav>
+</header>
+
+<main>
+  <!-- TRY IT -->
+  <section id="tab-try" class="tabpane on">
+    <div class="layout">
+      <div class="col-main">
+        <div class="card entry">
+          <label for="note" class="big-label">What happened?</label>
+          <textarea id="note" rows="3" placeholder="e.g. Rivka told me Leah agreed to go out." autocomplete="off" spellcheck="true"></textarea>
+          <div class="row ctx">
+            <label for="context">Typing from</label>
+            <select id="context"></select>
+            <span class="hint">Pick a person to test typing on their page.</span>
+          </div>
+          <div class="engines" role="radiogroup" aria-label="Engine">
+            <button class="eng" data-eng="A" role="radio"><b>Engine A</b><small id="lblA">GLiNER2.5 · tiny extractor</small></button>
+            <button class="eng" data-eng="B" role="radio"><b>Engine B</b><small id="lblB">Small language model</small></button>
+            <button class="eng" data-eng="C" role="radio"><b>Engine C</b><small>No AI · rules + your contacts</small></button>
+            <button class="eng" data-eng="ALL" role="radio"><b>Compare</b><small>Same note, all three</small></button>
+          </div>
+          <div class="row models">
+            <label>A model <select id="modelA"></select></label>
+            <label>B model <select id="modelB"></select></label>
+          </div>
+          <button id="analyze" class="primary">Analyze</button>
+        </div>
+
+        <div class="examples card">
+          <div class="ex-head"><b>Try an example</b> <span class="hint">or type anything of your own</span>
+            <button id="randomEx" class="small">Random unseen note</button></div>
+          <div id="examples" class="chips"></div>
+        </div>
+
+        <div id="results" class="results"></div>
+      </div>
+
+      <aside class="col-side card">
+        <h2>Fictional contacts</h2>
+        <p class="hint">Made-up test data. Note the <b>two Mrs. Cohens</b> and <b>two Rivkas</b>.</p>
+        <ul id="people" class="plist"></ul>
+        <h2>Shidduchim</h2>
+        <ul id="ideas" class="plist"></ul>
+      </aside>
+    </div>
+  </section>
+
+  <!-- BENCHMARK -->
+  <section id="tab-bench" class="tabpane">
+    <div class="card">
+      <h2>Benchmark</h2>
+      <p>Every engine gets the same made-up notes. Two questions are scored separately:
+        <b>did the engine understand the note?</b> and <b>did the note end up in the right place?</b>
+        The filing step is also run on the <i>correct</i> understanding, so a filing mistake can be blamed on the right part.</p>
+      <div class="row">
+        <label>Test set
+          <select id="benchSet">
+            <option value="cases.json">Development set (93 notes — rules were tuned on these)</option>
+            <option value="holdout.json">Holdout set (37 notes — written later, no engine tuned on them)</option>
+          </select></label>
+      </div>
+      <div class="row">
+        <button id="loadSaved" class="small">Show saved results</button>
+        <button id="runLive" class="small">Run now on this computer</button>
+        <label class="inline"><input type="checkbox" id="liveA" checked> A</label>
+        <label class="inline"><input type="checkbox" id="liveB" checked> B</label>
+        <label class="inline"><input type="checkbox" id="liveC" checked> C</label>
+        <span id="benchProgress" class="hint"></span>
+      </div>
+      <div id="benchSummary"></div>
+      <div id="benchRows"></div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="tab-about" class="tabpane">
+    <div class="card prose">
+      <h2>How the lab works</h2>
+      <ol>
+        <li><b>The engine reads the note</b> and writes down what it understood, in one shared format:
+          people and roles, activities, answers, my to-dos, and whom I'm waiting for. Engines A and B are real AI
+          models running on this computer. Engine C uses no AI: word lists, a few sentence rules and your saved contacts.</li>
+        <li><b>The filing step</b> (ordinary app logic, the same for every engine) matches names to saved contacts,
+          picks the record, works out dates, and sorts every action into:
+          <span class="tier auto">Saved with one tap</span>
+          <span class="tier choice">Needs a choice</span>
+          <span class="tier confirm">Needs your OK</span>
+          <span class="tier info">Just so you know</span>.
+          It never changes data; it only proposes.</li>
+        <li><b>The original note is always kept as written.</b> Nothing the engine extracted replaces it.</li>
+      </ol>
+      <p>What each result card shows is the model's real output, including its mistakes. Open
+        “What the model actually returned” on any card to see it unedited.</p>
+      <p>Privacy: the page may only talk to this local server (enforced by the browser), the server listens on
+        127.0.0.1 only, and the model libraries run in offline mode. The header shows how many network connections
+        the lab has to anything outside this computer.</p>
+    </div>
+  </section>
+</main>
+</body>
+</html>
