@@ -1,5 +1,20 @@
 # V11 — Claude Code build handoff for Single Mode
 
+## Session handoff
+_Unfinished work and next steps only (updated by /handoff). Everything below this section is the design spec — don't rewrite it._
+_Last updated: 2026-11-11_
+
+### In progress
+- (nothing)
+
+### Next steps
+- Owner decides on unmerged branch `claude/tweaks-ended-shidduch` ("Ended shidduch leaves Active (now Closed); not-interested buttons on Open rows and card"): make a PR and merge, or drop it.
+
+### Notes / blockers
+- (none)
+
+---
+
 Status: implementation instructions and acceptance contract. This chapter complements the approved design history above; when old exploratory language conflicts with this section, use the latest explicitly approved behavior and this implementation scope.
 
 ## A. Non-negotiable source and scope rules
