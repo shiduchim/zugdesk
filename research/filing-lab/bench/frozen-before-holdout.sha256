@@ -1,0 +1,6 @@
+7a3c8f11d38e62094b2ddca220b0fd53f18b56f7f881d259e03c2dc6a2228c15  web/js/engine_c.js
+29eb01773f143841909446197adffba5b59d6e302bd766a2bf92e1fc735a87b9  web/js/planner.js
+dd4a64ed04df30ba38dbc116a6a95a2fd9aefbb8c8578aeb32cc2250a11036a0  web/js/names.js
+817ad347939436a812900324e011e5412a3625cb90fdf21024d2622072c22a7b  web/js/dates.js
+# Note: after this freeze, planner.js changed only in one display string (how an answer's source is labelled).
+# engine_c.js, names.js and dates.js are unchanged; no score changed.
