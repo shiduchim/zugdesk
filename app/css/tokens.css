@@ -230,4 +230,7 @@
   --shs-dim:.6;                    /* finished shidduchim on a single's card, cancelled dates */
   --shs-tab-font:11px;             /* four lane tabs on a narrow phone */
   --shs-couple-font:17px;          /* the couple's names on a shidduch's page */
+  --shh-max:760px;                 /* Shadchan Home: one column of blocks on a computer */
+  --shh-stat-font:22px;            /* At a glance numbers */
+  --shh-backup-bg:var(--warn-bg);  /* backup reminder line */
 }

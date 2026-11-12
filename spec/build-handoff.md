@@ -108,20 +108,18 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-12 (S3 done)_
+_Last updated: 2026-11-12 (S4 done)_
 
 ### In progress
-- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1, S2 and S3 are done** on branch `claude/eloquent-thompson-tchp32`.
-- How it is built, and the rules for the next stages: `spec/shadchan/build-notes.md` (read it first; section 7 is new from S3). Approved design: `spec/shadchan/design.md`.
+- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1–S4 are done** on branch `claude/eloquent-thompson-tchp32`.
+- How it is built: `spec/shadchan/build-notes.md` (read it first; section 8 is new from S4). Approved design: `spec/shadchan/design.md`.
 
 ### Next steps
-- **S4 (Opus · Medium):** Home from blocks. Build "Your move" and "Waiting for them" from `loadAll()` + `m.step` in `pages/sh-shidduch-data.js` (do not work the rules out again); At a glance with No open shidduch; My singles; Edit Home; the backup reminder (`store.lastBackupAt()` is ready).
+- **S5 (Opus · Medium):** Find a match and Send. Reuse `singlesIndex()` + `applyFilters()`, `createIdea`, `pairDetail`; after “Yes, I sent it” call `setAnswer(m, side, 'asked')`; make Home’s “No open shidduch” rows open Find a match; build “Not a fit”.
 
 ### Notes / blockers
-- Owner should try S3 on the phone: Shidduchim → tap a bubble; open a card with the arrow; New idea; open a shidduch → Arrange a date, then answer after the date; end one and tick who was told.
-- Decisions made in S3 that the owner may want changed: engaged couples sit in Ended with a gold label; an idea does not light the open-shidduch dot; arranging a date marks both sides Yes; a second try starts as an idea again.
-- Not built on purpose: Send (S5) — until then "Mark his / her side asked" records it; "Not a fit" (S5).
-- Not testable from here: iPhone / Android "keep storage permanently" behaviour, a real NetFree / TAG filter, WhatsApp Share-to-app.
-- The survey file held 26 responses (owner said 27). Raw answers are not in the repo (public).
-- Filter and sync facts in design.md section 2 are partly unconfirmed. Test on a real NetFree and TAG device, and on an iPhone, before promising.
-- The address question (design.md section 9) is still open; it must be settled before a real shadchan types real data (S6).
+- Owner should try S4 on the phone: Home → To do (tap Mark asked, Got an answer, Remind), At a glance, Edit Home at the bottom (show/hide, Up/Down), Back up now.
+- Decisions made in S4 that the owner may want changed: Waiting rows are sorted by days waiting; At a glance counts Open / Waiting / Dating / Ideas; No open shidduch leaves out Engaged, Paused and Not relevant singles; the backup line shows after 14 days or when no backup was ever made.
+- Owner should still try S3 on the phone (see S3 notes in ROADMAP.md).
+- Not testable from here: iPhone / Android "keep storage permanently", a real NetFree / TAG filter, WhatsApp Share-to-app, WhatsApp opening from Remind.
+- Filter and sync facts in design.md section 2 are partly unconfirmed. The address question (design.md section 9) must be settled before real data (S6).

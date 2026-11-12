@@ -19,6 +19,7 @@
 - Shidduch page (S3): arranging a date marks both sides Yes, moves it to In Progress and makes both singles Busy; an answer after a past date marks the date Happened; No opens the End sheet with a tick for the side that still has to be told; after ending, both singles are Available again and "Your move: tell …" shows until "was told" is tapped; Try Again keeps the old bar; Engaged marks both singles Engaged and Undo puts back Busy.
 - New idea (S3): choosing a couple that already has a record shows "These two were already put together" and saves nothing.
 - Deleting (S3): a single in Offers or In Progress cannot be deleted; a single with only ideas or finished shidduchim is one line in Recently deleted and Restore brings the shidduchim back; a deleted shidduch is named by its couple.
+- Home (S4), with the demo loaded: blocks show To do, At a glance, Notes; “Your move” rows match the Shidduchim cards; “Mark … asked” moves a row from Your move to Waiting; Got an answer → Yes takes it off Waiting and offers Undo; Remind shows the message and WhatsApp/Copy; Edit Home show/hide and Up/Down change Home at once, all hidden shows “Your Home is empty”, Back to the first layout restores it; Settings → Home → Edit Home opens the same sheet; backup reminder shows until Back up now; search “stern” lists Shidduchim. Single Mode Home still has its three tabs.
 - Export holds both modes; Reset empties both; Import brings both back; a backup made before Shadchan Mode still loads and leaves Shadchan Mode alone.
 
 ## Manual (I check on my phone)

@@ -78,6 +78,10 @@ export async function render(root) {
           }
         } }, h('span', { html: icon('trash') }).firstChild, 'Remove all demo data') : null)),
 
+    isShadchan ? section('Home', 'settings.home',
+      h('p', { class: 'note' }, 'Choose which blocks show on Home and in what order.'),
+      h('button', { class: 'btn', type: 'button', 'data-id': 'settings.edit-home-btn', onClick: () => import('./sh-home.js').then(m => m.editHome()) }, 'Edit Home')) : null,
+
     isShadchan ? section('Recently deleted', 'settings.deleted',
       h('p', { class: 'note', 'data-id': 'settings.deleted-count' }, deleted.length
         ? `${deleted.length} deleted ${deleted.length === 1 ? 'thing is' : 'things are'} waiting. Each one can be put back for ${store.KEEP_DELETED_DAYS} days.`

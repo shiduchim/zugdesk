@@ -120,3 +120,37 @@
 @media (max-width:430px){
   .shs-tabbar .sh-tab{font-size:var(--shs-tab-font);gap:3px;padding:0 2px}
 }
+
+/* ---- Home in Shadchan Mode: blocks (pages/sh-home.js, design 6.1) ---- */
+.sh-home .home-wrap{max-width:var(--shh-max)}
+.sh-home .home-tabline .spacer{flex:1}
+.shh-blocks{display:flex;flex-direction:column;gap:var(--home-sec-gap);margin-top:6px}
+.sh-home .home-notes>.home-sec-head,.sh-home .home-history>.home-sec-head{display:flex}
+.sh-block{border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 14px 10px;background:var(--surface);min-width:0}
+.sh-block>.home-sec-head{border-top:0;padding-top:0}
+.shh-todo .home-panel.home-followups{border:0;padding:0;background:transparent}
+.shh-todo .note-group-title:first-child{margin-top:4px}
+.shh-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.shh-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.shh-main{flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:2px;min-height:var(--touch-min);justify-content:center;color:var(--text);text-decoration:none}
+.shh-main strong{overflow-wrap:anywhere}
+.shh-move .shh-main strong{color:var(--shs-move-text)}
+.shh-acts{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.shh-acts .btn{text-decoration:none}
+.shh-none{padding:4px 0 8px;margin:0}
+.shh-lead{margin:0 0 6px}
+.shh-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:4px}
+.shh-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--text);text-decoration:none;min-height:var(--touch-min)}
+.shh-stat-n{font-family:var(--font-mono);font-size:var(--shh-stat-font);font-weight:600;line-height:1.1}
+.shh-stat-l{font-size:var(--font-xs);color:var(--muted)}
+.shh-backup{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:8px 12px;border-radius:var(--radius);background:var(--shh-backup-bg);color:var(--text);font-size:var(--font-sm)}
+.shh-backup-slot:empty{display:none}
+.shh-edit-row{display:flex;justify-content:center;padding:4px 0 12px}
+.shh-empty{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px;border:1px dashed var(--border);border-radius:var(--radius-lg)}
+.shh-edit-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.shh-edit-list .shh-edit-row{justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shh-edit-list .shh-edit-row.off{opacity:var(--shs-dim)}
+.shh-edit-show{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
+.shh-edit-show input{width:var(--tick-size);height:var(--tick-size);flex-shrink:0}
+.shh-edit-text{display:flex;flex-direction:column;min-width:0}
+.shh-edit-move{display:flex;gap:6px;flex-shrink:0}

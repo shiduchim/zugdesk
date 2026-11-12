@@ -136,3 +136,13 @@ locking the file with a password is S6.
 - `singlesIndex()` now also returns `people` (a Map by id) and refreshes only the open-shidduch dots when `offers`
   change, so tapping an answer does not rebuild the search text of 3,000 singles.
 - `Element.append(null)` writes the word "null" on the page. Use `h()` (it skips empty children) or `''`.
+
+## 8. What S4 added (Home from blocks)
+
+- `pages/sh-home.js`, loaded by `home.js` only in Shadchan Mode (top-level `await import`). home.js still draws Notes, Follow Ups and History;
+  sh-home.js puts them, with To do / At a glance / My singles, into `home.blocks` in the saved order (`shHomeBlocks` pref, `layout()`).
+  Block wrappers are made once and only re-ordered when the layout changes, so typing in a note never loses focus.
+- To do = `m.step` from `loadAll()`: `move` rows (ask / date / tell buttons) and `wait` rows (Remind, Got an answer). No rules are repeated.
+- Got an answer calls `setAnswer`; No goes through `endDialog`. Remind never records anything.
+- `searchShidduchim(SH, has)` feeds Home search. `editHome()` is also used by Settings.
+- S5: “No open shidduch” rows should open Find a match instead of the card; Send replaces “Mark … asked” in Your move too.

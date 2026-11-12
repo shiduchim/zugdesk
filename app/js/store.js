@@ -124,6 +124,7 @@ const PREF_DEFAULTS = {
   personKind: 'guy',         // Add Person: last chosen Guy / Girl
   shidduchimView: 'compact', // Shidduchim list: compact | expanded
   homeSuggestions: true,     // Home: Smart Suggestions dot (blue = on)
+  shHomeBlocks: null,        // Shadchan Home: [{ id, on }] block order and show/hide (null = first layout; pages/sh-home.js)
   profileLang: 'en',         // My Profile: language being viewed / edited
 };
 export function getPrefs() {
