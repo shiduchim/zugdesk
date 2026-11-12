@@ -251,7 +251,12 @@ function section(cat) {
     case 'about': return block(cat,
       areaField('About the Person', 'about', 'Personality, background, interests…', 'person.about'),
       areaField('What are they looking for?', 'looking', 'Describe what they are looking for…', 'person.looking'),
-      h('div', { class: 'inline-field' }, h('label', { for: 'ap-maxAge' }, 'Up to what age?'),
+      // Shadchan Mode: two plain fields the filters can use (design.md 6.2); Single Mode keeps "Up to what age?".
+      isShadchan ? h('div', { class: 'inline-field' }, h('label', { for: 'ap-minAge' }, 'Looking for ages'),
+        h('input', { class: 'input tiny', id: 'ap-minAge', type: 'number', min: 18, max: 120, inputmode: 'numeric', value: d.p.minAge || '', placeholder: 'From', 'data-id': 'person.min-age', onInput: (e) => { d.p.minAge = e.target.value; touch(); } }),
+        h('span', {}, 'to'),
+        h('input', { class: 'input tiny', type: 'number', min: 18, max: 120, inputmode: 'numeric', value: d.p.maxAge || '', placeholder: 'To', 'aria-label': 'Looking for ages to', 'data-id': 'person.max-age', onInput: (e) => { d.p.maxAge = e.target.value; touch(); } }))
+      : h('div', { class: 'inline-field' }, h('label', { for: 'ap-maxAge' }, 'Up to what age?'),
         h('input', { class: 'input tiny', id: 'ap-maxAge', type: 'number', min: 18, max: 120, inputmode: 'numeric', value: d.p.maxAge || '', placeholder: 'Age', 'data-id': 'person.max-age', onInput: (e) => { d.p.maxAge = e.target.value; touch(); } })));
     case 'personal': return block(cat,
       textField('Occupation', 'occupation', {}, 'person.occupation'),

@@ -13,6 +13,8 @@
 - No request leaves the app's own address (fonts come from `app/fonts`).
 - Delete a single in Shadchan Mode: one line in Settings → Recently deleted; Restore brings back the single with originals, follow-ups and conversation links. Delete forever really erases. Things older than 30 days are erased when the app opens.
 - Deleting in Single Mode still erases at once.
+- Guys / Girls (S2): search "lakewood" narrows the list; a word only in a pasted original still finds the single and shows the words around it; Working on / All counts are right; an age filter lists "Age not recorded" apart; each tag's "remove" and Clear filters work; with 3,000 singles rows keep loading while scrolling.
+- Single's card (S2): Status, Working on, ages from–to, Talk to and "Still looking — today" save at once; choosing Busy with a date makes a follow-up. Single Mode's card has none of these.
 - Export holds both modes; Reset empties both; Import brings both back; a backup made before Shadchan Mode still loads and leaves Shadchan Mode alone.
 
 ## Manual (I check on my phone)
@@ -21,6 +23,7 @@
 - [ ] Ideas: Active / Open / Closed tabs show the right people
 - [ ] Shidduchim: Offers / In Progress / Ended lanes work
 - [ ] Add a person and a shadchan; they appear in the lists
+- [ ] Shadchan Mode → Guys: type a city in search, open Filters and set an age; tap a single, change Status and the star
 - [ ] Settings → Mode → Shadchan: the bottom bar changes; Guys → Try the demo shows 30 guys; Settings → Mode → Single brings my own things back
 
 ## Regression (add one line per fixed bug or approved feature)

@@ -17,3 +17,28 @@
 .deleted-page .del-acts{display:flex;gap:8px;flex-shrink:0}
 .singles-page .row-link .row-main{text-decoration:none;color:var(--text)}
 .singles-page .avatar svg{width:var(--icon);height:var(--icon)}
+/* Stage S2 — search, Working on / All, filters, rows */
+.sg-tools{margin-bottom:var(--gap)}
+.sg-scope{display:flex;gap:6px;flex-wrap:wrap}
+.sg-scope .bubble{display:inline-flex;align-items:center;gap:5px}
+.sg-scope-n{font-family:var(--font-mono);font-size:var(--sg-n-font);color:var(--muted)}
+.sg-age-row{display:flex;align-items:center;gap:8px}
+.sg-age-row .input{width:var(--sg-age-input)}
+.sg-row .row-main{min-width:0}
+.sg-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg-open{flex-shrink:0;width:var(--sg-open-dot);height:var(--sg-open-dot);border-radius:var(--radius-pill);background:var(--sg-open)}
+.sg-snip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg-noage{margin-top:var(--gap)}
+.sg-noage .note{margin:2px 0 0}
+/* Single's card (Shadchan Mode): status, Working on, age from–to, Talk to, last confirmed */
+.sp-panel{display:flex;flex-direction:column;gap:10px}
+.sp-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.sp-row > .sp-label{flex:0 0 var(--sp-label-width);font-size:var(--font-sm);color:var(--muted)}
+.sp-row .grow{flex:1 1 0;min-width:0}
+.sp-row select.input{min-height:var(--btn-small-height);padding:4px 8px;font-size:var(--font-sm);flex:1 1 140px;min-width:0}
+.sp-row .input.tiny{width:var(--sg-age-input)}
+.sp-star[aria-pressed="true"]{color:var(--sg-star);border-color:var(--sg-star)}
+.sp-star svg{width:var(--sg-star-size);height:var(--sg-star-size)}
+.sp-star[aria-pressed="true"] svg{fill:currentColor}
+.sp-stale{color:var(--warn)}
+.sp-find{align-self:flex-start}

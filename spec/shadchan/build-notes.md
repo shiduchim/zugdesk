@@ -88,3 +88,14 @@ locking the file with a password is S6.
 - Home's "Review X's answer" suggestion is off in Shadchan Mode (`home-data.js`); S3/S4 bring the
   two-sided version.
 - Checks: `TESTS.md`, section "Shadchan Mode".
+
+## 6. What S2 added (for S3 onwards)
+
+- `singles-data.js` → `singlesIndex()`: one in-memory index of all singles (fields, answers, contact
+  cards, pasted originals, open-shidduch flag). It rebuilds by itself when `people`, `sources` or
+  `offers` change. Find a match (S5) should reuse it with `applyFilters()` instead of reading the store.
+- The open-shidduch dot (`singles.row-open`) reads `offers` with `status !== 'ended'` and `guyId` / `girlId`.
+  S3 only has to save offers in that shape for the dot to appear.
+- `pages/single-panel.js`: the Shadchan panel on the card's Profile tab. Busy by hand sets `busyUntil`
+  and makes a follow-up. S3 sets Busy by itself while dating; keep `busyUntil` empty in that case.
+- Add Person in Shadchan Mode asks "Looking for ages from … to …" (`minAge`, `maxAge`).

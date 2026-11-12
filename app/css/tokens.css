@@ -211,4 +211,10 @@
   --mode-gear:18px;               /* the gear is a little smaller there, to leave room for the word */
   --nav-word-font:9.5px;          /* bottom bar: the word under the Guys / Girls icons */
   --nav-word-icon:19px;
+  /* Stage S2 — Guys / Girls lists and the single's card */
+  --sg-n-font:10.5px;             /* the small count inside Working on / All */
+  --sg-age-input:72px;            /* age from / to boxes */
+  --sg-open:var(--accent);        /* dot after a name: a shidduch is open */
+  --sg-open-dot:7px;
+  --sp-label-width:96px;          /* labels on the single's card panel */
 }

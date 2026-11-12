@@ -108,19 +108,18 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-12 (S1 done)_
+_Last updated: 2026-11-12 (S2 done)_
 
 ### In progress
-- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1 Foundation is done** and pushed on branch `claude/eloquent-thompson-tchp32` (PR opened).
-- How it is built, and the rules for the next stages: `spec/shadchan/build-notes.md` (read it first). Approved design: `spec/shadchan/design.md`.
+- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1 and S2 are done** on branch `claude/eloquent-thompson-tchp32`.
+- How it is built, and the rules for the next stages: `spec/shadchan/build-notes.md` (read it first; section 6 is new from S2). Approved design: `spec/shadchan/design.md`.
 
 ### Next steps
-- **S2 (Opus · Medium):** Guys and Girls for real: search over everything incl. pasted originals, filters (age from–to, city, background, languages, status) as removable tags, Working on / All, loading on scroll, To file; the single's card gets Status, Working on star, age from–to, Talk to, "Last confirmed looking", Find a match button (button only; the page is S5).
-- S3 needs Fable (ask the owner first, per the Fable rule).
+- **S3 (Fable · High):** Shidduchim with two sides. Ask the owner first, per the Fable rule. Save offers as `{ guyId, girlId, status }` so the open-shidduch dot in Guys / Girls lights up; set Busy by itself while dating; stop deleting a single with an open shidduch.
 
 ### Notes / blockers
-- Owner should try S1 on the phone: Settings → Mode → Shadchan, Guys → Try the demo, delete a single, Settings → Recently deleted → Restore, then switch back to Single.
-- Not testable from here: iPhone / Android "keep storage permanently" behaviour, and a real NetFree / TAG filter.
+- Owner should try S2 on the phone: Guys → search a city, Filters → age 24 to 27 (see "Age not recorded" at the bottom), tap a single → change Status, the star, Talk to.
+- Not testable from here: iPhone / Android "keep storage permanently" behaviour, a real NetFree / TAG filter, WhatsApp Share-to-app.
 - The survey file held 26 responses (owner said 27). Raw answers are not in the repo (public).
-- Filter and sync facts in design.md section 2 are partly unconfirmed (vendor sites were blocked from the session). Test on a real NetFree and TAG device, and on an iPhone, before promising.
+- Filter and sync facts in design.md section 2 are partly unconfirmed. Test on a real NetFree and TAG device, and on an iPhone, before promising.
 - The address question (design.md section 9) is still open; it must be settled before a real shadchan types real data (S6).

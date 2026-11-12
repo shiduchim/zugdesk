@@ -8,6 +8,7 @@ import { isShadchan, peopleListPath, peopleListName, rememberList } from '../js/
 import { loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
 import { ideaStatus, latestByPerson, recordInterest, reopen } from './idea-flow.js';
+import { singlePanel } from './single-panel.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
@@ -62,7 +63,7 @@ async function draw(id, keepScroll = false) {
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l))),
     h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? shidduchimSoon(b) : offersTab(b)) : notesTab(b)),
     // Status buttons stay on screen at the bottom (owner request); hidden while a section is being edited.
-    // (Single Mode's interest buttons. Shadchan Mode gets Status and Talk to here in stage S2.)
+    // (Single Mode's interest buttons. In Shadchan Mode, Status and Talk to sit at the top of the Profile tab.)
     EDITF || SEC || isShadchan ? '' : dock('person-card.dock', statusStrip(b)));
   if (keepScroll) window.scrollTo(0, y);
 }
@@ -114,6 +115,8 @@ function profileTab(b) {
         ownCards.length ? h('div', { class: 'reach', 'data-id': 'person-card.phone' }, ownCards.map(c => [c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null])) : null,
         p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
       pencil('Edit basic info here', 'person-card.summary-edit', () => openSec('summary'))),
+    // Shadchan Mode: Status, Working on, ages, Talk to, Last confirmed, Find a match (stage S2).
+    isShadchan ? singlePanel(p, savePerson) : null,
     sec('Facts', 'person-card.facts', 'facts',
       h('dl', { class: 'facts' },
         ...factList(p).map(f => EDITF && f.ed ? editRow(f) : fact(f.label, f.value, f.dataId)),
@@ -480,7 +483,7 @@ function factList(p) {
     c('Tzniut', 'pTzniut', 'person-card.fact-tzniut'), c('Religious background', 'pBackground', 'person-card.fact-background'),
     c('Religious', 'pReligious', 'person-card.fact-religious'), t('Other religious details', 'religiousOther', 'person-card.fact-religious-other'),
     c('Character & lifestyle', 'pTraits', 'person-card.fact-traits'), c('Body type', 'pBody', 'person-card.fact-body'),
-    t('Looking up to age', 'maxAge', 'person-card.fact-max-age'), ...custom];
+    isShadchan ? null : t('Looking up to age', 'maxAge', 'person-card.fact-max-age'), ...custom].filter(Boolean);
 }
 async function savePerson(patch, quiet) {
   const p = { ...B.p, ...patch };

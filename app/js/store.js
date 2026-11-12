@@ -13,7 +13,7 @@ const DB = isShadchan ? SHADCHAN_DB : SINGLE_DB;
 const { idb } = DB;
 export const SCHEMA_VERSION = DB.version;
 export const APP_VERSION = '0.9.0';
-export const STAGE = isShadchan ? 'S1' : 8; // last finished stage of this mode (shown in Settings → About)
+export const STAGE = isShadchan ? 'S2' : 8; // last finished stage of this mode (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }

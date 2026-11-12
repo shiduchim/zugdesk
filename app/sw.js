@@ -1,7 +1,7 @@
 // Service worker: makes ZugDesk installable and usable offline.
 // Strategy: network first (so updates arrive as soon as they are published),
 // cache fallback when offline. Bump CACHE when the shell changes shape.
-const CACHE = 'zugdesk-v25';
+const CACHE = 'zugdesk-v26';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/fonts.css', './css/tokens.css', './css/theme-dark.css', './css/base.css',
@@ -10,7 +10,7 @@ const SHELL = [
   './pages/home.js', './pages/home.css', './pages/contacts.js', './pages/contacts.css', './pages/contacts-data.js', './pages/contacts-panels.js',
   './pages/contact-form.js', './pages/contact-form.css',
   './pages/people.js', './pages/people.css', './pages/people-data.js', './pages/person-form.js', './pages/person-form.css', './pages/person-card.js', './pages/shidduchim.js', './pages/shidduchim.css', './pages/shidduch-data.js', './pages/idea-flow.js', './pages/shidduch-detail.js', './pages/profile.js', './pages/profile.css', './pages/profile-data.js', './pages/profile-share.js', './pages/home-data.js', './pages/notes-data.js', './pages/settings.js', './pages/settings.css',
-  './pages/singles.js', './pages/singles.css', './pages/singles-data.js', './pages/sh-shidduchim.js', './pages/deleted.js',
+  './pages/singles.js', './pages/singles.css', './pages/singles-data.js', './pages/single-panel.js', './pages/sh-shidduchim.js', './pages/deleted.js',
   './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png',
 ];
 
