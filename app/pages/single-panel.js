@@ -3,6 +3,7 @@
 // shared person card. Saves straight to the one person record through the card's save().
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet } from '../js/ui.js';
+import { navigate } from '../js/router.js';
 import { STATUSES, statusOf, agoWords } from './singles-data.js';
 import { dateOnly } from './people-data.js';
 
@@ -29,7 +30,6 @@ const T = {
   busyText: 'When should you check again? A follow-up is made for that day. Leave empty for no reminder.',
   busyFu: (name) => `Check if ${name} is free again`,
   find: 'Find a match',
-  findSoon: 'Find a match is coming in stage S5.',
 };
 const STALE_DAYS = 90; // older than this, "Last confirmed looking" is shown in the warning colour
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
@@ -65,7 +65,7 @@ export function singlePanel(p, save) {
     row(T.confirmed, 'person-card.confirmed',
       h('span', { class: 'grow small' + (days > STALE_DAYS ? ' sp-stale' : '') }, p.confirmedAt ? agoWords(p.confirmedAt) : T.never),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.confirm-btn', onClick: async () => { await save({ confirmedAt: today() }, true); toast(T.confirmedToast); } }, T.confirmBtn)),
-    h('button', { type: 'button', class: 'btn primary sp-find', 'data-id': 'person-card.find-match', onClick: () => toast(T.findSoon) }, T.find));
+    h('button', { type: 'button', class: 'btn primary sp-find', 'data-id': 'person-card.find-match', onClick: () => navigate(`/match/${encodeURIComponent(p.id)}`) }, T.find));
 }
 
 // Busy by hand asks "check again on …" and makes a follow-up for that day (design.md 6.2).

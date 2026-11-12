@@ -22,7 +22,7 @@ const NAV = isShadchan ? [
   { path: '/profile', label: 'My Profile', icon: 'profile', id: 'nav.profile' },
 ];
 const TITLES = isShadchan
-  ? { '/home': 'Home', '/guys': 'Guys', '/girls': 'Girls', '/people': 'Singles', '/shidduchim': 'Shidduchim', '/contacts': 'Contacts', '/settings': 'Settings', '/deleted': 'Recently deleted' }
+  ? { '/home': 'Home', '/guys': 'Guys', '/girls': 'Girls', '/people': 'Singles', '/shidduchim': 'Shidduchim', '/contacts': 'Contacts', '/settings': 'Settings', '/deleted': 'Recently deleted', '/match': 'Find a match' }
   : { '/home': 'Home', '/contacts': 'Contacts', '/people': 'Ideas', '/shidduchim': 'Shidduchim', '/profile': 'My Profile', '/settings': 'Settings' };
 
 // Shared by both modes: Home, Contacts, Add Person, the person card, Settings.
@@ -49,6 +49,7 @@ if (isShadchan) {
   route('/shidduchim/:id', () => import('../pages/sh-shidduch-detail.js'));
   route('/shidduchim/:id/:tab', () => import('../pages/sh-shidduch-detail.js'));
   route('/deleted', () => import('../pages/deleted.js'));
+  route('/match/:id', () => import('../pages/sh-match.js'));
 } else {
   route('/people', () => import('../pages/people.js'));
   route('/shidduchim', () => import('../pages/shidduchim.js'));

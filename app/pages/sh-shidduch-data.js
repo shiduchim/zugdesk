@@ -357,7 +357,7 @@ export async function createIdea(guyId, girlId) {
 
 // Change one side's answer in the round that is open now (the offer, or after the latest date).
 // No is not set here: it ends the shidduch and goes through endTry. Returns { undo, event, lane } or null.
-export async function setAnswer(m, side, value, { source = '' } = {}) {
+export async function setAnswer(m, side, value, { source = '', note = '' } = {}) {
   const t = m.cur.t, r = m.round;
   if (!isOpen(t) || value === 'no' || r.upcoming) return null;
   const was = sideOf(r.rec, side);
@@ -377,6 +377,7 @@ export async function setAnswer(m, side, value, { source = '' } = {}) {
     if (bothYes(rec) && !bothYes(r.rec)) await log(t, T.logBothContinue(r.n), { kind: 'stage' });
   } else {
     t2 = rec; await store.tries.save(t2);
+    if (note) await log(t, note, { kind: 'sent' }); // Send (S5): what went to whom, before the Asked line
     event = await log(t, T.logAnswer(T.side[side], first, label), { source, kind: 'answer' });
     if (bothYes(rec) && !bothYes(r.rec)) await log(t, T.logBothYes, { kind: 'stage' });
   }

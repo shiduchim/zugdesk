@@ -9,6 +9,7 @@ import { navigate } from '../js/router.js';
 import { statusOf, statusLabel, summaryLine } from './singles-data.js';
 import * as sd from './sh-shidduch-data.js';
 import { bar, barDim, endDialog, answerTag } from './sh-shidduch-parts.js';
+import { sendSheet } from './sh-send.js';
 
 const T = {
   gone: 'This shidduch is no longer saved.',
@@ -18,7 +19,8 @@ const T = {
   tryEnded: (name) => `${name} · ended`,
   yourMove: 'Your move: ',
   markAsked: (sides) => (sides.length === 2 ? 'Mark both sides asked' : `Mark ${sd.T.sideLow[sides[0]]} asked`),
-  askedNote: 'Sending the profile from here comes with Send (stage S5). For now, mark it when you have asked.',
+  send: (name) => `Send to ${name}`,
+  suggestTo: (side) => `Suggest to ${side}`,
   arrange: 'Arrange a date',
   arrangeN: (n) => `Arrange Date ${n}`,
   told: (name) => `${name} was told`,
@@ -195,10 +197,11 @@ function stepLine(m) {
   return h('div', { class: 'shs-step shs-step-' + st.kind, 'data-id': 'shidduch.your-move' },
     h('div', { class: 'shs-step-text', dir: 'auto' }, st.kind === 'move' ? h('strong', {}, T.yourMove) : null, st.text),
     st.ask || st.date || st.tell ? h('div', { class: 'shs-step-acts' },
-      st.ask ? btn(T.markAsked(st.ask), 'shidduch.mark-asked', () => markAsked(m, st.ask)) : null,
+      st.ask && m.round.kind === 'offer' ? st.ask.map(s => btn(T.send(sd.talkName(m, s)), 'shidduch.send', () => sendSheet(m, s))) : null,
+      st.ask && m.round.kind !== 'offer' ? btn(T.markAsked(st.ask), 'shidduch.mark-asked', () => markAsked(m, st.ask)) : null,
       st.date ? btn(T.arrangeN(st.date), 'shidduch.step-arrange', openDateForm) : null,
       (st.tell || []).map(s => btn(T.told(sd.talkName(m, s)), 'shidduch.told-' + s, async () => { const r = await sd.markTold(m, s); if (r) undoToast(T.toldToast, r); }))) : null,
-    st.ask && m.round.kind === 'offer' ? h('div', { class: 'note' }, T.askedNote) : null);
+    null);
 }
 
 async function markAsked(m, sides) {
@@ -245,6 +248,7 @@ function sideCard(m, side) {
       : h('div', { class: 'sh-answerfield' },
         h('label', { class: 'sh-answerlabel', for: 'shidduch.answer-' + side }, r.kind === 'date' && !r.upcoming ? T.answerAfter(r.n) : T.answer),
         answerSelect(m, side, 'shidduch.answer-' + side),
+        r.kind === 'offer' && sd.isOpen(t) && !x.answer && p && !(m.step.ask || []).includes(side) ? h('button', { type: 'button', class: 'btn small shs-suggest', 'data-id': 'shidduch.suggest-' + side, onClick: () => sendSheet(m, side) }, T.suggestTo(sd.T.sideLow[side])) : null,
         meta ? h('div', { class: 'shs-meta', dir: 'auto', 'data-id': 'shidduch.answer-meta' }, meta) : null),
     told ? h('div', { class: 'shs-meta' + ((t.told || {})[side] ? '' : ' shs-untold'), dir: 'auto', 'data-id': 'shidduch.told-state' }, `${sd.talkName(m, side)} ${told}`) : null);
 }

@@ -139,3 +139,29 @@ export function agoWords(d) {
   if (days < 730) return `${Math.round(days / 30)} months ago`;
   return `${Math.round(days / 365)} years ago`;
 }
+
+// ---------- Stage S5: "Not a fit" (Find a match) ----------
+// Kept on both singles as `notFit: { [otherId]: { reason, at } }`, so either side's Find a match
+// knows it. Saved with saveMany so the singles keep their place in Guys / Girls (updatedAt kept).
+export const notFitOf = (p, otherId) => ((p && p.notFit) || {})[otherId] || null;
+export async function setNotFit(aId, bId, reason) {
+  const [a, b] = await Promise.all([store.people.get(aId), store.people.get(bId)]);
+  if (!a || !b) return null;
+  const before = [a, b].map(p => ({ ...p }));
+  const mark = (p, other) => ({ ...p, notFit: { ...(p.notFit || {}), [other]: reason === null ? undefined : { reason: (reason || '').trim(), at: new Date().toISOString().slice(0, 10) } } });
+  const clean = (p) => { const n = { ...p.notFit }; for (const k of Object.keys(n)) if (!n[k]) delete n[k]; return { ...p, notFit: n }; };
+  await store.people.saveMany([clean(mark(a, bId)), clean(mark(b, aId))]);
+  return { undo: () => store.people.saveMany(before) };
+}
+// "He is 31 · she asked up to 30": where a stated age wish does not fit. Shown, never hidden.
+export function ageNotes(a, b) {
+  const out = [];
+  const pron = (p) => (p.kind === 'girl' ? ['She', 'she'] : ['He', 'he']);
+  for (const [x, y] of [[a, b], [b, a]]) {
+    const age = ageNum(x), lo = parseInt(y.minAge, 10), hi = parseInt(y.maxAge, 10);
+    if (age == null) continue;
+    if (Number.isFinite(hi) && age > hi) out.push(`${pron(x)[0]} is ${age} · ${pron(y)[1]} asked up to ${hi}`);
+    else if (Number.isFinite(lo) && age < lo) out.push(`${pron(x)[0]} is ${age} · ${pron(y)[1]} asked from ${lo}`);
+  }
+  return out;
+}

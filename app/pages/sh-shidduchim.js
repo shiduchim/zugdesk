@@ -8,6 +8,7 @@ import { h, icon, toast, swipeTabs } from '../js/ui.js';
 import { norm } from './singles-data.js';
 import * as sd from './sh-shidduch-data.js';
 import { bar, barDim, endDialog, newIdeaSheet } from './sh-shidduch-parts.js';
+import { sendSheet } from './sh-send.js';
 
 const T = {
   title: 'Shidduchim',
@@ -32,6 +33,8 @@ const T = {
   refsChecked: 'References checked',
   addUpdate: 'Add update',
   end: 'End shidduch',
+  send: (name) => `Send to ${name}`,
+  suggestTo: (side) => `Suggest to ${side}`,
   markAsked: (sides) => (sides.length === 2 ? 'Mark both sides asked' : `Mark ${sd.T.sideLow[sides[0]]} asked`),
   told: (name) => `${name} was told`,
   arrange: (n) => `Arrange Date ${n}`,
@@ -194,7 +197,9 @@ function actions(m) {
   const t = m.cur.t, st = m.step, live = sd.isOpen(t);
   const btn = (label, dataId, run, cls = '') => h('button', { type: 'button', class: 'btn small ' + cls, 'data-id': dataId, onClick: run }, label);
   return h('div', { class: 'shs-actions', 'data-id': 'shidduchim.actions' },
-    st.ask ? btn(T.markAsked(st.ask), 'shidduchim.mark-asked', () => markAsked(m, st.ask), 'primary') : null,
+    st.ask && m.round.kind === 'offer' ? st.ask.map(s => btn(T.send(sd.talkName(m, s)), 'shidduchim.send', () => sendSheet(m, s), 'primary')) : null,
+    st.ask && m.round.kind !== 'offer' ? btn(T.markAsked(st.ask), 'shidduchim.mark-asked', () => markAsked(m, st.ask), 'primary') : null,
+    m.lane === 'ideas' && live ? sd.SIDES.map(s => btn(T.suggestTo(sd.T.sideLow[s]), 'shidduchim.suggest-' + s, () => sendSheet(m, s), s === 'guy' ? 'primary' : '')) : null,
     st.date ? h('a', { class: 'btn small primary', href: openHref(m, '/dates?new'), 'data-id': 'shidduchim.arrange' }, T.arrange(st.date)) : null,
     (st.tell || []).map(s => btn(T.told(sd.talkName(m, s)), 'shidduchim.told-' + s, async () => { const r = await sd.markTold(m, s); if (r) undoToast(T.toldToast, r); }, 'primary')),
     live && !t.refsChecked && m.lane !== 'ideas' ? btn(T.refsChecked, 'shidduchim.refs-checked', async () => { const r = await sd.markRefs(m); if (r) undoToast(T.refsToast, r); }) : null,

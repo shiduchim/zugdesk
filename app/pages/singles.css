@@ -154,3 +154,21 @@
 .shh-edit-show input{width:var(--tick-size);height:var(--tick-size);flex-shrink:0}
 .shh-edit-text{display:flex;flex-direction:column;min-width:0}
 .shh-edit-move{display:flex;gap:6px;flex-shrink:0}
+
+/* ---------- Find a match (sh-match.js, stage S5) ---------- */
+.shm-head{flex-direction:column;align-items:flex-start;gap:2px}
+.shm-top{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;margin-bottom:var(--gap);border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shm-top .row-main{min-width:0}
+.shm-name{display:block;color:var(--text);text-decoration:none}
+.shm-warn{color:var(--shs-untold);white-space:normal}
+.shm-page .shs-hist{white-space:normal}
+.shm-nf-head{display:flex;align-items:center;justify-content:space-between;margin-top:var(--gap)}
+.shm-compare{display:flex;flex-direction:column;gap:12px}
+.shm-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--shm-col-min),1fr));gap:10px}
+.shm-col{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);min-width:0}
+.shm-fact{display:flex;flex-direction:column;font-size:var(--font-sm)}
+.shm-fact-l{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase}
+/* ---------- Send (sh-send.js, stage S5) ---------- */
+.ssn-which{margin:0 0 6px 30px;width:auto;max-width:calc(100% - 30px)}
+.ssn-other{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.shs-suggest{align-self:flex-start;margin-top:8px}

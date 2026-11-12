@@ -108,18 +108,18 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-12 (S4 done)_
+_Last updated: 2026-11-12 (S5 done)_
 
 ### In progress
-- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1–S4 are done** on branch `claude/eloquent-thompson-tchp32`.
-- How it is built: `spec/shadchan/build-notes.md` (read it first; section 8 is new from S4). Approved design: `spec/shadchan/design.md`.
+- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1–S5 are done** on branch `claude/eloquent-thompson-tchp32`.
+- How it is built: `spec/shadchan/build-notes.md` (read it first; section 9 is new from S5). Approved design: `spec/shadchan/design.md`.
 
 ### Next steps
-- **S5 (Opus · Medium):** Find a match and Send. Reuse `singlesIndex()` + `applyFilters()`, `createIdea`, `pairDetail`; after “Yes, I sent it” call `setAnswer(m, side, 'asked')`; make Home’s “No open shidduch” rows open Find a match; build “Not a fit”.
+- **S6 (Opus):** check everything at phone and computer sizes; locked backup file (password); decide the address (design.md section 9); test round with 3–5 shadchanim.
 
 ### Notes / blockers
-- Owner should try S4 on the phone: Home → To do (tap Mark asked, Got an answer, Remind), At a glance, Edit Home at the bottom (show/hide, Up/Down), Back up now.
-- Decisions made in S4 that the owner may want changed: Waiting rows are sorted by days waiting; At a glance counts Open / Waiting / Dating / Ideas; No open shidduch leaves out Engaged, Paused and Not relevant singles; the backup line shows after 14 days or when no backup was ever made.
-- Owner should still try S3 on the phone (see S3 notes in ROADMAP.md).
-- Not testable from here: iPhone / Android "keep storage permanently", a real NetFree / TAG filter, WhatsApp Share-to-app, WhatsApp opening from Remind.
+- Owner should try S5 on the phone: a starred single's card → Find a match → tap a row → Save as idea / Not a fit; Shidduchim → Ideas → open it → Suggest to her side → WhatsApp → Yes, I sent it; Home shows it under Waiting.
+- Decisions made in S5 the owner may want changed: Find a match starts with Available only; Not a fit rows are hidden until Show them; the shadchan's own number (role Shadchan) is never put in the message; the first line is “I have a suggestion for X: Y.”
+- Owner should still try S3 and S4 on the phone (see ROADMAP.md).
+- Not testable from here: iPhone / Android "keep storage permanently", a real NetFree / TAG filter, WhatsApp Share-to-app, WhatsApp opening from Send / Remind, sending files through the phone's share menu.
 - Filter and sync facts in design.md section 2 are partly unconfirmed. The address question (design.md section 9) must be settled before real data (S6).

@@ -7,6 +7,7 @@ import * as store from '../js/store.js';
 import { h, toast, sheet, bubbles } from '../js/ui.js';
 import * as sd from './sh-shidduch-data.js';
 import { endDialog } from './sh-shidduch-parts.js';
+import { sendSheet } from './sh-send.js';
 import { statusOf, statusLabel } from './singles-data.js';
 
 const T = {
@@ -27,6 +28,7 @@ const T = {
   told: (name) => `${name} was told`,
   toldToast: 'Marked as told',
   askedToast: 'Marked as asked',
+  send: (name) => `Send to ${name}`,
   undo: 'Undo', undone: 'Undone',
   remind: 'Remind', gotAnswer: 'Got an answer',
   // Remind
@@ -52,7 +54,7 @@ const T = {
   stats: [['open', 'Open'], ['waiting', 'Waiting'], ['dating', 'Dating'], ['ideas', 'Ideas']],
   statNote: { open: 'Offers and In Progress', waiting: 'asked, no answer yet', dating: 'In Progress', ideas: 'nobody asked yet' },
   noOpen: 'No open shidduch',
-  noOpenNote: 'Singles you are working on with nothing in Offers or In Progress. Tap one to open their card. Find a match comes in S5.',
+  noOpenNote: 'Singles you are working on with nothing in Offers or In Progress. Tap one to find a match.',
   noStarred: 'Star a single as “Working on” on their card, and they show here when nothing is moving for them.',
   allMoving: 'Every single you are working on has something moving.',
   // My singles
@@ -176,7 +178,8 @@ function moveRow(m) {
   return h('li', { class: 'shh-row shh-move', 'data-id': 'home.move-row' },
     rowMain(m, st.text, sd.coupleName(m)),
     h('div', { class: 'shh-acts' },
-      st.ask ? btn(T.markAsked(st.ask), 'home.move-asked', () => markAsked(m, st.ask)) : '',
+      st.ask && m.round.kind === 'offer' ? st.ask.map(s => btn(T.send(sd.talkName(m, s)), 'home.move-send', () => sendSheet(m, s), true)) : '',
+      st.ask && m.round.kind !== 'offer' ? btn(T.markAsked(st.ask), 'home.move-asked', () => markAsked(m, st.ask)) : '',
       st.date ? h('a', { class: 'btn small primary', href: href(m, '/dates?new'), 'data-id': 'home.move-arrange' }, T.arrange(st.date)) : '',
       (st.tell || []).map(s => btn(T.told(sd.talkName(m, s)), 'home.move-told-' + s, async () => { const r = await sd.markTold(m, s); if (r) undoToast(T.toldToast, r); }, true))));
 }
@@ -275,12 +278,12 @@ function drawGlance(el, SH) {
     !starred.length ? h('p', { class: 'note shh-none' }, T.noStarred)
       : !idle.length ? h('p', { class: 'note shh-none' }, T.allMoving)
         : [h('p', { class: 'note shh-lead' }, T.noOpenNote),
-          h('ul', { class: 'shh-list' }, cut(idle, 'noOpen').map(p => singleRow(p, statusOf(p) === 'available' ? T.nothingNext : statusLabel(statusOf(p)), 'home.no-open-row'))),
+          h('ul', { class: 'shh-list' }, cut(idle, 'noOpen').map(p => singleRow(p, statusOf(p) === 'available' ? T.nothingNext : statusLabel(statusOf(p)), 'home.no-open-row', 'match'))),
           moreBtn('noOpen', idle.length, 'home.no-open-more', () => drawGlance(el, SH))]);
 }
-function singleRow(p, sub, id) {
+function singleRow(p, sub, id, to = 'people') {
   return h('li', { class: 'shh-row', 'data-id': id },
-    h('a', { class: 'shh-main', href: `#/people/${encodeURIComponent(p.id)}` },
+    h('a', { class: 'shh-main', href: `#/${to}/${encodeURIComponent(p.id)}` },
       h('strong', { dir: 'auto' }, store.personName(p)), h('span', { class: 'note clamp1', dir: 'auto' }, sub)));
 }
 

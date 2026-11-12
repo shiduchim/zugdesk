@@ -146,3 +146,14 @@ locking the file with a password is S6.
 - Got an answer calls `setAnswer`; No goes through `endDialog`. Remind never records anything.
 - `searchShidduchim(SH, has)` feeds Home search. `editHome()` is also used by Settings.
 - S5: “No open shidduch” rows should open Find a match instead of the card; Send replaces “Mark … asked” in Your move too.
+
+## 9. What S5 added (Find a match and Send)
+
+- `pages/sh-match.js`, route `/match/:id`. Reads `loadAll()` (pairs) + `singlesIndex()` + `applyFilters()`; filters per single in memory,
+  starting from `minAge`/`maxAge` and Available. Groups: fresh, Age not recorded, Already tried (an `offers` record exists), Not a fit.
+- **Not a fit** is kept on both singles: `notFit: { [otherId]: { reason, at } }` (`singles-data.js` `notFitOf`, `setNotFit(a, b, reason | null)`).
+  Saved with `saveMany` so `updatedAt` is kept and Guys / Girls order does not change. `ageNotes(a, b)` gives the age-mismatch notes.
+- `pages/sh-send.js` `sendSheet(m, side)`: `side` is the side being asked; the profile sent is the other single's. Ticks are the
+  `shSendTicks` pref. After “Yes, I sent it” it calls `setAnswer(m, side, 'asked', { note })`; `note` is a history line (`kind: 'sent'`)
+  written before the Asked line, and Undo removes both. Send buttons replace Mark asked only in the offer round; after a date, Mark asked stays.
+- `suggestedFor(p)` moved from `person-card.js` to `people-data.js` (shared by Single Mode's Short versions and Send). No change in Single Mode.

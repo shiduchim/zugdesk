@@ -5,7 +5,7 @@ import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { isShadchan, peopleListPath, peopleListName, rememberList } from '../js/mode.js';
-import { loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
+import { suggestedFor, loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
 import { ideaStatus, latestByPerson, recordInterest, reopen } from './idea-flow.js';
 import { singlePanel } from './single-panel.js';
@@ -426,16 +426,6 @@ async function followUpSheet(f = null) {
 // Like My Profile › Short versions. A pasted profile shows here word for word ("Pasted profile");
 // editing it saves an editable copy on the person (shortVersions) — the original itself never changes.
 // Suggested is built from the person's fields and is always up to date.
-function suggestedFor(p) {
-  const A = p.answers || {}, txt = (v) => Array.isArray(v) ? v.filter(Boolean).join(', ') : (v || '');
-  const lines = [p.name || ''];
-  const sum = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
-  if (sum) lines.push('• ' + sum);
-  for (const [k, v] of [['Religious level', A.pLevel], ['Religious background', A.pBackground], ['Languages', p.languages], ['Status', A.pStatus]]) if (txt(v)) lines.push(`• ${k}: ${txt(v)}`);
-  if (p.about) lines.push('', p.about.split(/(?<=[.!?])\s/)[0]);
-  if (p.looking) lines.push('', 'Looking for: ' + p.looking.split(/(?<=[.!?])\s/)[0]);
-  return lines.join('\n').trim();
-}
 function shortCard({ title, sub, text, dataId, edit, remove }) {
   return h('article', { class: 'mp-card', 'data-id': dataId },
     h('div', { class: 'mp-card-head' },
