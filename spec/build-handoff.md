@@ -111,10 +111,10 @@ _Live notes for /handoff. Everything above this section is the fixed spec: do no
 _Last updated: 2026-11-12 (draft 2)_
 
 ### In progress
-- Shadchan Mode design, draft 2: `spec/shadchan/design.md` and `spec/shadchan/screens.html` (sketches, also a private artifact). Owner's answers are in design.md section 11. Waiting for the owner's OK on draft 2. Nothing is built.
+- Shadchan Mode design, draft 2: `spec/shadchan/design.md` and `spec/shadchan/screens.html` (sketches, also a private artifact). Owner's answers are in design.md section 11. Owner approved draft 2. Nothing is built.
+- Next to make: `spec/shadchan/home-options.html`, a page the owner sends to shadchanim with 4 Home layouts (A notepad first, as Single Mode · B one to-do list first · C overview with counts · D my singles with status) and 3 plain questions. Dark app look, fictional names, publish as a new artifact.
 
 ### Next steps
-- After the owner's OK: add stages S0–S7 (design.md section 12) to ROADMAP.md.
 - Owner: show the sketches to 2–3 shadchanim (they must be shared from the artifact's Share menu first). The address is left open until before the test round (design.md section 9).
 - Branch `claude/eloquent-thompson-tchp32` has no PR yet (say "make the PR").
 
