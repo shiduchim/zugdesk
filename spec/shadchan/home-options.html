@@ -1,0 +1,299 @@
+<title>Shadchan Home Options</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a short intro, four phone screens side by side (two, then one, on smaller screens),
+   each with a "best if you…" line, then the questions with a copy-a-reply button.
+   One look on purpose: the app's dark theme (app/css/theme-dark.css), its default. */
+:root{
+  color-scheme:dark;
+  --bg:#1C1B1A; --surface:#262523; --surface-2:#302E2B; --text:#ECEAE4; --muted:#A6A398; --border:#3D3B37;
+  --avatar:#3A3834; --link:#8DB0F2; --accent:#ECEAE4; --accent-text:#1C1B1A;
+  --danger:#F08A80; --danger-bg:#3A2422; --ok:#7CC48C; --ok-bg:#1F3324; --warn:#E3B55C; --warn-bg:#3A2F1A;
+  --info-bg:#22304A; --tab-on-bg:#55524A; --tab-on-text:#FFFFFF;
+  --note-new:#474A50; --note-pin:#4A4220; --fu-bg:#2F4166;
+  --seg:#3D3B37; --seg-done:#2BB5A8; --seg-next:#8B7BD8;
+  --letter-bg:#ECEAE4; --letter-text:#1C1B1A;
+  --frame:#4A4741; --shadow:0 4px 16px rgba(0,0,0,.5);
+  --font:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"JetBrains Mono",Consolas,"DejaVu Sans Mono",monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.55;
+  padding-block:32px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.intro{display:flex;flex-direction:column;gap:10px;max-width:64ch}
+.intro h1{font-size:28px;line-height:1.2;margin:0;font-weight:650;text-wrap:balance}
+.intro p{margin:0;color:var(--muted)}
+.intro p b{color:var(--text);font-weight:600}
+
+/* the four options */
+.options{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:36px 22px;align-items:stretch}
+@media (max-width:1120px){.options{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.options{grid-template-columns:minmax(0,1fr)}.opt{max-width:380px;width:100%;margin-inline:auto}}
+.opt{display:flex;flex-direction:column;gap:14px;min-width:0}
+.opt-head{display:flex;align-items:center;gap:12px}
+.letter{width:34px;height:34px;border-radius:50%;background:var(--letter-bg);color:var(--letter-text);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex:none}
+.opt-head h2{font-size:17px;margin:0;font-weight:650;line-height:1.25}
+.best{margin:0;font-size:14px;color:var(--text)}
+.best span{color:var(--muted)}
+.what{margin:0;padding:0 0 0 18px;color:var(--muted);font-size:13.5px;display:flex;flex-direction:column;gap:3px}
+
+/* phone frame */
+.phone{border:2px solid var(--frame);border-radius:22px;background:var(--bg);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column;font-size:14px;line-height:1.45}
+.scr{padding:13px 12px 14px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:610px}
+.bar{display:flex;border-top:1px solid var(--border);background:var(--bg);padding:6px 0 7px}
+.bar div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:var(--muted);font-size:9.5px;min-height:34px}
+.bar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bar .on{color:var(--text);font-weight:600}
+.bar .on svg{border-bottom:2px solid var(--text);padding-bottom:2px;height:23px}
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:2px}
+.sec b{font-size:13px}
+.sec span{font-size:11.5px;color:var(--muted)}
+.search{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:8px 11px;color:var(--muted);font-size:12.5px}
+.card{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:10px 11px;display:flex;flex-direction:column;gap:7px}
+.card.new{background:var(--note-new)}
+.card.pin{background:var(--note-pin)}
+.row{display:flex;align-items:center;gap:9px;min-width:0}
+.grow{flex:1;min-width:0}
+.t{font-weight:600;font-size:13px;line-height:1.3}
+.m{color:var(--muted);font-size:11.5px;line-height:1.35}
+.mono{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.av{width:32px;height:32px;border-radius:50%;background:var(--avatar);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex:none;color:var(--muted)}
+.btn{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:550;white-space:nowrap;text-align:center}
+.btn.main{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.tabs{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.tabs div{flex:1;text-align:center;padding:6px 2px;border-radius:8px;font-size:11.5px;color:var(--muted);font-weight:550;white-space:nowrap}
+.tabs .on{background:var(--tab-on-bg);color:var(--tab-on-text)}
+.tabs .fu{background:var(--fu-bg);color:var(--tab-on-text)}
+.tabs i{font-style:normal;font-family:var(--mono);font-size:10px;opacity:.85;margin-inline-start:3px}
+.tabs .alert i{color:var(--warn);opacity:1;font-weight:600}
+.gear{width:26px;height:26px;flex:none;color:var(--muted);display:flex;align-items:center;justify-content:center}
+.gear svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8}
+.tag{font-family:var(--mono);font-size:10px;border-radius:4px;padding:1px 6px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.tag.you{background:var(--info-bg);color:var(--link)}
+.tag.wait{background:var(--warn-bg);color:var(--warn)}
+.tag.ok{background:var(--ok-bg);color:var(--ok)}
+.seg{display:flex;gap:3px}
+.seg i{flex:1;height:4px;border-radius:3px;background:var(--seg)}
+.seg .d{background:var(--seg-done)} .seg .n{background:var(--seg-next)}
+.list{display:flex;flex-direction:column}
+.list>.row{padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.list>.row:last-child{border-bottom:0}
+.dim{opacity:.55}
+.link{color:var(--link);font-size:12px}
+.circle{width:16px;height:16px;border:1.5px solid var(--muted);border-radius:50%;flex:none;margin-top:1px}
+.quick{border:1px solid var(--border);background:var(--note-new);border-radius:10px;padding:8px 11px;color:var(--muted);font-size:12.5px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:10px 11px;display:flex;flex-direction:column;gap:2px}
+.tile b{font-size:24px;font-weight:650;line-height:1.1;font-variant-numeric:tabular-nums}
+.tile span{font-size:11.5px;color:var(--muted)}
+.tile.you{background:var(--info-bg);border-color:var(--info-bg)} .tile.you b{color:var(--link)}
+.tile.wait b{color:var(--warn)}
+.day{font-size:19px;font-weight:650;line-height:1.2;margin:0}
+.chips{display:flex;gap:5px;flex-wrap:wrap}
+.chip{border:1px solid var(--border);border-radius:999px;padding:3px 9px;font-size:11px;color:var(--muted);background:var(--surface)}
+.chip.on{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600}
+.days{font-family:var(--mono);font-size:10.5px;color:var(--warn);white-space:nowrap}
+.foot-note{margin-top:auto}
+
+/* questions */
+.ask{border:1px solid var(--border);background:var(--surface);border-radius:16px;padding:22px clamp(16px,3vw,28px);display:flex;flex-direction:column;gap:16px;max-width:760px}
+.ask h2{margin:0;font-size:21px;font-weight:650}
+.ask ol{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px}
+.ask li{padding-left:4px}
+.ask li span{display:block;color:var(--muted);font-size:13.5px}
+.ask p{margin:0;color:var(--muted)}
+.ask p b{color:var(--text);font-weight:600}
+.reply{display:flex;flex-direction:column;gap:10px}
+.reply textarea{width:100%;min-height:118px;resize:vertical;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:13px;line-height:1.55}
+.reply-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.copy{appearance:none;border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);border-radius:10px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer}
+.copy:focus-visible,.reply textarea:focus-visible{outline:2px solid var(--link);outline-offset:2px}
+#copy-status{color:var(--ok);font-size:13.5px}
+.small{color:var(--muted);font-size:13px;margin:0;max-width:64ch}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></symbol>
+  <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.6l-1-1a5.5 5.5 0 0 0-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+  <symbol id="i-contacts" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.9-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.4"/><path d="M15.5 14.2c2.2.2 3.8 1.6 4.3 4.3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+</svg>
+
+<div class="wrap">
+  <header class="intro" data-id="opts.intro">
+    <h1>Which first screen would help you most?</h1>
+    <p>We are building a phone app for shadchanim. It keeps your singles, your shidduchim and your notes in one place, and it tells you who you still need to call back. Everything stays on your own phone.</p>
+    <p>Below are <b>four ideas for the first screen</b> you see when you open the app. They all show the same made-up morning, just arranged differently. The bar at the bottom is the same in all four: Home, Guys, Girls, Shidduchim, Contacts.</p>
+    <p>Please look at all four, then answer the short questions at the end.</p>
+  </header>
+
+  <div class="options">
+
+    <!-- A · NOTEPAD FIRST -->
+    <section class="opt" data-id="opts.a">
+      <div class="opt-head"><span class="letter">A</span><h2>Notepad first</h2></div>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><div class="tabs grow"><div class="on">Notes <i>6</i></div><div class="alert">To do <i>5</i></div><div>History</div></div><div class="gear"><svg><use href="#i-gear"/></svg></div></div>
+          <div class="search">Search singles, notes, shidduchim</div>
+          <div class="card new">
+            <div class="t" style="font-size:14px">New note</div>
+            <div class="m" style="min-height:44px;font-size:12.5px">Mrs. Gold called, Rivka is ready to hear about Aharon…</div>
+            <div class="btn main">Save note</div>
+          </div>
+          <div class="sec"><b>Pinned</b><span>1</span></div>
+          <div class="card pin">
+            <div class="t">Questions to ask references</div>
+            <div class="m">Character, kindness, family values, how he treats people…</div>
+          </div>
+          <div class="sec"><b>Other notes</b><span>5</span></div>
+          <div class="card">
+            <div class="t">Rabbi Friedman has new names</div>
+            <div class="m">Three new boys from his yeshiva. Call him back next week.</div>
+          </div>
+          <div class="card">
+            <div class="t">Leah Roth</div>
+            <div class="m">Mother says she prefers someone learning a few more years.</div>
+          </div>
+        </div>
+        <div class="bar"><div class="on"><svg><use href="#i-home"/></svg></div><div><svg><use href="#i-person"/></svg>Guys</div><div><svg><use href="#i-person"/></svg>Girls</div><div><svg><use href="#i-heart"/></svg></div><div><svg><use href="#i-contacts"/></svg></div></div>
+      </div>
+      <p class="best"><span>Best if you</span> write a lot of notes while you are on the phone.</p>
+      <ul class="what">
+        <li>Opens on a blank note, ready to type.</li>
+        <li>Your calls and reminders wait one tap away, under <b>To do</b>, with a count so you never miss them.</li>
+      </ul>
+    </section>
+
+    <!-- B · TO-DO LIST FIRST -->
+    <section class="opt" data-id="opts.b">
+      <div class="opt-head"><span class="letter">B</span><h2>To-do list first</h2></div>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><div class="tabs grow"><div class="fu">To do <i>6</i></div><div>Notes <i>6</i></div><div>History</div></div><div class="gear"><svg><use href="#i-gear"/></svg></div></div>
+          <div class="quick"><span>Write a quick note…</span><span class="link">Save</span></div>
+          <div class="sec"><b>Today</b><span>most urgent first</span></div>
+          <div class="list">
+            <div class="row"><span class="circle"></span><div class="grow"><div class="t">Remind Mrs. Gold about Aharon Blum</div><div class="row" style="gap:6px;margin-top:3px"><span class="tag wait">Waiting 9 days</span></div></div><div class="btn">Remind</div></div>
+            <div class="row"><span class="circle"></span><div class="grow"><div class="t">Suggest Yehuda to Chana's side</div><div class="row" style="gap:6px;margin-top:3px"><span class="tag you">Your move</span><span class="m">he said Yes</span></div></div><div class="btn main">Send</div></div>
+            <div class="row"><span class="circle"></span><div class="grow"><div class="t">Ask how Date 2 went</div><div class="row" style="gap:6px;margin-top:3px"><span class="tag you">Your move</span><span class="m">Dovid and Miriam</span></div></div></div>
+            <div class="row"><span class="circle"></span><div class="grow"><div class="t">Call Rabbi Friedman about the new names</div><div class="row" style="gap:6px;margin-top:3px"><span class="tag">Reminder · today</span></div></div></div>
+            <div class="row"><span class="circle"></span><div class="grow"><div class="t">Tell Mrs. Katz the answer is No</div><div class="row" style="gap:6px;margin-top:3px"><span class="tag you">Your move</span><span class="m">2 days ago</span></div></div></div>
+          </div>
+          <div class="sec"><b>Later this week</b><span>1</span></div>
+          <div class="list">
+            <div class="row"><span class="circle"></span><div class="grow"><div class="t" style="font-weight:500">Ask Leah's mother for a newer resume</div><div class="mono">Mon</div></div></div>
+          </div>
+          <div class="m foot-note dim">Done today: 2</div>
+        </div>
+        <div class="bar"><div class="on"><svg><use href="#i-home"/></svg></div><div><svg><use href="#i-person"/></svg>Guys</div><div><svg><use href="#i-person"/></svg>Girls</div><div><svg><use href="#i-heart"/></svg></div><div><svg><use href="#i-contacts"/></svg></div></div>
+      </div>
+      <p class="best"><span>Best if you</span> want the app to tell you what to do next.</p>
+      <ul class="what">
+        <li>One list of everything waiting on you, the most urgent on top.</li>
+        <li>The app adds most items by itself, for example when a side has not answered for a week.</li>
+      </ul>
+    </section>
+
+    <!-- C · OVERVIEW -->
+    <section class="opt" data-id="opts.c">
+      <div class="opt-head"><span class="letter">C</span><h2>Overview at a glance</h2></div>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><p class="day grow">Thursday</p><div class="gear"><svg><use href="#i-gear"/></svg></div></div>
+          <div class="tiles">
+            <div class="tile you"><b>3</b><span>Your move</span></div>
+            <div class="tile wait"><b>2</b><span>Waiting for an answer</span></div>
+            <div class="tile"><b>2</b><span>Dating now</span></div>
+            <div class="tile"><b>6</b><span>Ideas to check</span></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="t">5 singles with nothing moving</div><div class="m">Leah Roth, Aharon Blum and 3 more</div></div><span class="link">Find</span></div>
+          </div>
+          <div class="quick"><span>Write a quick note…</span><span class="link">Save</span></div>
+          <div class="sec"><b>Lately</b><span class="link">All history</span></div>
+          <div class="list">
+            <div class="row"><div class="grow"><div class="m" style="color:var(--text)">Yehuda Stern said Yes to Chana Levy</div><div class="mono">Today 9:40</div></div></div>
+            <div class="row"><div class="grow"><div class="m" style="color:var(--text)">Dovid and Miriam had Date 2</div><div class="mono">Tue</div></div></div>
+            <div class="row"><div class="grow"><div class="m" style="color:var(--text)">Sent Aharon Blum to Mrs. Gold</div><div class="mono">Mon</div></div></div>
+            <div class="row"><div class="grow"><div class="m" style="color:var(--text)">Added Rivka Gold</div><div class="mono">Sun</div></div></div>
+          </div>
+        </div>
+        <div class="bar"><div class="on"><svg><use href="#i-home"/></svg></div><div><svg><use href="#i-person"/></svg>Guys</div><div><svg><use href="#i-person"/></svg>Girls</div><div><svg><use href="#i-heart"/></svg></div><div><svg><use href="#i-contacts"/></svg></div></div>
+      </div>
+      <p class="best"><span>Best if you</span> like to see the whole picture in one look.</p>
+      <ul class="what">
+        <li>Four numbers tell you how busy things are. Tap one to see the list behind it.</li>
+        <li>A short line of what happened lately, so you remember where things stand.</li>
+      </ul>
+    </section>
+
+    <!-- D · MY SINGLES -->
+    <section class="opt" data-id="opts.d">
+      <div class="opt-head"><span class="letter">D</span><h2>My singles</h2></div>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><p class="day grow">My singles</p><div class="gear"><svg><use href="#i-gear"/></svg></div></div>
+          <div class="chips"><span class="chip on">Need me 3</span><span class="chip">Dating 2</span><span class="chip">Nothing moving 5</span><span class="chip">All 14</span></div>
+          <div class="list">
+            <div class="row"><div class="av">YS</div><div class="grow"><div class="t">Yehuda Stern</div><div class="m">Said Yes to Chana Levy. Suggest him to her side.</div></div><span class="mono">today</span></div>
+            <div class="row"><div class="av">RG</div><div class="grow"><div class="t">Rivka Gold</div><div class="m">Waiting for her mother about Aharon Blum.</div></div><span class="days">9 days</span></div>
+            <div class="row"><div class="av">DW</div><div class="grow"><div class="t">Dovid Weiss</div><div class="m">Dating Miriam Adler. Ask how Date 2 went.</div><div class="seg" style="margin-top:5px"><i class="d"></i><i class="d"></i><i class="d"></i><i class="n"></i><i></i><i></i></div></div><span class="mono">Tue</span></div>
+          </div>
+          <div class="sec"><b>Pinned note</b><span class="link">All notes</span></div>
+          <div class="card pin">
+            <div class="t">Questions to ask references</div>
+            <div class="m">Character, kindness, family values…</div>
+          </div>
+          <div class="quick"><span>Write a quick note…</span><span class="link">Save</span></div>
+        </div>
+        <div class="bar"><div class="on"><svg><use href="#i-home"/></svg></div><div><svg><use href="#i-person"/></svg>Guys</div><div><svg><use href="#i-person"/></svg>Girls</div><div><svg><use href="#i-heart"/></svg></div><div><svg><use href="#i-contacts"/></svg></div></div>
+      </div>
+      <p class="best"><span>Best if you</span> think about the people you help, one by one.</p>
+      <ul class="what">
+        <li>Each single you are working on, with one line on where things stand and how long it has been.</li>
+        <li>The ones who need you today come first.</li>
+      </ul>
+    </section>
+  </div>
+
+  <section class="ask" data-id="opts.questions">
+    <h2>A few short questions</h2>
+    <ol>
+      <li>Which one would you want to see first thing in the morning: A, B, C or D? Why?<span>It is fine to say "B, but with the numbers from C".</span></li>
+      <li>Is anything missing that you would look for first?</li>
+      <li>Is there anything on these screens you would never use?</li>
+      <li>About how many singles are you working on right now?<span>A rough number is enough. It helps us see which screen works for a busy week.</span></li>
+    </ol>
+    <div class="reply">
+      <p><b>Easiest way to answer:</b> type below, press Copy, then paste it in a message to the person who sent you this page.</p>
+      <label for="reply-text" class="small">Your answers</label>
+      <textarea id="reply-text" spellcheck="true">1. I would pick:
+2. Missing:
+3. Would never use:
+4. Singles I am working on: </textarea>
+      <div class="reply-row"><button class="copy" id="copy-btn" type="button">Copy my answers</button><span id="copy-status" role="status"></span></div>
+    </div>
+  </section>
+
+  <p class="small">All names on this page are made up. This page does not save or send anything you type.</p>
+</div>
+
+<script>
+(function(){
+  var btn=document.getElementById('copy-btn'), box=document.getElementById('reply-text'), status=document.getElementById('copy-status');
+  function selectIt(msg){ box.focus(); box.select(); status.textContent=msg; }
+  btn.addEventListener('click',function(){
+    var text=box.value;
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(text).then(function(){ status.textContent='Copied. Now paste it in your message.'; },
+          function(){ selectIt('Text selected. Press and hold to copy it.'); });
+      } else { selectIt('Text selected. Press and hold to copy it.'); }
+    }catch(e){ selectIt('Text selected. Press and hold to copy it.'); }
+  });
+})();
+</script>
