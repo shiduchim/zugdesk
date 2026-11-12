@@ -108,13 +108,16 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-11_
+_Last updated: 2026-11-12_
 
 ### In progress
-- (nothing)
+- Shadchan Mode design, draft 1: `spec/shadchan/design.md` and `spec/shadchan/screens.html` (sketches, also published as a private artifact). Waiting for the owner's answers to the 7 questions in design.md section 12. Nothing is built.
 
 ### Next steps
-- Owner has not made the PR yet for branch claude/tweaks-ended-shidduch (say "make the PR").
+- After the owner answers: revise the design, then add stages S0–S7 (design.md section 10) to ROADMAP.md.
+- Owner: five short conversations with shadchanim (questions at the end of `spec/shadchan/research.md`), and decide on an own address before real users.
+- Branch `claude/eloquent-thompson-tchp32` has no PR yet (say "make the PR").
 
 ### Notes / blockers
-- 
+- The survey file held 26 responses (owner said 27). Raw answers are not in the repo (public).
+- Filter and sync facts in design.md section 2 are partly unconfirmed (vendor sites were blocked from the session). Test on a real NetFree and TAG device, and on an iPhone, before promising.

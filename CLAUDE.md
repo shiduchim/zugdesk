@@ -12,6 +12,7 @@ The owner is not a programmer and tests on a phone. They send short change reque
 | `spec/` | The design doc, split into one file per area (+ `spec/img/` pictures) | Read **only** the file for the current task |
 | `source/` | The owner's original HTML designs and the full .docx | **Never edit.** Open only to copy look/structure for the page being built |
 | `ROADMAP.md` | Stages and checkboxes | Update the checkboxes when a stage step is done |
+| `spec/shadchan/` | Shadchan Mode (future second mode): `research.md` (survey), `design.md` (proposal), `screens.html` (sketches) | Design only until the owner approves; no survey raw data in the repo |
 
 Spec files: `00-overview` · `build-handoff` (architecture + acceptance rules — read for every build stage) ·
 `home` · `contacts` · `add-person` (also Add Shadchan) · `offers-cards` · `shidduchim` · `my-profile` ·

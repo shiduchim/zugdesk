@@ -1,0 +1,427 @@
+<title>Shadchan Mode Screens</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a contact sheet of phone screens, each with a short caption; one wide computer view at the end.
+   Colours and sizes are the app's own tokens (app/css/tokens.css and theme-dark.css). */
+:root{
+  --bg:#FAF8F3; --surface:#FFFFFF; --surface-2:#F3F1EA; --text:#1F1F1E; --muted:#66655F; --border:#E4E1D9;
+  --avatar:#E6E3DA; --link:#2F56B0; --accent:#1F1F1E; --accent-text:#FFFFFF;
+  --danger:#B3261E; --danger-bg:#FBEDEB; --ok:#2E6B3A; --ok-bg:#EAF3EC; --warn:#8A5A00; --warn-bg:#FBF2DE;
+  --info-bg:#EAF0FB; --tab-on-bg:#FFFFFF; --tab-on-text:#1F1F1E; --seg:#DDD9CF; --seg-done:#1F9E92; --seg-next:#8B7BD8;
+  --frame:#D6D2C7; --shadow:0 4px 16px rgba(0,0,0,.12);
+  --font:Inter,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --mono:"JetBrains Mono",Consolas,"DejaVu Sans Mono",monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#1C1B1A; --surface:#262523; --surface-2:#302E2B; --text:#ECEAE4; --muted:#A6A398; --border:#3D3B37;
+  --avatar:#3A3834; --link:#8DB0F2; --accent:#ECEAE4; --accent-text:#1C1B1A;
+  --danger:#F08A80; --danger-bg:#3A2422; --ok:#7CC48C; --ok-bg:#1F3324; --warn:#E3B55C; --warn-bg:#3A2F1A;
+  --info-bg:#22304A; --tab-on-bg:#55524A; --tab-on-text:#FFFFFF; --seg:#3D3B37; --seg-done:#2BB5A8; --seg-next:#8B7BD8;
+  --frame:#4A4741; --shadow:0 4px 16px rgba(0,0,0,.5); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#1C1B1A; --surface:#262523; --surface-2:#302E2B; --text:#ECEAE4; --muted:#A6A398; --border:#3D3B37;
+  --avatar:#3A3834; --link:#8DB0F2; --accent:#ECEAE4; --accent-text:#1C1B1A;
+  --danger:#F08A80; --danger-bg:#3A2422; --ok:#7CC48C; --ok-bg:#1F3324; --warn:#E3B55C; --warn-bg:#3A2F1A;
+  --info-bg:#22304A; --tab-on-bg:#55524A; --tab-on-text:#FFFFFF; --seg:#3D3B37; --seg-done:#2BB5A8; --seg-next:#8B7BD8;
+  --frame:#4A4741; --shadow:0 4px 16px rgba(0,0,0,.5); color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;
+  padding-block:28px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:28px}
+.intro h1{font-size:24px;line-height:1.25;margin:0 0 8px;font-weight:650;text-wrap:balance}
+.intro p{margin:0;color:var(--muted);max-width:66ch}
+.note{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:12px 14px;max-width:66ch;color:var(--muted)}
+.note b{color:var(--text)}
+.sheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:36px 28px;align-items:start}
+.shot{display:flex;flex-direction:column;gap:12px;min-width:0}
+.shot h2{font-size:16px;margin:0;font-weight:650}
+.shot h2 span{font-family:var(--mono);font-size:11.5px;color:var(--muted);font-weight:400;margin-inline-start:8px}
+.cap{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:13px}
+.cap code{font-family:var(--mono);font-size:11.5px;color:var(--link)}
+
+/* phone frame */
+.phone{border:2px solid var(--frame);border-radius:22px;background:var(--bg);overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.scr{padding:14px 14px 16px;display:flex;flex-direction:column;gap:12px;min-height:520px}
+.bar{display:flex;border-top:1px solid var(--border);background:var(--bg)}
+.bar div{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 0 8px;font-size:10.5px;color:var(--muted)}
+.bar svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bar .on{color:var(--text);font-weight:600}
+.h1{font-size:20px;font-weight:650;line-height:1.2;margin:0}
+.sub{color:var(--muted);font-size:12.5px;margin:0}
+.sec{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-top:2px}
+.sec b{font-size:13.5px}
+.sec span{font-size:12px;color:var(--muted)}
+.search{border:1px solid var(--border);background:var(--surface);border-radius:8px;padding:9px 12px;color:var(--muted);font-size:13px}
+.card{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.grow{flex:1;min-width:0}
+.t{font-weight:600;font-size:13.5px;line-height:1.3}
+.m{color:var(--muted);font-size:12px;line-height:1.35}
+.av{width:34px;height:34px;border-radius:50%;background:var(--avatar);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;flex:none;color:var(--muted)}
+.btn{border:1px solid var(--border);background:var(--surface-2);color:var(--text);border-radius:8px;padding:7px 11px;font-size:12.5px;font-weight:550;white-space:nowrap;text-align:center}
+.btn.main{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.btn.wide{flex:1;padding:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted);background:var(--surface)}
+.chip.on{background:var(--accent);color:var(--accent-text);border-color:var(--accent);font-weight:600}
+.tabs{display:flex;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.tabs div{flex:1;text-align:center;padding:7px 2px;border-radius:8px;font-size:12px;color:var(--muted);font-weight:550;white-space:nowrap}
+.tabs .on{background:var(--tab-on-bg);color:var(--tab-on-text)}
+.tabs i{font-style:normal;font-family:var(--mono);font-size:11px;opacity:.8;margin-inline-start:3px}
+.bub{display:inline-flex;gap:5px;align-items:baseline;border:1px solid var(--border);border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted);background:var(--surface-2);white-space:nowrap}
+.bub b{font-weight:650}
+.bub.yes{background:var(--ok-bg);border-color:var(--ok)} .bub.yes b{color:var(--ok)}
+.bub.no{background:var(--danger-bg);border-color:var(--danger)} .bub.no b{color:var(--danger)}
+.bub.think{background:var(--warn-bg);border-color:var(--warn)} .bub.think b{color:var(--warn)}
+.bub.none{border-style:dashed;background:transparent}
+.seg{display:flex;gap:3px}
+.seg i{flex:1;height:5px;border-radius:3px;background:var(--seg)}
+.seg .d{background:var(--seg-done)} .seg .n{background:var(--seg-next)}
+.tag{font-family:var(--mono);font-size:10.5px;border-radius:4px;padding:1px 6px;background:var(--surface-2);color:var(--muted);white-space:nowrap}
+.tag.ok{background:var(--ok-bg);color:var(--ok)} .tag.warn{background:var(--warn-bg);color:var(--warn)} .tag.no{background:var(--danger-bg);color:var(--danger)} .tag.info{background:var(--info-bg);color:var(--link)}
+.days{font-family:var(--mono);font-size:11.5px;color:var(--warn);white-space:nowrap}
+.list{display:flex;flex-direction:column}
+.list .row{padding:9px 0;border-bottom:1px solid var(--border)}
+.list .row:last-child{border-bottom:0}
+.dim{opacity:.55}
+.link{color:var(--link);font-size:12.5px}
+.orig{font-family:var(--mono);font-size:11.5px;line-height:1.5;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);white-space:pre-wrap}
+.hint{background:var(--info-bg);color:var(--link);border-radius:8px;padding:8px 10px;font-size:12.5px;font-weight:550}
+.star{color:var(--warn);font-size:13px}
+.foot{display:flex;gap:8px;margin-top:auto}
+.check{width:16px;height:16px;border:1.5px solid var(--muted);border-radius:4px;flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:11px;line-height:1}
+.check.on{background:var(--ok);border-color:var(--ok);color:var(--accent-text)}
+
+/* computer view */
+.widebox{overflow-x:auto;border:2px solid var(--frame);border-radius:14px;box-shadow:var(--shadow)}
+.desk{display:grid;grid-template-columns:150px 300px 1fr;min-width:900px;background:var(--bg)}
+.desk>div{padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.desk>div+div{border-inline-start:1px solid var(--border)}
+.nav div{padding:7px 9px;border-radius:8px;color:var(--muted);font-size:13px}
+.nav .on{background:var(--surface-2);color:var(--text);font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-today" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-singles" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.700 6 6"/><circle cx="17.500" cy="9" r="2.400"/><path d="M16.500 14.200c2.600.300 4.500 2.500 4.500 5.300"/></symbol>
+  <symbol id="i-sugg" viewBox="0 0 24 24"><path d="M12 20s-7-4.400-7-10a4 4 0 0 1 7-2.600A4 4 0 0 1 19 10c0 5.600-7 10-7 10z"/></symbol>
+  <symbol id="i-contacts" viewBox="0 0 24 24"><rect x="5" y="3.500" width="14" height="17" rx="2"/><circle cx="12" cy="10" r="2.400"/><path d="M8.500 16.500c.600-1.700 1.900-2.600 3.500-2.600s2.900.900 3.500 2.600"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="intro">
+    <h1>Shadchan Mode: first screen sketches</h1>
+    <p>Nine screens that show how the proposal in <b>spec/shadchan/design.md</b> would look and work. These are sketches to react to, not the finished look. All names are fictional. Sizes, words and order can all change.</p>
+  </div>
+  <div class="note"><b>How to give feedback:</b> each block has a name in blue (for example <code style="font-family:var(--mono);font-size:11.5px;color:var(--link)">today.your-move</code>). Tell me the name and what to change, the same way as in Tweak mode.</div>
+
+  <div class="sheet">
+
+    <!-- 1 TODAY -->
+    <section class="shot">
+      <h2>1 · Today <span>#/today</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <div class="search">Search singles, contacts, suggestions…</div>
+          <div class="sec"><b>Your move</b><span>4</span></div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="t">Suggest Yehuda to Chana's side</div><div class="m">His side said Yes on Monday · her side not asked yet</div></div><div class="btn main">Send</div></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="t">Ask how Date 2 went</div><div class="m">Dovid Weiss – Miriam Adler · Tuesday evening</div></div><div class="btn">Open</div></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="t">Tell Mrs. Katz the answer is No</div><div class="m">Moshe Katz – Esther Klein · her side said No 2 days ago</div></div><div class="btn">Told</div></div>
+          </div>
+          <div class="sec"><b>Waiting for them</b><span>3</span></div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="t">Mrs. Gold <span class="m">· for Rivka</span></div><div class="m">About Aharon Blum</div></div><div class="days">9 days</div></div>
+            <div class="row"><div class="btn wide">Remind</div><div class="btn wide">Got an answer</div></div>
+          </div>
+          <div class="sec"><b>No open suggestion</b><span>5 of my singles</span></div>
+          <div class="chips"><span class="chip">Leah Roth</span><span class="chip">Aharon Blum</span><span class="chip">3 more</span></div>
+          <div class="m">Last backup: 16 days ago · <span class="link">Back up now</span></div>
+        </div>
+        <div class="bar"><div class="on"><svg><use href="#i-today"/></svg>Today</div><div><svg><use href="#i-singles"/></svg>Singles</div><div><svg><use href="#i-sugg"/></svg>Suggestions</div><div><svg><use href="#i-contacts"/></svg>Contacts</div></div>
+      </div>
+      <ul class="cap">
+        <li><code>today.your-move</code> What is waiting for you. Worked out from the suggestion cards; nothing to fill in.</li>
+        <li><code>today.waiting</code> Who has not answered, oldest first, with days.</li>
+        <li><code>today.no-open</code> Your singles for whom nothing is moving. Tap one to find a match.</li>
+      </ul>
+    </section>
+
+    <!-- 2 SINGLES -->
+    <section class="shot">
+      <h2>2 · Singles <span>#/singles</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><p class="h1 grow">Singles</p><div class="btn main">Add</div></div>
+          <div class="tabs"><div>Guys <i>84</i></div><div class="on">Girls <i>97</i></div></div>
+          <div class="search">Search any word: name, city, seminary…</div>
+          <div class="chips"><span class="chip on">My singles</span><span class="chip">Everyone</span><span class="chip">Age 24–28 ✕</span><span class="chip">Filters</span></div>
+          <div class="card"><div class="row"><div class="grow"><div class="t">To file</div><div class="m">3 profiles saved as they arrived</div></div><div class="btn">Open</div></div></div>
+          <div class="list">
+            <div class="row"><div class="av">CL</div><div class="grow"><div class="t">Chana Levy <span class="star">★</span></div><div class="m">26 · Jerusalem · Teacher</div></div><span class="tag info">1 open</span></div>
+            <div class="row"><div class="av">MA</div><div class="grow"><div class="t">Miriam Adler <span class="star">★</span></div><div class="m">27 · Lakewood · Nurse</div></div><span class="tag warn">Busy</span></div>
+            <div class="row"><div class="av">RG</div><div class="grow"><div class="t">Rivka Gold <span class="star">★</span></div><div class="m">28 · Monsey · Speech therapist</div></div><span class="tag info">1 open</span></div>
+            <div class="row"><div class="av">LR</div><div class="grow"><div class="t">Leah Roth <span class="star">★</span></div><div class="m">24 · Brooklyn · Bookkeeper</div></div><span class="tag">No open</span></div>
+            <div class="row"><div class="av">EK</div><div class="grow"><div class="t">Esther Klein <span class="star">★</span></div><div class="m">25 · Brooklyn · Graphic designer</div></div><span class="tag ok">Available</span></div>
+          </div>
+        </div>
+        <div class="bar"><div><svg><use href="#i-today"/></svg>Today</div><div class="on"><svg><use href="#i-singles"/></svg>Singles</div><div><svg><use href="#i-sugg"/></svg>Suggestions</div><div><svg><use href="#i-contacts"/></svg>Contacts</div></div>
+      </div>
+      <ul class="cap">
+        <li><code>singles.search</code> Finds any word, including words inside a pasted profile.</li>
+        <li><code>singles.mine</code> The star marks the singles you are working for; the rest are on file.</li>
+        <li><code>singles.to-file</code> Paste now, sort out later.</li>
+      </ul>
+    </section>
+
+    <!-- 3 ADD BY PASTE -->
+    <section class="shot">
+      <h2>3 · Add a single <span>#/singles/new</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><span class="link">Back</span><p class="h1 grow" style="font-size:17px;text-align:center">Add a single</p><span class="m">Girl</span></div>
+          <div class="tabs"><div class="on">Paste</div><div>Basic Info</div><div>Detailed</div></div>
+          <div class="row"><div class="btn wide">Paste from clipboard</div><div class="btn wide">Attach file</div></div>
+          <div class="orig">Leah Roth, 24, Brooklyn
+Bookkeeper, Bais Yaakov graduate
+Looking for a working boy who
+sets time to learn, up to 28
+Mother: Mrs. Roth 0017185550142
+Reference: Mrs. Green</div>
+          <div class="card">
+            <div class="m">Found in the text (check before saving)</div>
+            <div class="row"><div class="grow m">Name</div><div class="t">Leah Roth</div></div>
+            <div class="row"><div class="grow m">Age</div><div class="t">24</div></div>
+            <div class="row"><div class="grow m">Mother's phone</div><div class="t">001 718 555 0142</div></div>
+          </div>
+          <div class="m">The original text is kept word for word and stays searchable.</div>
+          <div class="foot"><div class="btn wide">Save for later</div><div class="btn main wide">Save</div></div>
+        </div>
+      </div>
+      <ul class="cap">
+        <li>This is Add Person from Single Mode, reused. Nothing has to be typed.</li>
+        <li><code>add.save-later</code> Sends the profile to "To file" in one tap.</li>
+        <li>On Android, WhatsApp's Share button could send a profile straight here (to be confirmed).</li>
+      </ul>
+    </section>
+
+    <!-- 4 SINGLE'S CARD -->
+    <section class="shot">
+      <h2>4 · A single's card <span>#/singles/:id</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><span class="link">Singles</span><div class="grow"></div><span class="tag ok">Available</span></div>
+          <div class="row"><div class="av" style="width:44px;height:44px">YS</div><div class="grow"><p class="h1">Yehuda Stern <span class="star">★</span></p><div class="m">29 · Jerusalem · Accountant</div></div></div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="m">Speaks for him</div><div class="t">Mrs. Stern (mother)</div></div><div class="btn">WhatsApp</div></div>
+            <div class="m">Looking for: 23–28 · "Someone warm and sincere who values a Torah home."</div>
+            <div class="m">Last confirmed looking: 3 weeks ago</div>
+          </div>
+          <div class="tabs"><div>Profile</div><div class="on">Suggestions <i>3</i></div><div>Notes <i>5</i></div></div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="t">Chana Levy</div><div class="m">26 · Jerusalem · Open</div></div></div>
+            <div class="row" style="flex-wrap:wrap;gap:6px"><span class="bub yes">His side: <b>Yes</b></span><span class="bub none">Her side: <b>Not asked</b></span></div>
+          </div>
+          <div class="card dim">
+            <div class="row"><div class="grow"><div class="t">Esther Klein</div><div class="m">Closed Mar 2026 · her side said No</div></div></div>
+          </div>
+          <div class="card dim">
+            <div class="row"><div class="grow"><div class="t">Rivka Gold</div><div class="m">Idea · marked Not a fit by you</div></div></div>
+          </div>
+          <div class="foot"><div class="btn wide">Add note</div><div class="btn main wide">Find a match</div></div>
+        </div>
+      </div>
+      <ul class="cap">
+        <li>The person card from Single Mode, with status, "speaks for" and a Suggestions tab.</li>
+        <li><code>single.suggestions</code> Everything ever tried for him, in one place.</li>
+        <li><code>single.find-match</code> Opens the next screen.</li>
+      </ul>
+    </section>
+
+    <!-- 5 FIND A MATCH -->
+    <section class="shot">
+      <h2>5 · Find a match <span>#/singles/:id/match</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><span class="link">Yehuda Stern</span></div>
+          <div class="card"><div class="t">For Yehuda Stern, 29, Jerusalem</div><div class="m">Looking for 23–28 · warm and sincere, a Torah home</div></div>
+          <div class="chips"><span class="chip on">Age 23–28</span><span class="chip on">Available</span><span class="chip">City</span><span class="chip">Background</span><span class="chip">Language</span></div>
+          <div class="sec"><b>Fits what is recorded</b><span>14</span></div>
+          <div class="list">
+            <div class="row"><div class="av">CL</div><div class="grow"><div class="t">Chana Levy</div><div class="m">26 · Jerusalem · Teacher</div></div><span class="tag info">Open</span></div>
+            <div class="row"><div class="av">LR</div><div class="grow"><div class="t">Leah Roth</div><div class="m">24 · Brooklyn · Bookkeeper</div></div></div>
+            <div class="row"><div class="av">SB</div><div class="grow"><div class="t">Shira Berg</div><div class="m">27 · Jerusalem · Occupational therapist</div><div class="m" style="color:var(--warn)">He is 29 · she asked up to 28</div></div></div>
+          </div>
+          <div class="sec"><b>Already tried</b><span>2</span></div>
+          <div class="list dim">
+            <div class="row"><div class="av">EK</div><div class="grow"><div class="t">Esther Klein</div><div class="m">Suggested Mar 2026 · her side said No</div></div></div>
+            <div class="row"><div class="av">RG</div><div class="grow"><div class="t">Rivka Gold</div><div class="m">Not a fit · your note: "very different homes"</div></div></div>
+          </div>
+          <div class="m">Age not recorded: 12 more · <span class="link">Show</span></div>
+        </div>
+      </div>
+      <ul class="cap">
+        <li><code>match.filters</code> Start from what he asked for; change with one tap.</li>
+        <li><code>match.tried</code> Pairs you already suggested or ruled out are never offered as new.</li>
+        <li>The app narrows the list. It does not score and does not choose.</li>
+      </ul>
+    </section>
+
+    <!-- 6 SUGGESTIONS -->
+    <section class="shot">
+      <h2>6 · Suggestions <span>#/suggestions</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <p class="h1">Suggestions</p>
+          <div class="tabs"><div>Ideas <i>6</i></div><div class="on">Open <i>4</i></div><div>Dating <i>2</i></div><div>Closed <i>31</i></div></div>
+          <div class="card">
+            <div class="row"><div class="grow t">Yehuda Stern – Chana Levy</div><span class="tag info">Your move</span></div>
+            <div class="row" style="flex-wrap:wrap;gap:6px"><span class="bub yes">His side: <b>Yes</b></span><span class="bub none">Her side: <b>Not asked</b></span></div>
+            <div class="seg"><i class="d"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="grow t">Aharon Blum – Rivka Gold</div><span class="days">9 days</span></div>
+            <div class="row" style="flex-wrap:wrap;gap:6px"><span class="bub yes">His side: <b>Yes</b></span><span class="bub">Her side: <b>Asked</b></span></div>
+            <div class="seg"><i class="d"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="grow t">Moshe Katz – Esther Klein</div><span class="tag info">Your move</span></div>
+            <div class="row" style="flex-wrap:wrap;gap:6px"><span class="bub yes">His side: <b>Yes</b></span><span class="bub no">Her side: <b>No</b></span></div>
+            <div class="m">His side has not been told yet</div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="grow t">Shmuel Fine – Leah Roth</div><span class="days">2 days</span></div>
+            <div class="row" style="flex-wrap:wrap;gap:6px"><span class="bub think">His side: <b>Thinking</b></span><span class="bub none">Her side: <b>Not asked</b></span></div>
+            <div class="seg"><i class="d"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          </div>
+        </div>
+        <div class="bar"><div><svg><use href="#i-today"/></svg>Today</div><div><svg><use href="#i-singles"/></svg>Singles</div><div class="on"><svg><use href="#i-sugg"/></svg>Suggestions</div><div><svg><use href="#i-contacts"/></svg>Contacts</div></div>
+      </div>
+      <ul class="cap">
+        <li>The Shidduchim page from Single Mode, with two sides in place of "Me" and one person.</li>
+        <li><code>sugg.answer</code> Tap a bubble: Not asked · Asked · Thinking · Yes · No. Undo is always offered.</li>
+        <li><code>sugg.lanes</code> Ideas are private thoughts; Open means at least one side was asked.</li>
+      </ul>
+    </section>
+
+    <!-- 7 SUGGESTION PAGE -->
+    <section class="shot">
+      <h2>7 · One suggestion <span>#/suggestions/:id</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <div class="row"><span class="link">Suggestions</span><div class="grow"></div><span class="tag">Dating</span></div>
+          <div class="t" style="font-size:15px">Dovid Weiss – Miriam Adler</div>
+          <div class="card">
+            <div class="seg"><i class="d"></i><i class="d"></i><i class="d"></i><i class="d"></i><i class="n"></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+            <div class="row m"><span class="grow">Suggested</span><span class="grow">Checked</span><span class="grow">Dates 1–8</span><span>Engaged</span></div>
+          </div>
+          <div class="tabs"><div class="on">Overview</div><div>Dates</div><div>History</div></div>
+          <div class="hint">Your move: ask both sides how Date 2 went</div>
+          <div class="card">
+            <div class="row"><div class="av">DW</div><div class="grow"><div class="t">Dovid Weiss</div><div class="m">31 · Lakewood · speaks for him: himself</div></div></div>
+            <div class="row" style="flex-wrap:wrap;gap:6px"><span class="bub none">After Date 2: <b>Not asked</b></span></div>
+          </div>
+          <div class="card">
+            <div class="row"><div class="av">MA</div><div class="grow"><div class="t">Miriam Adler</div><div class="m">27 · Lakewood · speaks for her: Mrs. Adler</div></div></div>
+            <div class="row" style="flex-wrap:wrap;gap:6px"><span class="bub yes">After Date 2: <b>Yes</b></span><span class="m">told by Mrs. Adler, today</span></div>
+          </div>
+          <div class="list">
+            <div class="row"><div class="grow"><div class="m">Tue, Nov 10 · 7:30 PM</div><div class="t" style="font-weight:500">Date 2 happened</div></div></div>
+            <div class="row"><div class="grow"><div class="m">Thu, Nov 5</div><div class="t" style="font-weight:500">Both sides said Yes after Date 1</div></div></div>
+          </div>
+          <div class="foot"><div class="btn wide">Add note</div><div class="btn main wide">Arrange a date</div></div>
+        </div>
+      </div>
+      <ul class="cap">
+        <li>The shidduch details page from Single Mode: same bar, tabs, dates and history.</li>
+        <li><code>sugg.after-date</code> After every date the two answer bubbles come back.</li>
+        <li><code>sugg.your-move</code> One line that says what is expected of you now.</li>
+      </ul>
+    </section>
+
+    <!-- 8 SEND -->
+    <section class="shot">
+      <h2>8 · Send to a side <span>sheet</span></h2>
+      <div class="phone">
+        <div class="scr">
+          <div class="t" style="font-size:15px">Suggest Yehuda to Chana's side</div>
+          <div class="card">
+            <div class="row"><div class="grow"><div class="m">To</div><div class="t">Mrs. Levy (mother) · WhatsApp</div></div><span class="link">Change</span></div>
+          </div>
+          <div class="sec"><b>What to send</b></div>
+          <div class="list">
+            <div class="row"><span class="check on">✓</span><div class="grow">Short profile text</div></div>
+            <div class="row"><span class="check on">✓</span><div class="grow">Resume file <span class="m">· Yehuda_Stern.pdf</span></div></div>
+            <div class="row"><span class="check"></span><div class="grow">References and phone numbers</div></div>
+          </div>
+          <div class="sec"><b>Exactly what leaves</b></div>
+          <div class="orig">Yehuda Stern, 29, Jerusalem.
+Accountant. Calm and organised,
+learns every morning before work.
+Looking for someone warm and
+sincere who values a Torah home.</div>
+          <div class="row"><div class="btn wide">Copy</div><div class="btn wide">WhatsApp</div><div class="btn wide">Email</div></div>
+          <div class="card">
+            <div class="m">Did you send it?</div>
+            <div class="row"><div class="btn main wide">Yes, I sent it</div><div class="btn wide">Not yet</div></div>
+            <div class="m">Yes records "Her side: Asked · today" and starts counting the days.</div>
+          </div>
+        </div>
+      </div>
+      <ul class="cap">
+        <li>The share sheet from My Profile, reused for a single's profile.</li>
+        <li><code>send.confirm</code> One tap records the ask. No separate tracking step.</li>
+        <li>What is ticked by default is an open question for you (design.md, question 1).</li>
+      </ul>
+    </section>
+  </div>
+
+  <!-- COMPUTER -->
+  <section class="shot">
+    <h2>9 · On a computer <span>1024 px and wider</span></h2>
+    <div class="widebox">
+      <div class="desk">
+        <div class="nav"><div class="t" style="padding:4px 9px 8px">ZugDesk</div><div>Today</div><div class="on">Singles</div><div>Suggestions</div><div>Contacts</div><div style="margin-top:auto">Settings</div></div>
+        <div>
+          <div class="tabs"><div class="on">Guys <i>84</i></div><div>Girls <i>97</i></div></div>
+          <div class="search">Search any word…</div>
+          <div class="list">
+            <div class="row"><div class="av">YS</div><div class="grow"><div class="t">Yehuda Stern <span class="star">★</span></div><div class="m">29 · Jerusalem · Accountant</div></div><span class="tag info">1 open</span></div>
+            <div class="row"><div class="av">DW</div><div class="grow"><div class="t">Dovid Weiss <span class="star">★</span></div><div class="m">31 · Lakewood · Software developer</div></div><span class="tag warn">Busy</span></div>
+            <div class="row"><div class="av">MK</div><div class="grow"><div class="t">Moshe Katz</div><div class="m">27 · Brooklyn · Learning full time</div></div><span class="tag info">1 open</span></div>
+            <div class="row"><div class="av">AB</div><div class="grow"><div class="t">Aharon Blum <span class="star">★</span></div><div class="m">26 · Monsey · Electrician</div></div><span class="tag info">1 open</span></div>
+          </div>
+        </div>
+        <div>
+          <div class="row"><div class="grow"><p class="h1">Find a match for Yehuda Stern</p><div class="m">29 · Jerusalem · looking for 23–28</div></div><div class="btn">Close</div></div>
+          <div class="chips"><span class="chip on">Age 23–28</span><span class="chip on">Available</span><span class="chip">City</span><span class="chip">Background</span></div>
+          <div class="two">
+            <div class="card">
+              <div class="t">Yehuda Stern</div><div class="m">29 · Jerusalem · Accountant</div>
+              <div class="m">Calm and organised. Learns every morning before work and enjoys hiking.</div>
+              <div class="m">Looking for: someone warm and sincere who values a Torah home.</div>
+            </div>
+            <div class="card">
+              <div class="t">Leah Roth</div><div class="m">24 · Brooklyn · Bookkeeper</div>
+              <div class="m">Looking for a working boy who sets time to learn, up to 28.</div>
+              <div class="m" style="color:var(--warn)">He is 29 · she asked up to 28</div>
+              <div class="row"><div class="btn wide">Not a fit</div><div class="btn main wide">Save as idea</div></div>
+            </div>
+          </div>
+          <div class="m">Next: Shira Berg · 12 more</div>
+        </div>
+      </div>
+    </div>
+    <ul class="cap">
+      <li>Menu, list and work area side by side, like Contacts on a computer today.</li>
+      <li><code>match.compare</code> Two profiles next to each other; decide and move to the next one.</li>
+    </ul>
+  </section>
+</div>
