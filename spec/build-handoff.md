@@ -108,14 +108,15 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-12 (draft 2)_
+_Last updated: 2026-11-12 (Home from blocks)_
 
 ### In progress
-- Shadchan Mode design, draft 2: `spec/shadchan/design.md` and `spec/shadchan/screens.html` (sketches, also a private artifact). Owner's answers are in design.md section 11. Owner approved draft 2. Nothing is built.
-- Made: `spec/shadchan/home-options.html` (private artifact https://claude.ai/artifact/SbEQhjtjrZ2iUc43JquySF): 4 Home layouts (A notepad first · B to-do list first · C overview · D my singles) and 4 questions with a copy-my-answers box. Waiting for shadchanim's replies; their choice decides the S4 Home layout.
+- Shadchan Mode design, draft 2: `spec/shadchan/design.md` and `spec/shadchan/screens.html` (sketches, also a private artifact). Owner approved draft 2. Nothing is built.
+- Home decided (12 Nov): no survey. Home is made from blocks (To do, At a glance, Notes, My singles, History) with Edit Home: show/hide, move up/down. Written in design.md 6.1 and ROADMAP S4. S0 (asking shadchanim) skipped by owner.
+- `spec/shadchan/home-options.html` (private artifact https://claude.ai/artifact/SbEQhjtjrZ2iUc43JquySF) now only serves as the look of the blocks; its questions are not used.
 
 ### Next steps
-- Owner: share the Home options page (and the sketches if wanted) with 2–3 shadchanim, then paste their replies here (they must be shared from the artifact's Share menu first). The address is left open until before the test round (design.md section 9).
+- Next build stage: S1 Foundation (needs Fable; ask the owner first, per the Fable rule).
 - Branch `claude/eloquent-thompson-tchp32` has no PR yet (say "make the PR").
 
 ### Notes / blockers

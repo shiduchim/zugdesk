@@ -79,23 +79,38 @@ These are the names on buttons and titles. They follow Single Mode where a word 
 
 ## 6. The five places (Shadchan Mode)
 
-### 6.1 Home (Single Mode's Home, with automatic follow-ups)
-Same page as in Single Mode: search, New Note with smart suggestions, and the three tabs.
+### 6.1 Home (made from blocks the shadchan arranges)
+Fixed at the top: the mode name, the gear, **search** and **New Note** (with smart suggestions).
+Search finds anything: singles, contacts, shidduchim, notes, and the words inside pasted profiles. (M1)
 
-- **Notes**: exactly as today. Pinned and other notes, colours, links to singles and contacts, dated updates.
-- **Follow Ups**: today's hand-made follow-ups, with two automatic groups above them, worked out from the shidduch cards:
-  - **Your move**:
-    - One side said Yes and the other was not asked yet: "Suggest Yehuda to Chana's side".
-    - Both said Yes: "Arrange Date 1".
-    - A date's time has passed: "Ask how Date 2 went".
-    - One side said No and the other side has not been told: "Tell Mrs. Stern". (Singles complain most about the No that never arrives.)
-  - **Waiting for them**: who was asked and has not answered, oldest first, with the number of days. Two buttons: *Remind* (opens WhatsApp or copies a short message) and *Got an answer*.
-  - **My follow-ups**: the hand-made ones, exactly as today (circle to complete, Undo, add to the phone's calendar).
-- **History**: exactly as today; every answer, send and date shows here.
-- Two lines that are new on this page:
-  - **No open shidduch**: my starred singles for whom nothing is moving right now. Tap one to open Find a match. (For "I am behind".)
-  - **Backup reminder**: a quiet line when the last backup is older than two weeks.
-- Search at the top finds anything: singles, contacts, shidduchim, notes, and the words inside pasted profiles. (M1)
+Below that, Home is a column of **blocks**. Each shadchan chooses which blocks show and in what order.
+The content of each block is the same as in Single Mode; only the layout is free.
+
+| Block | What it shows | Shown at first |
+|---|---|---|
+| **To do** | The Follow Ups list, with two automatic groups above the hand-made ones (below) | Yes, 1st |
+| **At a glance** | A few numbers (open shidduchim, waiting, dating) and **No open shidduch**: my starred singles for whom nothing is moving; tap one to open Find a match. (For "I am behind".) | Yes, 2nd |
+| **Notes** | Pinned and latest notes, exactly as today, with "See all" | Yes, 3rd |
+| **My singles** | Starred singles, one line each: what is next for them | No |
+| **History** | The latest lines from History, exactly as today, with "See all" | No |
+
+The **To do** block:
+- **Your move**:
+  - One side said Yes and the other was not asked yet: "Suggest Yehuda to Chana's side".
+  - Both said Yes: "Arrange Date 1".
+  - A date's time has passed: "Ask how Date 2 went".
+  - One side said No and the other side has not been told: "Tell Mrs. Stern". (Singles complain most about the No that never arrives.)
+- **Waiting for them**: who was asked and has not answered, oldest first, with the number of days. Two buttons: *Remind* (opens WhatsApp or copies a short message) and *Got an answer*.
+- **My follow-ups**: the hand-made ones, exactly as today (circle to complete, Undo, add to the phone's calendar).
+
+**Edit Home** (a quiet button at the bottom of Home, and in Settings):
+- One row per block, each with a show/hide switch and **Up** / **Down** buttons. No dragging (hard to use on a phone).
+- **Back to the first layout** puts the default order back.
+- If every block is hidden, Home says "Your Home is empty" with an Edit Home button.
+- The choice is saved on the device with the other settings, and is kept in backups.
+
+Always on Home, outside the blocks: the **Backup reminder**, a quiet line when the last backup is older than two weeks.
+The looks of the blocks are sketched in `home-options.html` (layouts A–D each show the blocks in a different order).
 
 ### 6.2 Guys and 6.3 Girls (the same page, one per tab)
 - Count, **Working on / All** chips, search by any word. Filters: age from–to, city, background, languages, status. Filters show as removable tags, as in Contacts. (M1, M4)
@@ -222,6 +237,7 @@ Real data lives in the browser under the app's address. Changing the address lat
 | — | Notes, reminders and history as in Single Mode | Yes | Home kept whole (6.1) |
 | — | Guys and Girls as separate bottom tabs | Yes | Bottom bar (section 5) |
 | — | Same dark, compact Claude look | Yes | Rule 9 |
+| — | Home layout (A–D options) | Make Home from blocks the shadchan arranges; no survey (12 Nov 2026) | Section 6.1 |
 
 The owner is not a shadchan. So before the largest stage (S3), 2–3 shadchanim should look at
 the sketches and say what is wrong. This costs nothing and can save a lot of rework.
@@ -234,7 +250,7 @@ the sketches and say what is wrong. This costs nothing and can save a lot of rew
 | S1 | Foundation: Mode switch in Settings, Shadchan Mode's own database and bottom bar, shared pieces wired, fonts inside the app, permanent storage, Recently deleted, 60 fictional singles | Fable |
 | S2 | Guys and Girls: lists at scale, search everything, filters, Add and To file, single's card with status and Talk to | Opus |
 | S3 | Shidduchim: Ideas to Ended, answers per side, lanes, details, dates with both sides' answers, history, already-tried warning | Fable |
-| S4 | Home: automatic follow-ups (Your move, Waiting for them), No open shidduch, backup reminder | Opus |
+| S4 | Home from blocks: To do (Your move, Waiting for them), At a glance with No open shidduch, Notes, My singles, History; Edit Home; backup reminder | Opus |
 | S5 | Find a match and Send | Opus |
 | S6 | Check everything together at phone and computer sizes; locked backup file; decide the address; test round with 3–5 shadchanim on one device each | Opus |
 | S7 | Phone and computer in step (Dropbox or own locked mailbox, chosen from S6) | Fable |

@@ -25,15 +25,15 @@ Tweaks can be sent in any chat, all in one message:
 ## Shadchan Mode (second mode, same app)
 
 Design: `spec/shadchan/design.md` (draft 2, approved 2026-11-12) · sketches: `spec/shadchan/screens.html` ·
-Home options to ask shadchanim about: `spec/shadchan/home-options.html`.
+Home block looks: `spec/shadchan/home-options.html` (Home is made from blocks, design.md 6.1).
 
 | Stage | What | Model | Status |
 |---|---|---|---|
-| S0 | Owner: ask 2–3 shadchanim about the sketches and the Home options; five short conversations if possible | — | ⏳ in progress |
+| S0 | Owner: ask 2–3 shadchanim about the sketches and the Home options | — | skipped by owner (Home made from blocks instead) |
 | S1 | Foundation: Mode switch in Settings, Shadchan Mode's own database and bottom bar, shared pieces wired, fonts inside the app, permanent storage, Recently deleted, 60 fictional singles | **Fable** | not started |
 | S2 | Guys and Girls: lists at scale, search everything, filters, Add and To file, single's card with status and Talk to | Opus | not started |
 | S3 | Shidduchim: Ideas to Ended, answers per side, lanes, details, dates with both sides' answers, history, already-tried warning | **Fable** | not started |
-| S4 | Home (layout chosen in S0): automatic follow-ups, No open shidduch, backup reminder | Opus | not started |
+| S4 | Home from blocks (To do, At a glance, Notes, My singles, History) with Edit Home: show/hide, move up/down; backup reminder | Opus | not started |
 | S5 | Find a match and Send | Opus | not started |
 | S6 | Check everything at phone and computer sizes; locked backup file; decide the address; test round with 3–5 shadchanim | Opus | not started |
 | S7 | Phone and computer in step (Dropbox or own locked mailbox, chosen from S6) | **Fable** | not started |
