@@ -108,17 +108,19 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-12 (S2 done)_
+_Last updated: 2026-11-12 (S3 done)_
 
 ### In progress
-- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1 and S2 are done** on branch `claude/eloquent-thompson-tchp32`.
-- How it is built, and the rules for the next stages: `spec/shadchan/build-notes.md` (read it first; section 6 is new from S2). Approved design: `spec/shadchan/design.md`.
+- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1, S2 and S3 are done** on branch `claude/eloquent-thompson-tchp32`.
+- How it is built, and the rules for the next stages: `spec/shadchan/build-notes.md` (read it first; section 7 is new from S3). Approved design: `spec/shadchan/design.md`.
 
 ### Next steps
-- **S3 (Fable · High):** Shidduchim with two sides. Ask the owner first, per the Fable rule. Save offers as `{ guyId, girlId, status }` so the open-shidduch dot in Guys / Girls lights up; set Busy by itself while dating; stop deleting a single with an open shidduch.
+- **S4 (Opus · Medium):** Home from blocks. Build "Your move" and "Waiting for them" from `loadAll()` + `m.step` in `pages/sh-shidduch-data.js` (do not work the rules out again); At a glance with No open shidduch; My singles; Edit Home; the backup reminder (`store.lastBackupAt()` is ready).
 
 ### Notes / blockers
-- Owner should try S2 on the phone: Guys → search a city, Filters → age 24 to 27 (see "Age not recorded" at the bottom), tap a single → change Status, the star, Talk to.
+- Owner should try S3 on the phone: Shidduchim → tap a bubble; open a card with the arrow; New idea; open a shidduch → Arrange a date, then answer after the date; end one and tick who was told.
+- Decisions made in S3 that the owner may want changed: engaged couples sit in Ended with a gold label; an idea does not light the open-shidduch dot; arranging a date marks both sides Yes; a second try starts as an idea again.
+- Not built on purpose: Send (S5) — until then "Mark his / her side asked" records it; "Not a fit" (S5).
 - Not testable from here: iPhone / Android "keep storage permanently" behaviour, a real NetFree / TAG filter, WhatsApp Share-to-app.
 - The survey file held 26 responses (owner said 27). Raw answers are not in the repo (public).
 - Filter and sync facts in design.md section 2 are partly unconfirmed. Test on a real NetFree and TAG device, and on an iPhone, before promising.

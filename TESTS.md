@@ -15,6 +15,10 @@
 - Deleting in Single Mode still erases at once.
 - Guys / Girls (S2): search "lakewood" narrows the list; a word only in a pasted original still finds the single and shows the words around it; Working on / All counts are right; an age filter lists "Age not recorded" apart; each tag's "remove" and Clear filters work; with 3,000 singles rows keep loading while scrolling.
 - Single's card (S2): Status, Working on, ages from–to, Talk to and "Still looking — today" save at once; choosing Busy with a date makes a follow-up. Single Mode's card has none of these.
+- Shidduchim (S3), with the demo loaded: the four lanes show their counts and nothing reads "null"; tap a bubble → five choices; Asked moves an idea to Offers and Undo brings it back (nothing lands in Recently deleted); his side Yes with her side Not asked shows "Your move"; "Mark her side asked" shows the days waiting.
+- Shidduch page (S3): arranging a date marks both sides Yes, moves it to In Progress and makes both singles Busy; an answer after a past date marks the date Happened; No opens the End sheet with a tick for the side that still has to be told; after ending, both singles are Available again and "Your move: tell …" shows until "was told" is tapped; Try Again keeps the old bar; Engaged marks both singles Engaged and Undo puts back Busy.
+- New idea (S3): choosing a couple that already has a record shows "These two were already put together" and saves nothing.
+- Deleting (S3): a single in Offers or In Progress cannot be deleted; a single with only ideas or finished shidduchim is one line in Recently deleted and Restore brings the shidduchim back; a deleted shidduch is named by its couple.
 - Export holds both modes; Reset empties both; Import brings both back; a backup made before Shadchan Mode still loads and leaves Shadchan Mode alone.
 
 ## Manual (I check on my phone)
@@ -24,6 +28,7 @@
 - [ ] Shidduchim: Offers / In Progress / Ended lanes work
 - [ ] Add a person and a shadchan; they appear in the lists
 - [ ] Shadchan Mode → Guys: type a city in search, open Filters and set an age; tap a single, change Status and the star
+- [ ] Shadchan Mode → Shidduchim: tap a bubble and choose an answer; open a card and arrange a date; end one and tick who was told
 - [ ] Settings → Mode → Shadchan: the bottom bar changes; Guys → Try the demo shows 30 guys; Settings → Mode → Single brings my own things back
 
 ## Regression (add one line per fixed bug or approved feature)
@@ -31,3 +36,6 @@
 - Ideas → Open rows have "I'm not interested" and "She/He is not interested" buttons; the person card shows the same choice.
 - Shadchan Mode Home at 360 px: the mode name sits under the gear, so the tab row does not push the page sideways.
 - In Shadchan Mode, Add Person offers both Guy and Girl even when My Profile in Single Mode says who I am.
+- Shadchan Mode Shidduchim: an opened card (arrow) still shows the floating answer choices above its quick-action buttons.
+- Shadchan Mode: Home → History names a shidduch by both singles ("Yehuda Stern – Chana Levy"), never "Shidduch · ?".
+

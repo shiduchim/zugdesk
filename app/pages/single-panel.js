@@ -22,6 +22,9 @@ const T = {
   confirmBtn: 'Still looking — today',
   confirmedToast: 'Marked as confirmed today',
   busyUntil: (d) => `Busy · check again on ${dateOnly(d)}`,
+  busyAuto: 'Busy while dating: set by the shidduch itself.',
+  engagedAuto: 'Engaged: set by the shidduch itself.',
+  openShidduch: 'Open the shidduch',
   busyTitle: 'Busy elsewhere',
   busyText: 'When should you check again? A follow-up is made for that day. Leave empty for no reminder.',
   busyFu: (name) => `Check if ${name} is free again`,
@@ -50,6 +53,9 @@ export function singlePanel(p, save) {
         title: p.starred ? 'Tap to put back on file' : 'Tap to mark Working on',
         onClick: () => save({ starred: !p.starred }, true) }, ico('star'), p.starred ? T.workingOn : T.workingOff)),
     st === 'busy' && p.busyUntil ? h('p', { class: 'note', 'data-id': 'person-card.busy-until' }, T.busyUntil(p.busyUntil)) : null,
+    // Stage S3: Busy or Engaged that a shidduch set by itself (it goes back to Available when that shidduch ends).
+    p.statusBy && (st === 'busy' || st === 'engaged') ? h('p', { class: 'note', 'data-id': 'person-card.status-by' }, st === 'busy' ? T.busyAuto : T.engagedAuto, ' ',
+      h('a', { href: `#/shidduchim/${encodeURIComponent(p.statusBy)}`, 'data-id': 'person-card.status-by-open' }, T.openShidduch)) : null,
     row(T.ages, 'person-card.ages', ageInput('minAge', T.from, 'person-card.min-age'), h('span', { class: 'note' }, '–'), ageInput('maxAge', T.to, 'person-card.max-age')),
     row(T.talkTo, 'person-card.talk-to', cards.length
       ? h('select', { class: 'input', 'aria-label': T.talkTo, 'data-id': 'person-card.talk-to-select', onChange: (e) => save({ talkTo: e.target.value || null }, true) },
@@ -64,14 +70,14 @@ export function singlePanel(p, save) {
 
 // Busy by hand asks "check again on …" and makes a follow-up for that day (design.md 6.2).
 async function setStatus(p, v, save, select) {
-  if (v !== 'busy') { await save({ status: v, busyUntil: null }, true); return; }
+  if (v !== 'busy') { await save({ status: v, busyUntil: null, statusBy: null }, true); return; }
   const input = h('input', { class: 'input', type: 'date', min: today(), 'data-id': 'person-card.busy-date' });
   const res = await sheet({ title: T.busyTitle, dataId: 'person-card.busy-sheet',
     body: [h('p', {}, T.busyText), h('div', { class: 'field' }, h('label', {}, 'Check again on'), input)],
     actions: [{ id: 'ok', label: 'Set Busy', primary: true }] });
   if (res !== 'ok') { select.value = statusOf(p); return; }
   const d = input.value || null;
-  await save({ status: 'busy', busyUntil: d }, true);
+  await save({ status: 'busy', busyUntil: d, statusBy: null }, true);
   if (d) {
     await store.followUps.save({ personId: p.id, contactId: null, noteId: null, kind: 'task', text: T.busyFu(store.personName(p)), dueAt: d, done: false });
     toast('Busy · follow-up made for ' + dateOnly(d));

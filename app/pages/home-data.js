@@ -166,7 +166,7 @@ export function buildHistory(D, extra) {
   }
   for (const s of extra.stageEvents) {
     const o = extra.offersById.get(s.offerId);
-    const name = o ? (pName(o.personId) || o.personName || 'Shidduch') : 'Shidduch';
+    const name = !o ? 'Shidduch' : isShadchan ? `${pName(o.guyId) || o.guyName || '?'} – ${pName(o.girlId) || o.girlName || '?'}` : (pName(o.personId) || o.personName || 'Shidduch');
     rows.push({ key: 'st:' + s.id, at: s.at, what: 'Shidduch · ' + name, text: s.text + (s.source ? ` (told by ${s.source})` : ''), kind: 'Shidduch', href: `#/shidduchim/${encodeURIComponent(s.offerId)}/history`, hrefLabel: 'Open shidduch' });
   }
   for (const i of extra.interests) {

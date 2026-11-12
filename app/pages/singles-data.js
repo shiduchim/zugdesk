@@ -35,35 +35,46 @@ export async function toFile(kind) {
 // ---------- Stage S2: one in-memory search index (scale target: 3,000 singles) ----------
 // Built once from people + their pasted originals + open shidduchim, then reused until one of
 // those stores changes. Pages never keep their own copies: they ask for the index each draw.
-let INDEX = null;
-store.subscribe((ch) => { if (['people', 'sources', 'offers', '*'].includes(ch.store)) INDEX = null; });
+let INDEX = null, OPEN = null;
+store.subscribe((ch) => {
+  if (['people', 'sources', '*'].includes(ch.store)) { INDEX = null; OPEN = null; }
+  if (ch.store === 'offers') OPEN = null; // only the open-shidduch dots change: the search text is kept
+});
 
 // Lower-case, no Hebrew vowel marks, curly quotes made plain: "Bnei-Brak" and "bnei brak" both match.
 export const norm = (s) => String(s || '').toLowerCase().normalize('NFKD').replace(/[֑-ׇ̀-ͯ]/g, '').replace(/[’‘`]/g, "'").replace(/[-_/.,;:()]+/g, ' ');
 export const ageNum = (p) => { const n = parseInt(p.age, 10); return Number.isFinite(n) && n > 0 && n < 130 ? n : null; };
 export const backgroundsOf = (p) => [].concat((p.answers || {}).pBackground || []).filter(Boolean);
+// "A shidduch is open" = at least one side was asked and it has not ended (Offers or In Progress).
+// An idea nobody was asked about, an ended one and an engaged one do not count.
+export const isOpenShidduch = (o) => o.status === 'offer' || o.status === 'progress';
 
+async function build() {
+  const [all, srcs] = await Promise.all([store.people.list(), store.sources.list()]);
+  const origText = new Map();
+  for (const s of srcs) if (s.personId) origText.set(s.personId, (origText.get(s.personId) || '') + '\n' + (s.text || ''));
+  const rows = all.map(p => {
+    const A = p.answers || {};
+    const words = [p.name, p.firstName, p.lastName, p.age, p.city, p.country, p.occupation, p.about, p.looking, p.sender, p.religiousOther, p.howKnow,
+      ...(p.languages || []), ...Object.values(A).flat(), ...(p.contactCards || []).flatMap(c => [c.name, c.number, c.email]), origText.get(p.id)];
+    return { p, kind: p.kind, age: ageNum(p), status: statusOf(p), text: norm(words.filter(Boolean).join(' \n ')),
+      orig: origText.get(p.id) || '', open: false, backgrounds: backgroundsOf(p) };
+  });
+  rows.sort((a, b) => (b.p.updatedAt || '').localeCompare(a.p.updatedAt || ''));
+  // `people`: every single by id, for pages that hold only ids (a shidduch holds guyId and girlId).
+  return { rows, total: all.length, people: new Map(all.map(p => [p.id, p])) };
+}
+async function markOpen(idx) {
+  const open = new Set();
+  for (const o of await store.offers.list()) if (isOpenShidduch(o)) { open.add(o.guyId); open.add(o.girlId); }
+  for (const r of idx.rows) r.open = open.has(r.p.id);
+}
 export async function singlesIndex() {
-  if (INDEX) return INDEX;
-  const built = (async () => {
-    const [all, srcs, offs] = await Promise.all([store.people.list(), store.sources.list(), store.offers.list()]);
-    const origText = new Map();
-    for (const s of srcs) if (s.personId) origText.set(s.personId, (origText.get(s.personId) || '') + '\n' + (s.text || ''));
-    const open = new Set();
-    for (const o of offs) if (o.status !== 'ended') { if (o.guyId) open.add(o.guyId); if (o.girlId) open.add(o.girlId); }
-    const rows = all.map(p => {
-      const A = p.answers || {};
-      const words = [p.name, p.firstName, p.lastName, p.age, p.city, p.country, p.occupation, p.about, p.looking, p.sender, p.religiousOther, p.howKnow,
-        ...(p.languages || []), ...Object.values(A).flat(), ...(p.contactCards || []).flatMap(c => [c.name, c.number, c.email]), origText.get(p.id)];
-      return { p, kind: p.kind, age: ageNum(p), status: statusOf(p), text: norm(words.filter(Boolean).join(' \n ')),
-        orig: origText.get(p.id) || '', open: open.has(p.id), backgrounds: backgroundsOf(p) };
-    });
-    const byNewest = (a, b) => (b.p.updatedAt || '').localeCompare(a.p.updatedAt || '');
-    rows.sort(byNewest);
-    return { rows, total: all.length };
-  })();
-  INDEX = built;
-  return built;
+  if (!INDEX) { INDEX = build(); OPEN = null; }
+  const idx = await INDEX;
+  if (!OPEN) OPEN = markOpen(idx);
+  await OPEN;
+  return idx;
 }
 
 // The filter state of one list. Kept per kind while the app is open.

@@ -46,6 +46,8 @@ if (isShadchan) {
   route('/girls', () => import('../pages/singles.js'));
   route('/people', () => import('../pages/singles.js'));       // shared pages go "back to the list": lands on Guys or Girls
   route('/shidduchim', () => import('../pages/sh-shidduchim.js'));
+  route('/shidduchim/:id', () => import('../pages/sh-shidduch-detail.js'));
+  route('/shidduchim/:id/:tab', () => import('../pages/sh-shidduch-detail.js'));
   route('/deleted', () => import('../pages/deleted.js'));
 } else {
   route('/people', () => import('../pages/people.js'));

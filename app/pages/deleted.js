@@ -3,6 +3,7 @@
 // and Restore puts all of it back together. The store does the work (js/store.js).
 import * as store from '../js/store.js';
 import { h, icon, toast, confirmDialog } from '../js/ui.js';
+import { reapplyStatus } from './sh-shidduch-data.js';
 
 const T = {
   title: 'Recently deleted',
@@ -22,7 +23,7 @@ const KINDS = [
   ['people', 'Single', (r) => store.personName(r)],
   ['contacts', 'Contact', (r) => store.displayName(r)],
   ['notes', 'Note', (r) => r.title],
-  ['offers', 'Shidduch', () => ''],
+  ['offers', 'Shidduch', (r) => [r.guyName, r.girlName].filter(Boolean).join(' – ')],
   ['sources', 'Saved profile', (r) => firstLine(r.text)],
   ['events', 'Conversation', (r) => firstLine(r.text)],
   ['followUps', 'Follow-up', (r) => r.text],
@@ -73,7 +74,11 @@ function row(g) {
       h('div', { class: 'row-title', dir: 'auto' }, `${word} · ${name}`),
       h('div', { class: 'row-sub' }, sub)),
     h('div', { class: 'del-acts' },
-      h('button', { type: 'button', class: 'btn small', 'data-id': 'deleted.restore', onClick: async () => { await store.restoreDeleted(g.batch); toast(T.restored); } }, T.restore),
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'deleted.restore', onClick: async () => {
+        await store.restoreDeleted(g.batch);
+        await reapplyStatus(g.items.filter(i => i.store === 'offers').map(i => i.rec.id)); // dating again = Busy again
+        toast(T.restored);
+      } }, T.restore),
       h('button', { type: 'button', class: 'btn small danger', 'data-id': 'deleted.erase', onClick: async () => {
         if (!(await confirmDialog({ title: T.eraseTitle, text: T.eraseText(name), ok: T.erase, danger: true, dataId: 'deleted.erase-dialog' }))) return;
         await store.eraseDeleted(g.batch); toast(T.erased);

@@ -10,6 +10,8 @@ import { copy } from './profile-share.js';
 import { ideaStatus, latestByPerson, recordInterest, reopen } from './idea-flow.js';
 import { singlePanel } from './single-panel.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
+import { forSingle, removeShidduch, fullName as shName, other as shOther } from './sh-shidduch-data.js';
+import { singleShidduchim } from './sh-shidduch-parts.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
@@ -39,6 +41,7 @@ export async function render(container, params) {
 async function draw(id, keepScroll = false) {
   const token = ++gen;
   const [b, ch] = await Promise.all([loadPerson(id), store.getChoices()]);
+  if (b && isShadchan) b.sh = await forSingle(b.p); // every shidduch this single is part of (stage S3)
   if (token !== gen || !root) return;
   CH = ch;
   if (B && B.p.id !== id) { EDITF = false; SEC = null; }
@@ -60,8 +63,9 @@ async function draw(id, keepScroll = false) {
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.add-note', onClick: () => { setTab('notes'); setTimeout(() => root?.querySelector('[data-id="person-card.note-text"]')?.focus(), 120); } }, ico('message'), 'Add note'),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.follow-up', onClick: () => followUpSheet() }, ico('clock'), 'Follow-up')),
     h('div', { class: 'pc-tabs', role: 'tablist', 'data-id': 'person-card.tabs' },
-      TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l))),
-    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? shidduchimSoon(b) : offersTab(b)) : notesTab(b)),
+      TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l,
+        isShadchan && k === 'offers' && b.sh.length ? h('span', { class: 'pc-tab-n' }, b.sh.length) : null))),
+    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? singleShidduchim(b.p, b.sh, { refresh: redraw }) : offersTab(b)) : notesTab(b)),
     // Status buttons stay on screen at the bottom (owner request); hidden while a section is being edited.
     // (Single Mode's interest buttons. In Shadchan Mode, Status and Talk to sit at the top of the Profile tab.)
     EDITF || SEC || isShadchan ? '' : dock('person-card.dock', statusStrip(b)));
@@ -172,8 +176,17 @@ function attachmentsSheet(b) {
 async function deletePerson(b) {
   const { p } = b;
   if (b.offers.length || b.tries.length) { toast('This person has a formal offer or shidduch history, which is kept. Delete is not available.', 5000); return; }
-  if (!(await confirmDialog({ title: `Delete ${store.personName(p)}?`, text: 'Removes the person, their originals, attachments, interest records and follow-ups from this phone. Conversation entries also linked to a contact stay with that contact. ' + (store.SOFT_DELETE ? 'You can put it back for 30 days from Settings → Recently deleted.' : 'This cannot be undone.'), ok: 'Delete', danger: true, dataId: 'person-card.delete-dialog' }))) return;
+  // Shadchan Mode: a single with an open shidduch (Offers or In Progress) cannot be deleted; end it first.
+  // Ideas and finished shidduchim go with the single, as one deletion that Restore brings back whole.
+  const sh = b.sh || [], openSh = sh.find(m => m.lane === 'offers' || m.lane === 'progress');
+  if (openSh) {
+    toast(`${store.personName(p)} has an open shidduch with ${shName(openSh, shOther(p.kind))}. End it first, or set the status to Not relevant.`, 6000,
+      { label: 'Open', run: () => navigate(`/shidduchim/${encodeURIComponent(openSh.o.id)}`) });
+    return;
+  }
+  if (!(await confirmDialog({ title: `Delete ${store.personName(p)}?`, text: 'Removes the person, their originals, attachments, interest records and follow-ups from this phone. Conversation entries also linked to a contact stay with that contact. ' + (sh.length ? `Also removes ${sh.length === 1 ? '1 idea or finished shidduch' : sh.length + ' ideas and finished shidduchim'} with ${pron(p).him}. ` : '') + (store.SOFT_DELETE ? 'You can put it back for 30 days from Settings → Recently deleted.' : 'This cannot be undone.'), ok: 'Delete', danger: true, dataId: 'person-card.delete-dialog' }))) return;
   await store.asOne(async () => { // one deletion: Shadchan Mode can restore it whole from Recently deleted
+    for (const m of sh) await removeShidduch(m);
     for (const s of b.srcs) await store.sources.remove(s.id);
     for (const a of b.atts) await store.attachments.remove(a.id);
     for (const i of b.ints) await store.interests.remove(i.id);
@@ -185,14 +198,6 @@ async function deletePerson(b) {
     await store.people.remove(p.id);
   });
   toast(store.SOFT_DELETE ? 'Deleted. It waits 30 days in Settings → Recently deleted' : 'Deleted', store.SOFT_DELETE ? 5000 : undefined); navigate(peopleListPath(p.kind));
-}
-
-// Shadchan Mode: a shidduch is a guy and a girl; that part is built in stage S3.
-function shidduchimSoon(b) {
-  return [h('section', { class: 'pc-sec', 'data-id': 'person-card.shidduchim-soon' },
-    h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow' }, 'Shidduchim')),
-    h('p', {}, `Every shidduch suggested for ${store.personName(b.p)} will be listed here, with both sides’ answers.`),
-    h('p', { class: 'note' }, 'Coming in stage S3. Nothing is recorded here yet.'))];
 }
 
 // ---------- Offers ----------

@@ -42,3 +42,81 @@
 .sp-star[aria-pressed="true"] svg{fill:currentColor}
 .sp-stale{color:var(--warn)}
 .sp-find{align-self:flex-start}
+/* Stage S3 — Shidduchim with two sides. The cards, bubbles, bar and details reuse shidduchim.css;
+   only what is new in Shadchan Mode is here. */
+.shs-search{margin-bottom:10px}
+.shs-intro{margin:0 0 10px}
+.shs-card .sh-card-main{min-width:0}
+.shs-side{display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+.shs-move{display:inline-flex;align-items:center;padding:2px 8px;border-radius:var(--radius-pill);background:var(--shs-move-bg);color:var(--shs-move-text);font-size:var(--font-xs);font-weight:600;white-space:nowrap}
+.shs-days{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);white-space:nowrap}
+.shs-round{font-size:var(--font-xs);color:var(--muted);font-weight:600;flex-basis:100%;pointer-events:none}
+.shs-engaged{color:var(--shs-engaged-text);font-weight:600}
+.shs-hint-move{color:var(--shs-move-text);font-weight:600}
+.sh-tag.none{border-style:dashed}
+.sh-tag.asked{color:var(--text)}
+.sh-option.none{border-style:dashed}
+.sh-option.asked{color:var(--text)}
+.sh-answerselect.asked{color:var(--text)}
+.shs-static{cursor:default;min-height:var(--shs-tag-height);padding:2px 9px}
+.shs-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.shs-actions,.shs-over{position:relative;z-index:2}
+/* the floating answer choices stay above the next card and above this card's quick actions */
+.shs-card.menu-open{z-index:12;border-color:var(--text)}
+.shs-card.menu-open .sh-answers{z-index:5}
+.shs-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.shs-actions .btn{text-decoration:none}
+.shs-actions .linkish{text-decoration:none;margin-left:auto}
+.shs-tick{display:flex;align-items:center;gap:10px;min-height:var(--touch-min);color:var(--text);font-size:var(--font-base)}
+.shs-tick input{width:var(--tick-size);height:var(--tick-size);flex-shrink:0}
+/* New idea sheet */
+.shs-pair{display:flex;flex-direction:column;gap:10px}
+.shs-slot{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shs-slot.on{border-color:var(--text)}
+.shs-slot .grow{flex:1;min-width:0}
+.shs-slot-label{flex:0 0 var(--shs-slot-label);font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase}
+.shs-cand{width:100%;background:none;border:0;border-top:1px solid var(--border);text-align:start;font:inherit;cursor:pointer}
+.shs-cand .row-main{min-width:0}
+.shs-hist{color:var(--shs-untold)}
+.shs-already,.shs-warn{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--radius);background:var(--warn-bg);color:var(--text);font-size:var(--font-sm)}
+.shs-already .btn{align-self:flex-start}
+/* Shidduchim tab on a single's card */
+.shs-crow{text-decoration:none}
+.shs-crow .row-main{min-width:0;flex:1}
+.shs-crow .row-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.shs-crow>svg{width:var(--icon);height:var(--icon);color:var(--muted);flex-shrink:0}
+.shs-dim{opacity:var(--shs-dim)}
+.pc-tab-n{margin-left:6px;font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted)}
+/* One shidduch's page */
+.shs-couple{font-size:var(--shs-couple-font);font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.shs-couple .sh-try{font-weight:400}
+.shs-engaged-label{background:var(--shs-engaged-bg);color:var(--shs-engaged-text)}
+.shs-step{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:var(--radius);background:var(--surface-2);font-size:var(--font-base)}
+.shs-step-move{background:var(--shs-move-bg)}
+.shs-step-move strong{color:var(--shs-move-text)}
+.shs-step-acts{display:flex;flex-wrap:wrap;gap:8px}
+.shs-sidecard .grow{flex:1;min-width:0}
+.shs-sidecard .sh-who{font-size:var(--font-lg)}
+.shs-sidelabel{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.shs-talk .tel-link{margin-left:4px}
+.shs-meta{font-size:var(--font-xs);color:var(--muted);margin-top:6px}
+.shs-untold{color:var(--shs-untold);font-weight:600}
+.shs-later{margin-top:12px}
+.shs-quickname{align-self:flex-start}
+.shs-engaged-panel{background:var(--shs-engaged-bg)}
+.shs-engaged-panel h3{color:var(--shs-engaged-text)}
+.shs-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.shs-dates{display:flex;flex-direction:column;gap:10px}
+.shs-date{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shs-date-head{display:flex;align-items:center;gap:12px}
+.shs-date .linkish{align-self:flex-start}
+.shs-date-head .linkish{align-self:center}
+.shs-after{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shs-after .shs-tags{grid-column:1/-1;margin-top:0}
+.shs-after-side{display:flex;flex-direction:column;min-width:0}
+.shs-feedback{display:flex;flex-direction:column;gap:4px;font-size:var(--font-sm)}
+.shs-feedback p{margin:0;overflow-wrap:anywhere}
+.shs-feedback .sh-answerlabel{display:inline}
+@media (max-width:430px){
+  .shs-tabbar .sh-tab{font-size:var(--shs-tab-font);gap:3px;padding:0 2px}
+}

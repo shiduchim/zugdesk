@@ -218,3 +218,16 @@
   --sg-open-dot:7px;
   --sp-label-width:96px;          /* labels on the single's card panel */
 }
+:root{
+  /* Stage S3 — Shidduchim in Shadchan Mode (two sides). The bar, bubbles and lanes reuse the --sh-… tokens above. */
+  --shs-move-bg:var(--info-bg);   /* "Your move" tag and line */
+  --shs-move-text:var(--info-text);
+  --shs-engaged-bg:var(--warn-bg);  /* Engaged label and panel */
+  --shs-engaged-text:var(--warn);
+  --shs-untold:var(--warn);        /* "has not been told yet" */
+  --shs-tag-height:26px;           /* answer tags that cannot be tapped (single's card, older dates) */
+  --shs-slot-label:34px;           /* "Guy" / "Girl" in the New idea sheet */
+  --shs-dim:.6;                    /* finished shidduchim on a single's card, cancelled dates */
+  --shs-tab-font:11px;             /* four lane tabs on a narrow phone */
+  --shs-couple-font:17px;          /* the couple's names on a shidduch's page */
+}

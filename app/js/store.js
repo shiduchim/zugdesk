@@ -13,7 +13,7 @@ const DB = isShadchan ? SHADCHAN_DB : SINGLE_DB;
 const { idb } = DB;
 export const SCHEMA_VERSION = DB.version;
 export const APP_VERSION = '0.9.0';
-export const STAGE = isShadchan ? 'S2' : 8; // last finished stage of this mode (shown in Settings → About)
+export const STAGE = isShadchan ? 'S3' : 8; // last finished stage of this mode (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -84,6 +84,13 @@ function collection(store, prefix) {
   };
 }
 
+// Undo of something made a moment ago: really erase it, in both modes (it never waits in Recently deleted).
+export async function discard(col, ids) {
+  if (!ids.length) return;
+  await idb.deleteMany(col.store, ids);
+  emit({ store: col.store, type: 'remove', count: ids.length });
+}
+
 export const contacts        = collection('contacts', 'c');
 export const people          = collection('people', 'p');
 export const notes           = collection('notes', 'n');
@@ -149,6 +156,11 @@ export async function init() {
   if (!(await getMeta('seeded'))) await setMeta('seeded', { at: now(), count: 0 });
   if (isShadchan) { // Shadchan Mode has none of Single Mode's older demo steps
     await purgeExpired();
+    // Stage S3: a device that already shows the demo singles gets the fictional shidduchim once.
+    if (!(await getMeta('demoShidduchimS3'))) {
+      if (await idb.get('people', 'demo_s_g01')) await loadShadchanDemo();
+      await setMeta('demoShidduchimS3', { at: now() });
+    }
     await setMeta('schemaVersion', SCHEMA_VERSION);
     return;
   }
@@ -274,11 +286,23 @@ export async function loadShadchanDemo() {
   const { makeShadchanDemo } = await import('./seed-shadchan.js');
   const d = makeShadchanDemo();
   let singles = 0;
-  for (const [col, rows] of [[contacts, d.contacts], [people, d.people], [sources, d.sources], [events, d.events], [followUps, d.followUps], [notes, d.notes]]) {
+  let newOffers = [];
+  for (const [col, rows] of [[contacts, d.contacts], [people, d.people], [sources, d.sources], [events, d.events], [followUps, d.followUps], [notes, d.notes],
+    [offers, d.offers], [tries, d.tries], [stageEvents, d.stageEvents], [dateEvents, d.dateEvents]]) {
     const have = new Set(await idb.keys(col.store));
     const fresh = rows.filter(r => !have.has(r.id));
     if (fresh.length) await col.saveMany(fresh);
     if (col === people) singles = fresh.length;
+    if (col === offers) newOffers = fresh;
+  }
+  // The demo couples who are dating or engaged get the status the app would have set by itself.
+  for (const o of newOffers) {
+    const status = o.status === 'progress' ? 'busy' : o.status === 'engaged' ? 'engaged' : null;
+    if (!status) continue;
+    for (const id of [o.guyId, o.girlId]) {
+      const p = await people.get(id);
+      if (p && p.demo && (!p.status || p.status === 'available' || p.status === status)) await idb.put('people', { ...p, status, busyUntil: null, statusBy: o.id });
+    }
   }
   emit({ store: '*', type: 'import', total: singles });
   return singles;

@@ -1,4 +1,4 @@
-# Shadchan Mode — build notes (for whoever builds S2 to S7)
+# Shadchan Mode — build notes (for whoever builds S4 to S7)
 
 Read this before any Shadchan Mode stage. It says how S1 was built and what the later stages
 must keep to. The owner-facing design is `design.md`; this file is for the code.
@@ -18,10 +18,12 @@ must keep to. The owner-facing design is `design.md`; this file is for the code.
   A Single Mode file is changed only to make it shareable, never to change what Single Mode does.
 
 Shadchan-only files: `pages/singles.js` (Guys and Girls), `pages/singles-data.js`,
-`pages/singles.css` (all Shadchan Mode page CSS), `pages/sh-shidduchim.js` (placeholder until S3),
+`pages/singles.css` (all Shadchan Mode page CSS), `pages/sh-shidduchim.js` (the list),
+`pages/sh-shidduch-detail.js` (one shidduch), `pages/sh-shidduch-data.js` (records and every change),
+`pages/sh-shidduch-parts.js` (bar, End sheet, New idea sheet, the card's Shidduchim tab),
 `pages/deleted.js`, `js/seed-shadchan.js`.
 
-Routes in Shadchan Mode: `/home`, `/guys`, `/girls`, `/shidduchim`, `/contacts…`, `/settings`,
+Routes in Shadchan Mode: `/home`, `/guys`, `/girls`, `/shidduchim`, `/shidduchim/:id(/dates|/history)`, `/contacts…`, `/settings`,
 `/deleted`, and the shared `/people/new…`, `/people/:id…` (Add Person and the single's card).
 `/people` alone redirects to Guys or Girls. `/profile` does not exist.
 
@@ -39,15 +41,12 @@ A **single** is a `people` record: exactly what Add Person saves, plus these fie
 | `minAge`, `maxAge` | "looking for" age range as text. `maxAge` already existed ("Up to age") |
 | `talkTo` | id of one of the single's `contactCards` (parent, the single, or another shadchan) |
 | `confirmedAt` | date the single last confirmed they are still looking |
+| `statusBy` | id of the shidduch that set Busy / Engaged by itself (S3). Empty = the shadchan chose the status by hand |
 
 **Contacts**: same record as Single Mode. Default roles here: parent, shadchan, reference, rav, other.
 
-**Shidduch (to build in S3)**: `offers` has indexes `guyId`, `girlId`, `status` (and `tries` has `offerId`).
-Proposed shape, to be settled in S3:
-`offers { guyId, girlId, status: 'idea'|'offer'|'progress'|'ended', … }`,
-`tries { offerId, n, sides: { guy: { answer, askedAt, answeredAt, toldBy }, girl: { … } }, toldOtherSide, … }`.
-Do not reuse `pages/shidduch-data.js` for the records: it assumes "me and one person".
-Its look (bar, lanes, bubbles) can be copied.
+**Shidduch**: built in S3; the shapes are in section 7. `pages/shidduch-data.js` (Single Mode: "me and one
+person") is not used for these records; only its look (bar, lanes, bubbles, `shidduchim.css`) is shared.
 
 ## 3. Recently deleted (nothing is hard-deleted)
 
@@ -94,8 +93,46 @@ locking the file with a password is S6.
 - `singles-data.js` → `singlesIndex()`: one in-memory index of all singles (fields, answers, contact
   cards, pasted originals, open-shidduch flag). It rebuilds by itself when `people`, `sources` or
   `offers` change. Find a match (S5) should reuse it with `applyFilters()` instead of reading the store.
-- The open-shidduch dot (`singles.row-open`) reads `offers` with `status !== 'ended'` and `guyId` / `girlId`.
-  S3 only has to save offers in that shape for the dot to appear.
+- The open-shidduch dot (`singles.row-open`) reads `offers` through `isOpenShidduch()`: status `offer` or
+  `progress`. An idea, an ended and an engaged shidduch do not count as open (S3).
 - `pages/single-panel.js`: the Shadchan panel on the card's Profile tab. Busy by hand sets `busyUntil`
   and makes a follow-up. S3 sets Busy by itself while dating; keep `busyUntil` empty in that case.
 - Add Person in Shadchan Mode asks "Looking for ages from … to …" (`minAge`, `maxAge`).
+
+## 7. What S3 added (Shidduchim with two sides)
+
+**Records** (all written only by `pages/sh-shidduch-data.js`):
+
+| Store | Shape |
+|---|---|
+| `offers` | one per couple, ever: `{ guyId, girlId, guyName, girlName, status }`. `status` is `idea` · `offer` · `progress` · `engaged` · `ended`, rewritten on every change from the current try |
+| `tries` | `{ offerId, guyId, girlId, n, phase, sides: { guy, girl }, refsChecked, endedBy, saidNo, endedReason, endedAt, told: { guy, girl }, engagedAt, startedAt }`. `phase` is `open` · `dating` · `engaged` · `ended` |
+| a side | `{ answer, askedAt, answeredAt, toldBy }`; `answer` is `''` (not asked) · `asked` · `thinking` · `yes` · `no` |
+| `dateEvents` | `{ tryId, offerId, n, when, where, status, sides: { guy, girl } }`; a side here also keeps `feedback` (private) |
+| `stageEvents` | one history line: `{ tryId, offerId, text, source, eventAt, kind, at }` |
+
+**Rules the code keeps**
+
+- The lane is never typed. `laneOf(try)`: ended or engaged → Ended; dating → In Progress; any side asked → Offers;
+  otherwise Ideas. Try Again starts a new try that is an idea again.
+- The answers that matter now are those of the **round**: the offer, or the latest date that was not cancelled
+  (`roundOf`). While that date is still ahead, nobody is asked anything and the bubbles are hidden.
+- `nextStep(m)` gives the one "your move" / "waiting N days" of a shidduch. **S4 must build Home's "Your move" and
+  "Waiting for them" from `loadAll()` + `m.step`**, not work it out again. An idea has no move (design rule 5).
+- Tracking is a by-product: an answer after a date marks that date Happened; saving a new date marks both sides
+  Yes, moves the shidduch to In Progress and sets both singles Busy (`statusBy`). Ending frees them again.
+- No is never set directly: it goes through `endDialog` → `endTry`, which asks who already knows. Sides that were
+  part of it and were not told give "Your move: tell …" (`needTelling`).
+- Every change returns `{ undo }` (a snapshot of the offer, try, dates and the two singles' status). Undo erases
+  what the change added with `store.discard()`, so it never lands in Recently deleted.
+- Deleting: a single with a shidduch in Offers or In Progress cannot be deleted (`person-card.js`). Ideas and
+  finished shidduchim are removed with the single in the same `asOne`. A shidduch can be deleted alone
+  (`removeShidduch`); Restore calls `reapplyStatus` so a dating couple is Busy again.
+- `createIdea(guyId, girlId)` and `pairOf` / `pairDetail` are ready for **Find a match (S5)**: one record per couple,
+  and the text for "Already tried". "Not a fit" is not built yet (S5).
+- **Send (S5)** replaces the "Mark his / her side asked" button: after "Yes, I sent it" call
+  `setAnswer(m, side, 'asked')`.
+- Lists never read history lines: `loadAll()` reads offers, tries and dates; `loadOne(id)` reads the rest by index.
+- `singlesIndex()` now also returns `people` (a Map by id) and refreshes only the open-shidduch dots when `offers`
+  change, so tapping an answer does not rebuild the search text of 3,000 singles.
+- `Element.append(null)` writes the word "null" on the page. Use `h()` (it skips empty children) or `''`.

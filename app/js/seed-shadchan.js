@@ -210,5 +210,84 @@ export function makeShadchanDemo() {
     fu('demo_s_fu03', 'Waiting for Mrs. Levy to send Chana’s updated profile', { contactId: 'demo_s_c02', personId: 'demo_s_r01', kind: 'waiting' }),
     fu('demo_s_fu04', 'File the three profiles that arrived this week', { dueAt: ahead(1) }),
   ];
-  return { contacts, people, sources, events, notes, followUps };
+  return { contacts, people, sources, events, notes, followUps, ...shidduchim(people) };
+}
+
+// ---- Stage S3: fictional shidduchim in every lane (shapes: pages/sh-shidduch-data.js) ----
+// One record per couple (offers), one per try, dated history lines, and dates with both sides' answers.
+function shidduchim(people) {
+  const P = (kind, n) => people.find(p => p.id === `demo_s_${kind}${pad2(n)}`);
+  const first = (p) => p.name.trim().split(/\s+/)[0];
+  const talk = (p) => { const c = p.contactCards.find(x => x.id === p.talkTo); return c ? c.name : ''; };
+  const side = (answer = '', asked = null, answered = null, toldBy = '', feedback) =>
+    ({ answer, askedAt: asked == null ? null : ago(asked), answeredAt: answered == null ? null : ago(answered), toldBy, ...(feedback == null ? {} : { feedback }) });
+  const at = (days, hour = 19, min = 30) => { const d = new Date(Date.now() - days * day); d.setHours(hour, min, 0, 0); return d.toISOString(); };
+  const offers = [], tries = [], stageEvents = [], dateEvents = [];
+  let k = 0;
+  // tries: [{ phase, guy, girl, refs, started, end: { by, saidNo, reason, days, told }, engaged, lines: [[text, daysAgo, source]], dates: [[daysAgo, where, status, guySide, girlSide]] }]
+  const couple = (g, r, status, list) => {
+    const guy = P('g', g), girl = P('r', r), id = `demo_s_off${pad2(++k)}`;
+    const startedAt = ago(list[0].started), lastAt = ago(Math.min(...list.flatMap(t => t.lines.map(l => l[1]))));
+    offers.push({ id, demo: true, guyId: guy.id, girlId: girl.id, guyName: guy.name, girlName: girl.name, status, createdAt: startedAt, updatedAt: lastAt });
+    list.forEach((t, i) => {
+      const tid = `${id}_t${i + 1}`, e = t.end || null;
+      tries.push({ id: tid, demo: true, offerId: id, guyId: guy.id, girlId: girl.id, n: i + 1, phase: t.phase, sides: { guy: t.guy || side(), girl: t.girl || side() },
+        refsChecked: !!t.refs, endedBy: e ? e.by : null, saidNo: !!(e && e.saidNo), endedReason: e ? e.reason || '' : '', endedAt: e ? ago(e.days) : null,
+        told: { guy: !!(e && e.told === 'guy'), girl: !!(e && e.told === 'girl') }, engagedAt: t.engaged == null ? null : ago(t.engaged), startedAt: ago(t.started), createdAt: ago(t.started), updatedAt: lastAt });
+      t.lines.forEach(([text, days, source], j) => { const when = ago(days, -j / 60); stageEvents.push({ id: `${tid}_e${j + 1}`, demo: true, tryId: tid, offerId: id, text, source: source || '', eventAt: null, kind: 'note', at: when, createdAt: when, updatedAt: when }); });
+      (t.dates || []).forEach(([days, where, st, gs, rs], j) => dateEvents.push({ id: `${tid}_d${j + 1}`, demo: true, tryId: tid, offerId: id, n: j + 1, when: at(days), where, status: st,
+        sides: { guy: gs || side('', null, null, '', ''), girl: rs || side('', null, null, '', '') }, at: ago(days + 2), createdAt: ago(days + 2), updatedAt: ago(Math.max(0, days)) }));
+    });
+    return { guy, girl };
+  };
+  const his = (p, a) => `His side (${first(p)}): ${a}.`, her = (p, a) => `Her side (${first(p)}): ${a}.`;
+  const idea = 'Saved as an idea.', bothYes = 'Both sides said Yes. Next: Date 1.', dating = 'First date set up. Moved to In Progress.';
+  let a, b;
+
+  // Offers — his side said Yes, her side was not asked yet: "Your move".
+  a = P('g', 1); b = P('r', 1);
+  couple(1, 1, 'offer', [{ phase: 'open', started: 6, guy: side('yes', 4, 1, talk(a)), lines: [[idea, 6], [his(a, 'Asked'), 4], [his(a, 'Yes'), 1, talk(a)]] }]);
+  // Offers — waiting nine days for her side.
+  a = P('g', 21); b = P('r', 2);
+  couple(21, 2, 'offer', [{ phase: 'open', started: 14, guy: side('yes', 13, 12, talk(a)), girl: side('asked', 9), lines: [[idea, 14], [his(a, 'Asked'), 13], [his(a, 'Yes'), 12, talk(a)], [her(b, 'Asked'), 9]] }]);
+  // Ended — her side said No; his side has not been told yet: "Your move".
+  a = P('g', 3); b = P('r', 8);
+  couple(3, 8, 'ended', [{ phase: 'ended', started: 12, guy: side('yes', 11, 9, talk(a)), girl: side('no', 8, 3, talk(b)), end: { by: 'girl', saidNo: true, days: 3, reason: 'They are looking for someone who lives closer.' },
+    lines: [[idea, 12], [his(a, 'Asked'), 11], [his(a, 'Yes'), 9, talk(a)], [her(b, 'Asked'), 8], [`Her side (${first(b)}) said No. The shidduch ended. Reason: They are looking for someone who lives closer.`, 3, talk(b)]] }]);
+  // Offers — his side is thinking.
+  a = P('g', 14); b = P('r', 5);
+  couple(14, 5, 'offer', [{ phase: 'open', started: 5, guy: side('thinking', 3, 2, talk(a)), lines: [[idea, 5], [his(a, 'Asked'), 3], [his(a, 'Thinking'), 2, talk(a)]] }]);
+  // In Progress — Date 2 was two days ago; her side answered, his side was not asked: "Your move".
+  a = P('g', 2); b = P('r', 3);
+  couple(2, 3, 'progress', [{ phase: 'dating', refs: true, started: 30, guy: side('yes', 28, 26, talk(a)), girl: side('yes', 25, 22, talk(b)),
+    lines: [[idea, 30], [his(a, 'Asked'), 28], [his(a, 'Yes'), 26, talk(a)], [her(b, 'Asked'), 25], [her(b, 'Yes'), 22, talk(b)], [bothYes, 22], ['References checked.', 18], ['Date 1 arranged.', 14], [dating, 14], ['Date 1 happened.', 9],
+      [`After Date 1 · his side (${first(a)}): Yes.`, 8, talk(a)], [`After Date 1 · her side (${first(b)}): Yes.`, 8, talk(b)], ['Both sides want to continue after Date 1.', 8], ['Date 2 arranged.', 6], ['Date 2 happened.', 2], [`After Date 2 · her side (${first(b)}): Yes.`, 0.2, talk(b)]],
+    dates: [[9, 'Hotel lobby', 'Happened', side('yes', 9, 8, talk(a), 'Enjoyed it. Easy conversation.'), side('yes', 9, 8, talk(b), 'She liked how he listens.')],
+      [2, 'A walk in the park', 'Happened', side('', null, null, '', ''), side('yes', 1, 0.2, talk(b), 'Wants to continue.')]] }]);
+  // In Progress — Date 1 is in two days.
+  a = P('g', 5); b = P('r', 6);
+  couple(5, 6, 'progress', [{ phase: 'dating', refs: true, started: 16, guy: side('yes', 14, 12, talk(a)), girl: side('yes', 11, 6, talk(b)),
+    lines: [[idea, 16], [his(a, 'Asked'), 14], [his(a, 'Yes'), 12, talk(a)], [her(b, 'Asked'), 11], [her(b, 'Yes'), 6, talk(b)], [bothYes, 6], ['References checked.', 4], ['Date 1 arranged.', 1], [dating, 1]],
+    dates: [[-2, 'Hotel lobby', 'Arranged']] }]);
+  // Ideas — nobody was asked yet.
+  couple(6, 9, 'idea', [{ phase: 'open', started: 2, lines: [[idea, 2]] }]);
+  couple(1, 10, 'idea', [{ phase: 'open', started: 7, lines: [[idea, 7], ['Wait for an answer about Chana first.', 6]] }]);
+  couple(10, 13, 'idea', [{ phase: 'open', started: 20, lines: [[idea, 20]] }]);
+  // Ended eight months ago after two dates; both sides know.
+  a = P('g', 8); b = P('r', 11);
+  couple(8, 11, 'ended', [{ phase: 'ended', refs: true, started: 270, guy: side('yes', 268, 266), girl: side('yes', 265, 262), end: { by: 'girl', saidNo: true, days: 240, reason: 'Did not feel it was for her.', told: 'guy' },
+    lines: [[idea, 270], [his(a, 'Yes'), 266], [her(b, 'Yes'), 262], [bothYes, 262], [dating, 258], ['Date 1 happened.', 252], ['Date 2 happened.', 244], [`Her side (${first(b)}) said No. The shidduch ended. Reason: Did not feel it was for her.`, 240]],
+    dates: [[252, 'Hotel lobby', 'Happened', side('yes', 252, 251, '', ''), side('yes', 252, 251, '', '')], [244, 'Restaurant', 'Happened', side('yes', 244, 243, '', ''), side('no', 244, 240, '', 'Nice, but not for her.')]] }]);
+  // Engaged three weeks ago.
+  a = P('g', 12); b = P('r', 12);
+  couple(12, 12, 'engaged', [{ phase: 'engaged', refs: true, started: 110, engaged: 21, guy: side('yes', 108, 105), girl: side('yes', 104, 100),
+    lines: [[idea, 110], [his(a, 'Yes'), 105], [her(b, 'Yes'), 100], [bothYes, 100], [dating, 95], ['Date 5 happened.', 30], ['Engaged. Mazal tov!', 21]],
+    dates: [90, 80, 66, 48, 30].map(d => [d, 'Hotel lobby', 'Happened', side('yes', d, d - 1, '', ''), side('yes', d, d - 1, '', '')]) }]);
+  // A second try: the first ended five months ago, his side was asked again yesterday.
+  a = P('g', 9); b = P('r', 14);
+  couple(9, 14, 'offer', [
+    { phase: 'ended', started: 160, guy: side('no', 158, 150), girl: side('asked', 157), end: { by: 'guy', saidNo: true, days: 150, reason: 'He wanted to finish the year in yeshiva first.', told: 'girl' },
+      lines: [[idea, 160], [his(a, 'Asked'), 158], [her(b, 'Asked'), 157], [`His side (${first(a)}) said No. The shidduch ended. Reason: He wanted to finish the year in yeshiva first.`, 150]] },
+    { phase: 'open', started: 3, guy: side('asked', 1), lines: [['The 2nd Try started.', 3], [his(a, 'Asked'), 1]] }]);
+  return { offers, tries, stageEvents, dateEvents };
 }
