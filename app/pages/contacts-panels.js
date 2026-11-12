@@ -5,6 +5,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, promptText, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
+import { isShadchan } from '../js/mode.js';
 import { S, D, LAYOUTS, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel, optionsFor, clearFilters, fresh } from './contacts-data.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
@@ -79,7 +80,8 @@ function actions(c) {
     h('div', { class: 'pa-links' },
       link('contact.edit-btn', 'Edit', () => navigate(`/contacts/${encodeURIComponent(c.id)}/edit`)),
       link('contact.folder-btn', 'Move to folder', () => folderSheet(c)),
-      link('contact.share-btn', 'Send my profile', async () => { const m = await import('./profile-share.js'); m.openShare({ contactId: c.id }); })));
+      // Single Mode only (My Profile). Shadchan Mode sends a single's profile from the shidduch (stage S5).
+      isShadchan ? null : link('contact.share-btn', 'Send my profile', async () => { const m = await import('./profile-share.js'); m.openShare({ contactId: c.id }); })));
 }
 
 function focusComposer(from) {

@@ -3,10 +3,12 @@
 // pasted profile, and "Manage categories & choices". Data always goes through store.js.
 import * as store from '../js/store.js';
 import { h, toast, sheet, promptText, confirmDialog } from '../js/ui.js';
+import { isShadchan } from '../js/mode.js';
 
 export const KINDS = [['guy', 'Guy'], ['girl', 'Girl']];
 // Who the owner is looking for: a guy sees only girls, a girl only guys ('' = not set yet).
-export const seekingKind = (prefs) => prefs.iAm === 'guy' ? 'girl' : prefs.iAm === 'girl' ? 'guy' : '';
+// Shadchan Mode: the user is not looking for anyone, so nothing is narrowed.
+export const seekingKind = (prefs) => isShadchan ? '' : prefs.iAm === 'guy' ? 'girl' : prefs.iAm === 'girl' ? 'guy' : '';
 export const kindLabel = (k) => (KINDS.find(x => x[0] === k) || [, ''])[1];
 export function pron(p) {
   if (p?.kind === 'guy') return { he: 'he', his: 'his', him: 'him', He: 'He', His: 'His' };

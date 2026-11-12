@@ -1,0 +1,19 @@
+/* Guys and Girls (Shadchan Mode). Sizes and colours come from css/tokens.css. */
+.singles-page .page-head h1{display:flex;align-items:baseline;gap:8px}
+.sg-count{font-family:var(--font-mono);font-size:var(--font-sm);font-weight:400;color:var(--muted)}
+.sg-row .row-title{display:flex;align-items:center;gap:6px}
+.sg-star{display:inline-flex;flex-shrink:0;color:var(--sg-star)}
+.sg-star svg{width:var(--sg-star-size);height:var(--sg-star-size);fill:currentColor}
+.sg-quiet .row-title,.sg-quiet .avatar{color:var(--muted)}
+.sg-status{flex-shrink:0}
+.sg-more{width:100%;margin-top:var(--gap)}
+.singles-page .empty .btn{margin-top:var(--gap)}
+/* Shown where a part of Shadchan Mode is not built yet */
+.soon-page .soon-list{margin:0;padding-left:18px;color:var(--muted);font-size:var(--font-sm);display:flex;flex-direction:column;gap:4px}
+/* Recently deleted */
+.deleted-page .del-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 0;border-top:1px solid var(--border)}
+.deleted-page .del-row:first-child{border-top:0}
+.deleted-page .del-row .row-main{flex:1 1 180px}
+.deleted-page .del-acts{display:flex;gap:8px;flex-shrink:0}
+.singles-page .row-link .row-main{text-decoration:none;color:var(--text)}
+.singles-page .avatar svg{width:var(--icon);height:var(--icon)}

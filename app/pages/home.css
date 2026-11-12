@@ -246,3 +246,7 @@
 .home-composer-slot.hidden{display:none}
 .notes-delete-all{display:flex;justify-content:center;margin:18px 0 6px}
 .notes-delete-all .linkish{font-size:var(--font-sm);color:var(--danger)}
+/* Shadchan Mode: the mode name next to the gear */
+.home-settings.has-mode{flex-direction:column;gap:2px;width:auto;min-width:var(--touch-min);padding:0 1px;text-decoration:none}
+.home-settings.has-mode svg{width:var(--mode-gear);height:var(--mode-gear)}
+.home-mode{font-family:var(--font-mono);font-size:var(--mode-tag-font);line-height:1;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}

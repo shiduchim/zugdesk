@@ -1,6 +1,6 @@
 # Shadchan Mode — design proposal (draft 2)
 
-Status: **proposal, revised after the owner's answers on 12 Nov 2026** (section 11). Nothing is built.
+Status: **approved by the owner (draft 2, 12 Nov 2026)**; answers in section 11. Stage S1 is built; how it is built is in `build-notes.md`.
 Based on `spec/shadchan/research.md` (26 survey answers) and three checks done on 12 Nov 2026:
 what already exists for shadchanim, how to keep phone and computer in step, and internet filters.
 Screen sketches: `spec/shadchan/screens.html`.

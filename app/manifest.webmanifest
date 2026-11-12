@@ -1,7 +1,7 @@
 {
   "name": "ZugDesk",
   "short_name": "ZugDesk",
-  "description": "ZivugMatch Single Mode — organize shadchanim, suggested people, offers, dates and notes.",
+  "description": "Organize shadchanim, singles, shidduchim, dates and notes. Single Mode and Shadchan Mode.",
   "start_url": "./index.html#/home",
   "scope": "./",
   "display": "standalone",

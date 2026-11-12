@@ -2,6 +2,7 @@
 // History list, which is read straight from the records it describes (nothing copied).
 import * as store from '../js/store.js';
 import { norm } from './notes-data.js';
+import { isShadchan } from '../js/mode.js';
 
 // ---------- name index ----------
 // alias (normalised) → [{ kind: 'c' | 'p', id }]. More than one = ambiguous, never auto-picked.
@@ -117,7 +118,8 @@ export function recognize(text, IX, D) {
   }
   // a reported answer about a suggested person ("Mrs. Cohen says Leah is not interested")
   let answer = null;
-  for (const r of refs) {
+  // Single Mode only: there the answer is about me and one person. Shadchan Mode's two-sided answers come with stage S3.
+  for (const r of isShadchan ? [] : refs) {
     const person = r.matches.length === 1 && r.matches[0].kind === 'p' ? r.matches[0] : null;
     if (!person) continue;
     const tail = text.slice(r.end, r.end + 60);
@@ -174,7 +176,7 @@ export function buildHistory(D, extra) {
   }
   for (const a of extra.activity) rows.push({ key: 'ac:' + a.id, at: a.at, what: a.what, text: a.text, kind: 'Change', noteId: a.noteId || null, href: a.href || null, hrefLabel: 'Open' });
   for (const s of extra.shares) rows.push({ key: 'sh:' + s.id, at: s.at, what: 'Shared my profile' + (s.recipientName ? ' · ' + s.recipientName : ''), text: `${s.what} — you confirmed you sent it${s.channel ? ' (' + s.channel + ')' : ''}.`, kind: 'Sharing', href: '#/profile/short', hrefLabel: 'Open sharing activity' });
-  for (const p of D.people) if (p.createdAt) rows.push({ key: 'p:' + p.id, at: p.createdAt, what: 'New suggested person · ' + store.personName(p), text: [p.age, p.city, p.occupation].filter(Boolean).join(' · ') || 'Saved in Ideas', kind: 'Person', href: `#/people/${encodeURIComponent(p.id)}`, hrefLabel: 'Open person' });
+  for (const p of D.people) if (p.createdAt) rows.push({ key: 'p:' + p.id, at: p.createdAt, what: (isShadchan ? 'New single · ' : 'New suggested person · ') + store.personName(p), text: [p.age, p.city, p.occupation].filter(Boolean).join(' · ') || 'Saved in Ideas', kind: 'Person', href: `#/people/${encodeURIComponent(p.id)}`, hrefLabel: 'Open person' });
   return rows.filter(r => r.at).sort((a, b) => b.at.localeCompare(a.at));
 }
 

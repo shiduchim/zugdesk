@@ -5,6 +5,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
+import { isShadchan, peopleListName } from '../js/mode.js';
 import * as PD from './profile-data.js';
 import { seekingKind, KINDS, LISTS, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE, listType, listsOf, extract, managePersonForm, addChoice, dateOnly } from './people-data.js';
 
@@ -31,7 +32,7 @@ export async function render(container, params = {}, path = '') {
   const key = me ? 'me' : editing ? 'edit:' + params.id : params.sourceId ? 'from:' + params.sourceId : params.contactId ? 'by:' + params.contactId : 'new';
   if (!drafts.has(key)) {
     const fresh = me ? await makeMeDraft() : await makeDraft({ key, editing, params, path });
-    if (!fresh) { root.append(h('p', { class: 'empty' }, 'This person or original no longer exists.'), h('a', { class: 'btn', href: '#/people' }, 'Back to Ideas')); return; }
+    if (!fresh) { root.append(h('p', { class: 'empty' }, 'This person or original no longer exists.'), h('a', { class: 'btn', href: '#/people' }, isShadchan ? 'Back to the list' : 'Back to Ideas')); return; }
     drafts.set(key, fresh);
   }
   d = drafts.get(key);
@@ -103,7 +104,7 @@ function paint({ keepScroll = false } = {}) {
       ...KINDS.filter(([k]) => d.personId || !seekingKind(store.getPrefs()) || k === seekingKind(store.getPrefs())).map(([k, l]) => h('button', { type: 'button', 'aria-pressed': d.kind === k ? 'true' : 'false', 'data-id': 'person.kind-' + k, onClick: () => {
         d.kind = k; touch(); store.setPref('personKind', k); paint({ keepScroll: true });
       } }, l)),
-      d.personId ? null : h('a', { href: '#/contacts/new', 'data-id': 'person.kind-shadchan' }, 'Shadchan')),
+      d.personId ? null : h('a', { href: '#/contacts/new', 'data-id': 'person.kind-shadchan' }, isShadchan ? 'Contact' : 'Shadchan')),
     h('div', { class: 'ap-sheet', 'data-id': 'person.sheet' },
       h('div', { class: 'ap-tabs', role: 'tablist', 'data-id': 'person.tabs' },
         ...TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': d.tab === k ? 'true' : 'false', 'data-id': 'person.tab-' + k, onClick: () => goTab(k) }, l))),
@@ -599,7 +600,7 @@ async function saveForLater() {
   const src = await store.sources.save({ personId: null, text: d.sourceText, sender: d.sender.trim(), senderContactId: d.senderContactId, receivedAt: store.now(), kind: d.kind });
   for (const f of d.files) await store.attachments.save({ ...f, personId: null, contactId: null, sourceId: src.id });
   drafts.delete(d.key);
-  toast('Saved for later — find it in Ideas');
+  toast(isShadchan ? `Saved for later. Find it under To file in ${peopleListName(d.kind)}` : 'Saved for later — find it in Ideas');
   navigate('/people');
 }
 
@@ -629,7 +630,7 @@ async function save({ then }) {
     const dup = ctx.people.find(x => (rec.name && norm(x.name) === norm(rec.name)) ||
       (own && (x.contactCards || []).some(c => c.role === 'person' && store.phoneDigits(c.number) === store.phoneDigits(own.number) && store.phoneDigits(own.number).length >= 7)));
     if (dup) {
-      const res = await sheet({ title: 'Already in Ideas?', dataId: 'person.duplicate',
+      const res = await sheet({ title: isShadchan ? 'Already saved?' : 'Already in Ideas?', dataId: 'person.duplicate',
         body: [h('p', { dir: 'auto' }, `${dup.name || 'Someone'}${dup.age ? ', ' + dup.age : ''}${dup.city ? ' · ' + dup.city : ''} may be the same person.`),
           h('p', { class: 'note' }, 'Adding this as an updated version keeps one person with all originals. Nothing is merged automatically: only empty fields are filled in.')],
         actions: [{ id: 'open', label: 'Open existing' }, { id: 'version', label: 'Add as updated version' }, { id: 'new', label: 'Save as new person', primary: true }] });

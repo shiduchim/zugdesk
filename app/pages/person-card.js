@@ -4,6 +4,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
+import { isShadchan, peopleListPath, peopleListName, rememberList } from '../js/mode.js';
 import { loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
 import { ideaStatus, latestByPerson, recordInterest, reopen } from './idea-flow.js';
@@ -11,7 +12,9 @@ import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from '
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
-const TABS = [['profile', 'Profile'], ['short', 'Short versions'], ['offers', 'Offers'], ['notes', 'Notes']];
+// Shadchan Mode (spec/shadchan/design.md 6.2): Profile · Shidduchim · Notes. The tab key stays 'offers' so links keep working.
+const TABS = isShadchan ? [['profile', 'Profile'], ['offers', 'Shidduchim'], ['notes', 'Notes']]
+  : [['profile', 'Profile'], ['short', 'Short versions'], ['offers', 'Offers'], ['notes', 'Notes']];
 export const MY_INTEREST = ['Interested', 'Want to learn more', 'Not sure yet', 'Not interested'];
 export const THEIR_RESPONSE = ['Yes, interested', 'Checking availability', 'Thinking about it', 'Not available now', 'No', 'Not asked yet'];
 const TYPE_OPTS = store.EVENT_TYPES.map(([v, l]) => [v || '_unknown', l]);
@@ -40,13 +43,14 @@ async function draw(id, keepScroll = false) {
   if (B && B.p.id !== id) { EDITF = false; SEC = null; }
   const y = window.scrollY;
   root.innerHTML = '';
-  if (!b) { root.append(h('p', { class: 'empty' }, 'This person is no longer saved.'), h('a', { class: 'btn', href: '#/people' }, 'Back to Ideas')); return; }
+  if (!b) { root.append(h('p', { class: 'empty' }, 'This person is no longer saved.'), h('a', { class: 'btn', href: '#/people' }, isShadchan ? 'Back to the list' : 'Back to Ideas')); return; }
   B = b;
   const p = b.p;
+  rememberList(p.kind); // Shadchan Mode: the bottom bar lights up Guys or Girls
   const enc = encodeURIComponent(p.id);
   root.append(
     h('div', { class: 'pc-namebar', 'data-id': 'person-card.namebar' },
-      h('a', { class: 'icon-btn', href: '#/people', 'aria-label': 'Back to Ideas', 'data-id': 'person-card.back', html: icon('back') }),
+      h('a', { class: 'icon-btn', href: '#' + peopleListPath(p.kind), 'aria-label': 'Back to ' + peopleListName(p.kind), 'data-id': 'person-card.back', html: icon('back') }),
       h('h1', { dir: 'auto' }, store.personName(p)),
       p.kind ? h('span', { class: 'pc-kind' }, kindLabel(p.kind)) : null,
       h('span', { class: 'spacer' }),
@@ -56,9 +60,10 @@ async function draw(id, keepScroll = false) {
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.follow-up', onClick: () => followUpSheet() }, ico('clock'), 'Follow-up')),
     h('div', { class: 'pc-tabs', role: 'tablist', 'data-id': 'person-card.tabs' },
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l))),
-    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? offersTab(b) : notesTab(b)),
+    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? shidduchimSoon(b) : offersTab(b)) : notesTab(b)),
     // Status buttons stay on screen at the bottom (owner request); hidden while a section is being edited.
-    EDITF || SEC ? '' : dock('person-card.dock', statusStrip(b)));
+    // (Single Mode's interest buttons. Shadchan Mode gets Status and Talk to here in stage S2.)
+    EDITF || SEC || isShadchan ? '' : dock('person-card.dock', statusStrip(b)));
   if (keepScroll) window.scrollTo(0, y);
 }
 
@@ -164,17 +169,27 @@ function attachmentsSheet(b) {
 async function deletePerson(b) {
   const { p } = b;
   if (b.offers.length || b.tries.length) { toast('This person has a formal offer or shidduch history, which is kept. Delete is not available.', 5000); return; }
-  if (!(await confirmDialog({ title: `Delete ${store.personName(p)}?`, text: 'Removes the person, their originals, attachments, interest records and follow-ups from this phone. Conversation entries also linked to a contact stay with that contact. This cannot be undone.', ok: 'Delete', danger: true, dataId: 'person-card.delete-dialog' }))) return;
-  for (const s of b.srcs) await store.sources.remove(s.id);
-  for (const a of b.atts) await store.attachments.remove(a.id);
-  for (const i of b.ints) await store.interests.remove(i.id);
-  for (const f of b.fus) await store.followUps.remove(f.id);
-  for (const e of b.evs) {
-    const rest = (e.personIds || []).filter(x => x !== p.id);
-    if (rest.length || (e.contactIds || []).length) await store.events.save({ ...e, personIds: rest }); else await store.events.remove(e.id);
-  }
-  await store.people.remove(p.id);
-  toast('Deleted'); navigate('/people');
+  if (!(await confirmDialog({ title: `Delete ${store.personName(p)}?`, text: 'Removes the person, their originals, attachments, interest records and follow-ups from this phone. Conversation entries also linked to a contact stay with that contact. ' + (store.SOFT_DELETE ? 'You can put it back for 30 days from Settings → Recently deleted.' : 'This cannot be undone.'), ok: 'Delete', danger: true, dataId: 'person-card.delete-dialog' }))) return;
+  await store.asOne(async () => { // one deletion: Shadchan Mode can restore it whole from Recently deleted
+    for (const s of b.srcs) await store.sources.remove(s.id);
+    for (const a of b.atts) await store.attachments.remove(a.id);
+    for (const i of b.ints) await store.interests.remove(i.id);
+    for (const f of b.fus) await store.followUps.remove(f.id);
+    for (const e of b.evs) {
+      const rest = (e.personIds || []).filter(x => x !== p.id);
+      if (rest.length || (e.contactIds || []).length) await store.unlink(store.events, e, 'personIds', p.id); else await store.events.remove(e.id);
+    }
+    await store.people.remove(p.id);
+  });
+  toast(store.SOFT_DELETE ? 'Deleted. It waits 30 days in Settings → Recently deleted' : 'Deleted', store.SOFT_DELETE ? 5000 : undefined); navigate(peopleListPath(p.kind));
+}
+
+// Shadchan Mode: a shidduch is a guy and a girl; that part is built in stage S3.
+function shidduchimSoon(b) {
+  return [h('section', { class: 'pc-sec', 'data-id': 'person-card.shidduchim-soon' },
+    h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow' }, 'Shidduchim')),
+    h('p', {}, `Every shidduch suggested for ${store.personName(b.p)} will be listed here, with both sides’ answers.`),
+    h('p', { class: 'note' }, 'Coming in stage S3. Nothing is recorded here yet.'))];
 }
 
 // ---------- Offers ----------

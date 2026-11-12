@@ -220,3 +220,9 @@ main.content:has(.dock),main.content:has(.form-foot),main.content:has(.me-foot){
 .fchip[aria-pressed="true"]{background:var(--selected-bg);border-color:var(--selected-edge);font-weight:600}
 
 
+/* Slim bar: items marked with-word keep a small name under the icon (Guys and Girls share one icon). */
+@media (max-width:1023.98px){
+  body.shell-slim .bottom-nav a.with-word span:not(.ico){display:block;font-size:var(--nav-word-font);line-height:1;margin-top:2px}
+  body.shell-slim .bottom-nav a.with-word svg{width:var(--nav-word-icon);height:var(--nav-word-icon)}
+  body.shell-slim .bottom-nav a.with-word[aria-current="page"]::after{margin-top:2px}
+}

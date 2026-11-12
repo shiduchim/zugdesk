@@ -202,3 +202,13 @@
   --mp-untranslated:var(--muted);
   --mp-preview-max:40dvh;
 }
+
+/* ---- Shadchan Mode (stage S1) ---- */
+:root{
+  --sg-star:var(--warn);          /* "Working on" star in Guys / Girls */
+  --sg-star-size:13px;
+  --mode-tag-font:8.5px;          /* the small "Shadchan" word under the gear on Home */
+  --mode-gear:18px;               /* the gear is a little smaller there, to leave room for the word */
+  --nav-word-font:9.5px;          /* bottom bar: the word under the Guys / Girls icons */
+  --nav-word-icon:19px;
+}

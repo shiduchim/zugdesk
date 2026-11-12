@@ -7,6 +7,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast } from '../js/ui.js';
 import { navigate } from '../js/router.js';
+import { isShadchan } from '../js/mode.js';
 import { S, D, load, visible, extraFilterCount, anyFilter, clearFilters, ensureSelection, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel } from './contacts-data.js';
 import { personBlock, quickFacts, nameLine, statusText, filtersSheet, viewSheet, shortDate, eventItem } from './contacts-panels.js';
 
@@ -90,7 +91,8 @@ function draw() {
 }
 
 // ---------- shared toolbar ----------
-const addBtn = (cls) => h('button', { class: 'btn primary ' + cls, type: 'button', 'data-id': 'contacts.add-btn', onClick: () => navigate('/contacts/new') }, 'Add Shadchan');
+const ADD_WORD = isShadchan ? 'Add Contact' : 'Add Shadchan';
+const addBtn = (cls) => h('button', { class: 'btn primary ' + cls, type: 'button', 'data-id': 'contacts.add-btn', onClick: () => navigate('/contacts/new') }, ADD_WORD);
 // Add Shadchan sits top right, next to the heading, on phone and computer (owner request).
 function head() {
   return h('div', { class: 'page-head ct-head' }, h('h1', {}, 'Contacts'), addBtn(''));
@@ -160,7 +162,7 @@ function redrawBody() {
 
 // ---------- directory ----------
 function emptyState() {
-  if (!D.contacts.length) return h('p', { class: 'empty', 'data-id': 'contacts.empty' }, 'No contacts yet. Tap “Add Shadchan”, or load demo contacts in Settings.');
+  if (!D.contacts.length) return h('p', { class: 'empty', 'data-id': 'contacts.empty' }, `No contacts yet. Tap “${ADD_WORD}”, or load demo contacts in Settings.`);
   return h('div', { class: 'empty', 'data-id': 'contacts.no-match' }, h('p', {}, 'No contacts match these filters.'),
     h('button', { class: 'btn small', type: 'button', onClick: () => { clearFilters(); refresh(); } }, 'Clear filters'));
 }
@@ -283,10 +285,10 @@ function phoneBody(lay) {
 // No contacts at all yet: one clear message instead of empty panes.
 function firstRun() {
   return h('div', { class: 'ct-first', 'data-id': 'contacts.first-run' },
-    h('p', {}, 'No contacts yet. Tap “Add Shadchan” to add your first one.'),
-    h('p', { class: 'note' }, 'Want to look around first? Load 200 fictional demo contacts. You can remove them any time in Settings.'),
+    h('p', {}, `No contacts yet. Tap “${ADD_WORD}” to add your first one.`),
+    h('p', { class: 'note' }, isShadchan ? 'Want to look around first? Load 60 fictional singles with a few made-up contacts. You can remove them any time in Settings.' : 'Want to look around first? Load 200 fictional demo contacts. You can remove them any time in Settings.'),
     h('button', { class: 'btn', type: 'button', 'data-id': 'contacts.try-demo', onClick: async (e) => {
-      e.currentTarget.disabled = true; const n = await store.loadFullDemo(); toast(`Demo loaded: ${n} contacts`); } }, 'Try the demo'));
+      e.currentTarget.disabled = true; const n = await store.loadFullDemo(); toast(isShadchan ? `Demo loaded: ${n} singles` : `Demo loaded: ${n} contacts`); } }, 'Try the demo'));
 }
 
 // ---------- inbox drill-down levels ----------
