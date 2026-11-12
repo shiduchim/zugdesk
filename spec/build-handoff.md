@@ -108,14 +108,14 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-12_
+_Last updated: 2026-11-12 (draft 2)_
 
 ### In progress
-- Shadchan Mode design, draft 1: `spec/shadchan/design.md` and `spec/shadchan/screens.html` (sketches, also published as a private artifact). Waiting for the owner's answers to the 7 questions in design.md section 12. Nothing is built.
+- Shadchan Mode design, draft 2: `spec/shadchan/design.md` and `spec/shadchan/screens.html` (sketches, also a private artifact). Owner's answers are in design.md section 11. Waiting for the owner's OK on draft 2. Nothing is built.
 
 ### Next steps
-- After the owner answers: revise the design, then add stages S0–S7 (design.md section 10) to ROADMAP.md.
-- Owner: five short conversations with shadchanim (questions at the end of `spec/shadchan/research.md`), and decide on an own address before real users.
+- After the owner's OK: add stages S0–S7 (design.md section 12) to ROADMAP.md.
+- Owner: show the sketches to 2–3 shadchanim (they must be shared from the artifact's Share menu first). The address is left open until before the test round (design.md section 9).
 - Branch `claude/eloquent-thompson-tchp32` has no PR yet (say "make the PR").
 
 ### Notes / blockers
