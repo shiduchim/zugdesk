@@ -37,6 +37,7 @@ Home block looks: `spec/shadchan/home-options.html` (Home is made from blocks, d
 | S5 | Find a match and Send | Opus | ✅ done (12 Nov 2026) |
 | S6 | Check everything at phone and computer sizes; locked backup file; decide the address; test round with 3–5 shadchanim | Opus | 🟡 app part done (13 Nov 2026); owner: address + test round (`spec/shadchan/test-round.md`) |
 | S7 | Phone and computer in step — by moving the backup file (owner: nothing online for now) | **Fable** | done |
+| S8 | Automatic phone–computer sync (online). Plan: `spec/shadchan/build-notes.md` section 12 | **Fable** | not now (owner: later) |
 
 ## Stage notes
 (Claude adds a 2–3 line summary here at the end of each stage: what was built, what's left, known problems.)
