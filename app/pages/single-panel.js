@@ -46,6 +46,8 @@ export function singlePanel(p, save) {
     onChange: (e) => save({ [key]: e.target.value.trim() }, true) });
 
   return h('section', { class: 'pc-sec sp-panel', 'data-id': 'person-card.shadchan' },
+    // Main action of the panel: first and full width, so it never looks like a stray floating button.
+    h('button', { type: 'button', class: 'btn primary sp-find', 'data-id': 'person-card.find-match', onClick: () => navigate(`/match/${encodeURIComponent(p.id)}`) }, T.find),
     row(T.status, 'person-card.status',
       h('select', { class: 'input', 'aria-label': T.status, 'data-id': 'person-card.status-select', onChange: (e) => setStatus(p, e.target.value, save, e.target) },
         STATUSES.map(([v, l]) => h('option', { value: v, selected: st === v || null }, l))),
@@ -64,8 +66,7 @@ export function singlePanel(p, save) {
       : h('span', { class: 'note grow' }, T.noCards)),
     row(T.confirmed, 'person-card.confirmed',
       h('span', { class: 'grow small' + (days > STALE_DAYS ? ' sp-stale' : '') }, p.confirmedAt ? agoWords(p.confirmedAt) : T.never),
-      h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.confirm-btn', onClick: async () => { await save({ confirmedAt: today() }, true); toast(T.confirmedToast); } }, T.confirmBtn)),
-    h('button', { type: 'button', class: 'btn primary sp-find', 'data-id': 'person-card.find-match', onClick: () => navigate(`/match/${encodeURIComponent(p.id)}`) }, T.find));
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.confirm-btn', onClick: async () => { await save({ confirmedAt: today() }, true); toast(T.confirmedToast); } }, T.confirmBtn)));
 }
 
 // Busy by hand asks "check again on …" and makes a follow-up for that day (design.md 6.2).
