@@ -236,6 +236,7 @@
   --shs-dim:.6;                    /* finished shidduchim on a single's card, cancelled dates */
   --shs-tab-font:11px;             /* four lane tabs on a narrow phone */
   --shs-couple-font:17px;          /* the couple's names on a shidduch's page */
+  --sp-find-height:38px;           /* Find a match button on the single panel (default buttons are 44px) */
   --shm-col-min:240px;             /* Find a match: the two profiles sit side by side when wider than this each */
   --shh-max:760px;                 /* Shadchan Home: one column of blocks on a computer */
   --shh-stat-font:22px;            /* At a glance numbers */
