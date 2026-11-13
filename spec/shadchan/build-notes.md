@@ -179,3 +179,34 @@ device's files) and is locked with a password by default (section 10).
 - Settings → Backup has the how-to (`settings.in-step`). Merge texts in `backup-sheet.js` say "changed last wins".
 - Known limits: something erased for good (Delete forever, 30-day clean-up, Undo of a new record) can come back from an older file of the other device,
   as a deleted item. Settings (prefs) still come from the file. A later online way only has to move the same file and call Merge.
+
+## 12. Plan for S8: automatic sync (not built; owner wants it later)
+
+Start a new chat with: "Read CLAUDE.md. Build S8 from build-notes section 12." Use Fable (or Opus with a Fable review at the end).
+
+**Owner decides first (one question):** which place holds the file between devices.
+- **Dropbox (recommended)**: each shadchan connects their own Dropbox once. No server. The owner registers one free Dropbox app
+  (gets an "app key"; Claude gives the steps). Only the key goes in the code; it is not a secret (sign-in with PKCE, no password stored).
+- **Own locked mailbox**: a tiny server (e.g. Cloudflare Worker + storage, free tier) holding only the locked file; devices pair with a
+  6-digit code. No account for shadchanim, but the owner must keep the server running.
+- Google Drive: not recommended (asks to sign in again about every hour; iPhone unconfirmed).
+- Ask the test-round testers first: which cloud accounts they have, and whether their filter (NetFree / TAG) opens dropbox.com.
+
+**How it works (same for both places), building on S6/S7:**
+1. The unit is the same **locked backup file** (`js/backup.js` `lock`/`unlock`), without attached files (`exportAll({ files: false })`).
+   The sync password is asked once per device and kept on that device only (it never leaves it).
+2. "Sync now" = download the remote file → `unlock` → `store.importAll(json, 'merge')` (newest copy wins, already built in S7)
+   → make a fresh export → `lock` → upload, overwriting. If the upload finds the file changed meanwhile (Dropbox `rev` / server version),
+   repeat once.
+3. Runs: when the app opens, when it comes back to the front, and a few seconds after a change (debounced). Never while offline.
+4. Settings → "Phone and computer" section: Connect / Disconnect, the sync password, "Last synced …", "Sync now", and a plain error line.
+   New code in `js/sync.js` (+ `js/sync-dropbox.js` or `js/sync-mailbox.js`); every new element gets a `data-id`.
+5. Attached files: later, one remote file per attachment (by id), uploaded once, downloaded when missing.
+
+**Known gaps to fix in S8:**
+- Things erased for good (Delete forever, 30-day clean-up) can return from the other device. Fix: keep a small list of erased ids with
+  dates (a "tombstone" list) inside the backup, and skip those ids on Merge.
+- Settings (prefs) are copied from the file; device-only ones (theme, labels, layout) should stay per device.
+- Single Mode erases at once, so its deletes do not sync; sync Shadchan Mode only, unless the owner wants both.
+- Must still work fully offline; filters may block the sync host: show "Could not reach Dropbox" and carry on.
+- Test with two Playwright contexts (as in S7) and then on the owner's phone + computer.
