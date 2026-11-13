@@ -7,7 +7,7 @@ import * as N from './notes-data.js';
 import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from './home-data.js';
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
 import { recordInterest } from './idea-flow.js';
-import { MODE, MODES, isShadchan, modeLabel, switchMode } from '../js/mode.js';
+import { MODE, MODES, isShadchan, switchMode } from '../js/mode.js';
 // Shadchan Mode builds Home from blocks (pages/sh-home.js); Single Mode never loads it.
 const SHH = isShadchan ? await import('./sh-home.js') : null;
 
@@ -587,8 +587,7 @@ function modeToggle() {
     }, label)));
 }
 
-// The gear. Shadchan Mode also names the mode under it (no extra width).
+// The gear. The mode name is no longer written under it: the switch beside it shows the mode (owner request).
 function settingsLink() {
-  return h('a', { class: 'icon-btn home-settings' + (isShadchan ? ' has-mode' : ''), href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') },
-    isShadchan ? h('span', { class: 'home-mode', 'data-id': 'home.mode' }, modeLabel()) : null);
+  return h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') });
 }
