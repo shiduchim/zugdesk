@@ -119,6 +119,12 @@
   --orig-pane-max:32dvh;            /* narrow phones: original stacked on top, this tall */
   --jump-height:32px;
   --tab-height:36px;
+  --mode-toggle-height:22px;   /* Home: tiny Single / Shadchan switch */
+  --mode-toggle-pad:2px;
+  --mode-toggle-gap:2px;
+  --mode-toggle-row-gap:6px;
+  --mode-toggle-x:8px;
+  --mode-toggle-font:11px;
   --row-height:44px;                /* oval rows (Status, Religious, Know them) */
   --tick-size:20px;
 

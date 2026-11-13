@@ -7,7 +7,7 @@ import * as N from './notes-data.js';
 import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from './home-data.js';
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
 import { recordInterest } from './idea-flow.js';
-import { isShadchan, modeLabel } from '../js/mode.js';
+import { MODE, MODES, isShadchan, switchMode } from '../js/mode.js';
 // Shadchan Mode builds Home from blocks (pages/sh-home.js); Single Mode never loads it.
 const SHH = isShadchan ? await import('./sh-home.js') : null;
 
@@ -26,14 +26,14 @@ const els = {};
 export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
 
 export async function render(container, params) {
-  swipeTabs(container, { keys: () => PHONE.matches && !SHH ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
+  swipeTabs(container, { keys: () => PHONE.matches ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
   root = container;
   root.classList.add('home-page', 'wide');
   if (SHH) root.classList.add('sh-home');
   U = { expanded: params.noteId || null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
   if (params.noteId) section = 'notes';
   try { drafts = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; } catch { drafts = {}; }
-  els.search = h('input', { class: 'input home-search', type: 'search', dir: 'auto', placeholder: 'Search notes, people, conversations…', 'aria-label': 'Search everything', 'data-id': 'home.search',
+  els.search = h('input', { class: 'input home-search', type: 'search', dir: 'auto', placeholder: 'Search…', 'aria-label': 'Search notes, people, conversations', 'data-id': 'home.search',
     onInput: (e) => { U.q = e.target.value; drawSearch(); } });
   els.results = h('section', { class: 'home-results hidden', 'data-id': 'home.search-results', 'aria-live': 'polite' });
   els.composer = h('div', { class: 'home-composer-slot' });
@@ -42,12 +42,11 @@ export async function render(container, params) {
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
   els.grid = SHH ? h('div', { class: 'shh-blocks', 'data-id': 'home.blocks' }) : h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
   root.append(h('div', { class: 'home-wrap' },
-    // Title and tagline removed to save phone screen space (owner request); tabs go first.
-    // Phone has no top bar; Settings sits at the end of the tab row, using no extra space (owner request).
-    h('div', { class: 'home-tabline' }, SHH ? h('span', { class: 'spacer' }) : tabRow(),
-      // Shadchan Mode says so under the gear (no extra width), so it is always clear which mode is open.
-      h('a', { class: 'icon-btn home-settings' + (isShadchan ? ' has-mode' : ''), href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') },
-        isShadchan ? h('span', { class: 'home-mode', 'data-id': 'home.mode' }, modeLabel()) : null)), els.search, els.results, els.composer, els.grid));
+    // Owner request, both modes: top row is search · tiny Single / Shadchan switch · gear;
+    // the Notes / To Do List / History tabs sit underneath.
+    h('div', { class: 'home-searchline', 'data-id': 'home.searchline' }, els.search, modeToggle(), settingsLink()),
+    h('div', { class: 'home-tabline' }, tabRow()),
+    els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key !== 'homeSuggestions' && !(SHH && (ch.key === 'shHomeBlocks' || ch.type === 'backup'))) return;
@@ -364,7 +363,7 @@ function secHead(eyebrow, title, count, id) {
 // each has its own screen. On a wide screen the tabs are hidden and all sections show in columns.
 // Tabs inside Home, not navigation destinations (spec/home.md keeps both on Home).
 const PHONE = window.matchMedia('(max-width: 899px)');
-const SECTIONS = [['notes', 'Notes'], ['followups', 'Follow Ups'], ['history', 'History']];
+const SECTIONS = [['notes', 'Notes'], ['followups', 'To Do List'], ['history', 'History']];
 let section = 'notes';
 function tabRow() {
   els.tabs = h('div', { class: 'home-tabs', role: 'tablist', 'aria-label': 'Home sections', 'data-id': 'home.tabs' },
@@ -374,20 +373,32 @@ function tabRow() {
   return els.tabs;
 }
 function applySection() {
-  if (!root || SHH) return; // Shadchan Home has no tabs: every shown block is on the page
+  if (!root) return;
   const phone = PHONE.matches;
   els.tabs?.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', b.dataset.id === 'home.tab-' + section ? 'true' : 'false'));
+  if (SHH) return applyShSection(phone);
   els.composer.classList.toggle('hidden', phone && section !== 'notes');
   els.notes.classList.toggle('hidden', phone && section !== 'notes');
   els.fus.classList.toggle('hidden', phone && section !== 'followups');
   els.hist.classList.toggle('hidden', phone && section !== 'history');
 }
 function showSection(k) { section = k; applySection(); }
+// Shadchan Mode on a phone: Notes = New Note and the blocks chosen in Edit Home (not To do / History);
+// To Do List = the To do block; History = the History block. Those two show on their tab even if
+// hidden in Edit Home. On a wide screen the tabs are hidden and the Edit Home blocks all show.
+function applyShSection(phone) {
+  els.composer.classList.toggle('hidden', phone && section !== 'notes');
+  for (const node of els.grid.children) {
+    const tab = node.dataset.tab || 'notes', off = node.dataset.off === '1';
+    node.classList.toggle('hidden', phone ? tab !== section : off);
+  }
+}
 // Shadchan Mode: arrange the blocks. Notes stay on the page while a note is open, even if hidden.
 function drawBlocks() { if (SHH && root && SH) SHH.draw(els.grid, { notes: els.notes, fus: els.fus, hist: els.hist }, SH, D, { keepNotes: !!U.expanded }); }
 function tabCounts() {
   if (!els.tabs) return;
-  const c = { notes: shownNotes().length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
+  const moves = SHH && SH ? SH.list.filter(m => m.step.kind === 'move').length : 0; // Shadchan To Do List also holds Your move
+  const c = { notes: shownNotes().length, followups: openFollowUps(D.followUps).length + moves, history: buildHistory(D, X).length };
   els.tabs.querySelectorAll('[data-count]').forEach(el => { el.textContent = String(c[el.dataset.count] ?? ''); });
 }
 
@@ -576,3 +587,18 @@ function resultRow(title, sub, href, onClick) {
     : h('button', { type: 'button', class: 'result-row', 'data-id': 'home.search-result', onClick }, inner));
 }
 
+
+// Two-choice switch between Single Mode and Shadchan Mode. Switching reloads the app (each mode has its own records).
+function modeToggle() {
+  return h('div', { class: 'home-mode-toggle', role: 'radiogroup', 'aria-label': 'Mode', 'data-id': 'home.mode-toggle' },
+    MODES.map(([value, label]) => h('button', {
+      type: 'button', role: 'radio', class: 'home-mode-opt' + (value === MODE ? ' on' : ''),
+      'aria-checked': value === MODE ? 'true' : 'false', 'data-id': 'home.mode-toggle.' + value,
+      onClick: () => { if (value !== MODE) switchMode(value); },
+    }, label)));
+}
+
+// The gear. The mode name is no longer written under it: the switch beside it shows the mode (owner request).
+function settingsLink() {
+  return h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') });
+}

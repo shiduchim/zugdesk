@@ -9,7 +9,7 @@
 
 ## Shadchan Mode (automatic; `spec/shadchan/build-notes.md`)
 - Run every check above in **both** modes (Settings → Mode). Single Mode must behave exactly as before.
-- Switching to Shadchan Mode: bottom bar is Home · Guys · Girls · Shidduchim · Contacts, Home says "Shadchan" under the gear, and none of Single Mode's records show. Switching back shows Single Mode exactly as it was.
+- Switching to Shadchan Mode: bottom bar is Home · Guys · Girls · Shidduchim · Contacts, the Home switch shows Shadchan, and none of Single Mode's records show. Switching back shows Single Mode exactly as it was.
 - No request leaves the app's own address (fonts come from `app/fonts`).
 - Delete a single in Shadchan Mode: one line in Settings → Recently deleted; Restore brings back the single with originals, follow-ups and conversation links. Delete forever really erases. Things older than 30 days are erased when the app opens.
 - Deleting in Single Mode still erases at once.
@@ -40,8 +40,10 @@
 ## Regression (add one line per fixed bug or approved feature)
 - Ending a shidduch moves the person out of Ideas → Active into Closed ("Shidduch ended"); Reopen puts them back in Open.
 - Ideas → Open rows have "I'm not interested" and "She/He is not interested" buttons; the person card shows the same choice.
-- Shadchan Mode Home at 360 px: the mode name sits under the gear, so the tab row does not push the page sideways.
+- Shadchan Mode Home at 360 px: search · switch · gear fit on one row, nothing pushes the page sideways; no mode name under the gear.
 - In Shadchan Mode, Add Person offers both Guy and Girl even when My Profile in Single Mode says who I am.
 - Shadchan Mode Shidduchim: an opened card (arrow) still shows the floating answer choices above its quick-action buttons.
 - Shadchan Mode: Home → History names a shidduch by both singles ("Yehuda Stern – Chana Levy"), never "Shidduch · ?".
 - Phone and computer in step (S7): two devices start from the same backup; A changes one single, B later changes another; A's backup imported on B with Merge keeps both changes and says "kept 1 that were newer on this device"; a single deleted on A (Shadchan Mode) is deleted on B too. Replace still wipes first.
+- Home: tiny Single / Shadchan switch on the search row (Shadchan Mode: search · switch · gear in one row); tapping it switches mode like Settings → Mode, no sideways scroll at 320 px.
+- Home, both modes: top row search · switch · gear; tabs Notes / To Do List / History underneath (phone). Shadchan phone tabs: Notes = New Note + Edit Home blocks, To Do List = To do block (Your move + follow-ups, count includes Your move), History = History block, even if hidden in Edit Home; swipe moves between them. Wide screen: tabs hidden, Edit Home blocks show.

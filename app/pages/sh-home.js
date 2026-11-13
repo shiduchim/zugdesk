@@ -127,12 +127,18 @@ export function draw(grid, parts, SH, D, { keepNotes = false } = {}) {
   if (key === w.key) return;
   w.key = key;
   const node = { todo: w.todo, glance: w.glance, notes: parts.notes, singles: w.singles, history: parts.hist };
+  // Phone tabs (home.js applyShSection): To do lives on the To Do List tab, History on the History tab.
+  // Both are always in the page so their tab works; data-off marks them hidden by Edit Home.
+  w.todo.dataset.tab = 'followups'; parts.hist.dataset.tab = 'history';
   const shown = L.filter(b => b.on);
+  const tabbed = ['todo', 'history'];
+  for (const id of tabbed) node[id].dataset.off = shown.some(b => b.id === id) ? '' : '1';
   grid.replaceChildren(w.backup, ...shown.map(b => node[b.id]),
     shown.length ? '' : h('div', { class: 'shh-empty', 'data-id': 'home.empty' },
       h('h2', {}, T.empty), h('p', { class: 'note' }, T.emptyNote),
       h('button', { type: 'button', class: 'btn primary', 'data-id': 'home.empty-edit', onClick: () => editHome() }, T.editHome)),
-    shown.length ? w.edit : '');
+    shown.length ? w.edit : '',
+    ...tabbed.filter(id => !shown.some(b => b.id === id)).map(id => node[id]));
 }
 
 function head(eyebrow, title, count, id) {
