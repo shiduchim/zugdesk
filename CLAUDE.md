@@ -12,6 +12,7 @@ The owner is not a programmer and tests on a phone. They send short change reque
 | `spec/` | The design doc, split into one file per area (+ `spec/img/` pictures) | Read **only** the file for the current task |
 | `source/` | The owner's original HTML designs and the full .docx | **Never edit.** Open only to copy look/structure for the page being built |
 | `ROADMAP.md` | Stages and checkboxes | Update the checkboxes when a stage step is done |
+| `spec/shadchan/` | Shadchan Mode (second mode, being built in stages S1–S7): `design.md` (approved design), `build-notes.md` (how it is built: **read before any S stage**), `research.md` (survey), `screens.html` (sketches) | No survey raw data in the repo |
 
 Spec files: `00-overview` · `build-handoff` (architecture + acceptance rules — read for every build stage) ·
 `home` · `contacts` · `add-person` (also Add Shadchan) · `offers-cards` · `shidduchim` · `my-profile` ·
@@ -26,12 +27,13 @@ These files are large: use grep / read in parts, never read a whole file unless 
 
 - Plain HTML + CSS + JavaScript ES modules. **No build step, no npm, no framework.**
 - `app/index.html` is the single app shell with a hash router (`#/home`, `#/contacts/…`).
+- Two modes in one app: Single and Shadchan (Settings → Mode). `app/js/mode.js` says which one is open; each mode has its own database. Shared pages are one file for both modes.
 - One JS module + one CSS file per page in `app/pages/` (e.g. `contacts.js`, `contacts.css`).
 - Shared styles and **all sizes/colours as CSS variables** in `app/css/tokens.css`
   (e.g. `--btn-height`, `--font-base`, `--gap`). "Make all buttons bigger" = change one variable.
 - One shared data store in `app/js/store.js` (IndexedDB, versioned schema, export/import/reset).
   Pages never keep their own copies of records — see `spec/build-handoff.md` section C.
-- Installable on the phone (manifest + service worker).
+- Installable on the phone (manifest + service worker). No outside services: fonts are inside the app (`app/fonts`).
 - Visual style: Claude minimalist look from `source/My Profile.html` (Inter / JetBrains Mono, warm light).
 - **Every colour, corner, shadow and font is a token in `app/css/tokens.css`.** Page CSS and JS never write raw colours
   (no `#hex`, `rgb()`, numeric `border-radius` or `box-shadow`). A future warm theme = one file that redefines the tokens.

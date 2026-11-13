@@ -1,0 +1,174 @@
+/* Guys and Girls (Shadchan Mode). Sizes and colours come from css/tokens.css. */
+.singles-page .page-head h1{display:flex;align-items:baseline;gap:8px}
+.sg-count{font-family:var(--font-mono);font-size:var(--font-sm);font-weight:400;color:var(--muted)}
+.sg-row .row-title{display:flex;align-items:center;gap:6px}
+.sg-star{display:inline-flex;flex-shrink:0;color:var(--sg-star)}
+.sg-star svg{width:var(--sg-star-size);height:var(--sg-star-size);fill:currentColor}
+.sg-quiet .row-title,.sg-quiet .avatar{color:var(--muted)}
+.sg-status{flex-shrink:0}
+.sg-more{width:100%;margin-top:var(--gap)}
+.singles-page .empty .btn{margin-top:var(--gap)}
+/* Shown where a part of Shadchan Mode is not built yet */
+.soon-page .soon-list{margin:0;padding-left:18px;color:var(--muted);font-size:var(--font-sm);display:flex;flex-direction:column;gap:4px}
+/* Recently deleted */
+.deleted-page .del-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px;padding:10px 0;border-top:1px solid var(--border)}
+.deleted-page .del-row:first-child{border-top:0}
+.deleted-page .del-row .row-main{flex:1 1 180px}
+.deleted-page .del-acts{display:flex;gap:8px;flex-shrink:0}
+.singles-page .row-link .row-main{text-decoration:none;color:var(--text)}
+.singles-page .avatar svg{width:var(--icon);height:var(--icon)}
+/* Stage S2 — search, Working on / All, filters, rows */
+.sg-tools{margin-bottom:var(--gap)}
+.sg-scope{display:flex;gap:6px;flex-wrap:wrap}
+.sg-scope .bubble{display:inline-flex;align-items:center;gap:5px}
+.sg-scope-n{font-family:var(--font-mono);font-size:var(--sg-n-font);color:var(--muted)}
+.sg-age-row{display:flex;align-items:center;gap:8px}
+.sg-age-row .input{width:var(--sg-age-input)}
+.sg-row .row-main{min-width:0}
+.sg-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg-open{flex-shrink:0;width:var(--sg-open-dot);height:var(--sg-open-dot);border-radius:var(--radius-pill);background:var(--sg-open)}
+.sg-snip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg-noage{margin-top:var(--gap)}
+.sg-noage .note{margin:2px 0 0}
+/* Single's card (Shadchan Mode): status, Working on, age from–to, Talk to, last confirmed */
+.sp-panel{display:flex;flex-direction:column;gap:10px}
+.sp-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-width:0}
+.sp-row > .sp-label{flex:0 0 var(--sp-label-width);font-size:var(--font-sm);color:var(--muted)}
+.sp-row .grow{flex:1 1 0;min-width:0}
+.sp-row select.input{min-height:var(--btn-small-height);padding:4px 8px;font-size:var(--font-sm);flex:1 1 140px;min-width:0}
+.sp-row .input.tiny{width:var(--sg-age-input)}
+.sp-star[aria-pressed="true"]{color:var(--sg-star);border-color:var(--sg-star)}
+.sp-star svg{width:var(--sg-star-size);height:var(--sg-star-size)}
+.sp-star[aria-pressed="true"] svg{fill:currentColor}
+.sp-stale{color:var(--warn)}
+.sp-find{align-self:flex-start}
+/* Stage S3 — Shidduchim with two sides. The cards, bubbles, bar and details reuse shidduchim.css;
+   only what is new in Shadchan Mode is here. */
+.shs-search{margin-bottom:10px}
+.shs-intro{margin:0 0 10px}
+.shs-card .sh-card-main{min-width:0}
+.shs-side{display:inline-flex;align-items:center;gap:6px;flex-shrink:0}
+.shs-move{display:inline-flex;align-items:center;padding:2px 8px;border-radius:var(--radius-pill);background:var(--shs-move-bg);color:var(--shs-move-text);font-size:var(--font-xs);font-weight:600;white-space:nowrap}
+.shs-days{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);white-space:nowrap}
+.shs-round{font-size:var(--font-xs);color:var(--muted);font-weight:600;flex-basis:100%;pointer-events:none}
+.shs-engaged{color:var(--shs-engaged-text);font-weight:600}
+.shs-hint-move{color:var(--shs-move-text);font-weight:600}
+.sh-tag.none{border-style:dashed}
+.sh-tag.asked{color:var(--text)}
+.sh-option.none{border-style:dashed}
+.sh-option.asked{color:var(--text)}
+.sh-answerselect.asked{color:var(--text)}
+.shs-static{cursor:default;min-height:var(--shs-tag-height);padding:2px 9px}
+.shs-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.shs-actions,.shs-over{position:relative;z-index:2}
+/* the floating answer choices stay above the next card and above this card's quick actions */
+.shs-card.menu-open{z-index:12;border-color:var(--text)}
+.shs-card.menu-open .sh-answers{z-index:5}
+.shs-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.shs-actions .btn{text-decoration:none}
+.shs-actions .linkish{text-decoration:none;margin-left:auto}
+.shs-tick{display:flex;align-items:center;gap:10px;min-height:var(--touch-min);color:var(--text);font-size:var(--font-base)}
+.shs-tick input{width:var(--tick-size);height:var(--tick-size);flex-shrink:0}
+/* New idea sheet */
+.shs-pair{display:flex;flex-direction:column;gap:10px}
+.shs-slot{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shs-slot.on{border-color:var(--text)}
+.shs-slot .grow{flex:1;min-width:0}
+.shs-slot-label{flex:0 0 var(--shs-slot-label);font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase}
+.shs-cand{width:100%;background:none;border:0;border-top:1px solid var(--border);text-align:start;font:inherit;cursor:pointer}
+.shs-cand .row-main{min-width:0}
+.shs-hist{color:var(--shs-untold)}
+.shs-already,.shs-warn{display:flex;flex-direction:column;gap:6px;padding:12px;border-radius:var(--radius);background:var(--warn-bg);color:var(--text);font-size:var(--font-sm)}
+.shs-already .btn{align-self:flex-start}
+/* Shidduchim tab on a single's card */
+.shs-crow{text-decoration:none}
+.shs-crow .row-main{min-width:0;flex:1}
+.shs-crow .row-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.shs-crow>svg{width:var(--icon);height:var(--icon);color:var(--muted);flex-shrink:0}
+.shs-dim{opacity:var(--shs-dim)}
+.pc-tab-n{margin-left:6px;font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted)}
+/* One shidduch's page */
+.shs-couple{font-size:var(--shs-couple-font);font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.shs-couple .sh-try{font-weight:400}
+.shs-engaged-label{background:var(--shs-engaged-bg);color:var(--shs-engaged-text)}
+.shs-step{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border-radius:var(--radius);background:var(--surface-2);font-size:var(--font-base)}
+.shs-step-move{background:var(--shs-move-bg)}
+.shs-step-move strong{color:var(--shs-move-text)}
+.shs-step-acts{display:flex;flex-wrap:wrap;gap:8px}
+.shs-sidecard .grow{flex:1;min-width:0}
+.shs-sidecard .sh-who{font-size:var(--font-lg)}
+.shs-sidelabel{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.shs-talk .tel-link{margin-left:4px}
+.shs-meta{font-size:var(--font-xs);color:var(--muted);margin-top:6px}
+.shs-untold{color:var(--shs-untold);font-weight:600}
+.shs-later{margin-top:12px}
+.shs-quickname{align-self:flex-start}
+.shs-engaged-panel{background:var(--shs-engaged-bg)}
+.shs-engaged-panel h3{color:var(--shs-engaged-text)}
+.shs-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+.shs-dates{display:flex;flex-direction:column;gap:10px}
+.shs-date{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shs-date-head{display:flex;align-items:center;gap:12px}
+.shs-date .linkish{align-self:flex-start}
+.shs-date-head .linkish{align-self:center}
+.shs-after{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.shs-after .shs-tags{grid-column:1/-1;margin-top:0}
+.shs-after-side{display:flex;flex-direction:column;min-width:0}
+.shs-feedback{display:flex;flex-direction:column;gap:4px;font-size:var(--font-sm)}
+.shs-feedback p{margin:0;overflow-wrap:anywhere}
+.shs-feedback .sh-answerlabel{display:inline}
+@media (max-width:430px){
+  .shs-tabbar .sh-tab{font-size:var(--shs-tab-font);gap:3px;padding:0 2px}
+}
+
+/* ---- Home in Shadchan Mode: blocks (pages/sh-home.js, design 6.1) ---- */
+.sh-home .home-wrap{max-width:var(--shh-max)}
+.sh-home .home-tabline .spacer{flex:1}
+.shh-blocks{display:flex;flex-direction:column;gap:var(--home-sec-gap);margin-top:6px}
+.sh-home .home-notes>.home-sec-head,.sh-home .home-history>.home-sec-head{display:flex}
+.sh-block{border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 14px 10px;background:var(--surface);min-width:0}
+.sh-block>.home-sec-head{border-top:0;padding-top:0}
+.shh-todo .home-panel.home-followups{border:0;padding:0;background:transparent}
+.shh-todo .note-group-title:first-child{margin-top:4px}
+.shh-list{list-style:none;margin:0;padding:0;border-top:1px solid var(--border)}
+.shh-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:8px 0;border-bottom:1px solid var(--border)}
+.shh-main{flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:2px;min-height:var(--touch-min);justify-content:center;color:var(--text);text-decoration:none}
+.shh-main strong{overflow-wrap:anywhere}
+.shh-move .shh-main strong{color:var(--shs-move-text)}
+.shh-acts{display:flex;flex-wrap:wrap;gap:6px;margin-left:auto}
+.shh-acts .btn{text-decoration:none}
+.shh-none{padding:4px 0 8px;margin:0}
+.shh-lead{margin:0 0 6px}
+.shh-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:4px}
+.shh-stat{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-2);color:var(--text);text-decoration:none;min-height:var(--touch-min)}
+.shh-stat-n{font-family:var(--font-mono);font-size:var(--shh-stat-font);font-weight:600;line-height:1.1}
+.shh-stat-l{font-size:var(--font-xs);color:var(--muted)}
+.shh-backup{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;padding:8px 12px;border-radius:var(--radius);background:var(--shh-backup-bg);color:var(--text);font-size:var(--font-sm)}
+.shh-backup-slot:empty{display:none}
+.shh-edit-row{display:flex;justify-content:center;padding:4px 0 12px}
+.shh-empty{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:16px;border:1px dashed var(--border);border-radius:var(--radius-lg)}
+.shh-edit-list{list-style:none;margin:8px 0 0;padding:0;display:flex;flex-direction:column;gap:8px}
+.shh-edit-list .shh-edit-row{justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shh-edit-list .shh-edit-row.off{opacity:var(--shs-dim)}
+.shh-edit-show{display:flex;align-items:center;gap:10px;flex:1;min-width:0;cursor:pointer}
+.shh-edit-show input{width:var(--tick-size);height:var(--tick-size);flex-shrink:0}
+.shh-edit-text{display:flex;flex-direction:column;min-width:0}
+.shh-edit-move{display:flex;gap:6px;flex-shrink:0}
+
+/* ---------- Find a match (sh-match.js, stage S5) ---------- */
+.shm-head{flex-direction:column;align-items:flex-start;gap:2px}
+.shm-top{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;margin-bottom:var(--gap);border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface)}
+.shm-top .row-main{min-width:0}
+.shm-name{display:block;color:var(--text);text-decoration:none}
+.shm-warn{color:var(--shs-untold);white-space:normal}
+.shm-page .shs-hist{white-space:normal}
+.shm-nf-head{display:flex;align-items:center;justify-content:space-between;margin-top:var(--gap)}
+.shm-compare{display:flex;flex-direction:column;gap:12px}
+.shm-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(var(--shm-col-min),1fr));gap:10px}
+.shm-col{display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface);min-width:0}
+.shm-fact{display:flex;flex-direction:column;font-size:var(--font-sm)}
+.shm-fact-l{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase}
+/* ---------- Send (sh-send.js, stage S5) ---------- */
+.ssn-which{margin:0 0 6px 30px;width:auto;max-width:calc(100% - 30px)}
+.ssn-other{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--border)}
+.shs-suggest{align-self:flex-start;margin-top:8px}

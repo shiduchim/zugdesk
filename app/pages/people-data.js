@@ -3,10 +3,12 @@
 // pasted profile, and "Manage categories & choices". Data always goes through store.js.
 import * as store from '../js/store.js';
 import { h, toast, sheet, promptText, confirmDialog } from '../js/ui.js';
+import { isShadchan } from '../js/mode.js';
 
 export const KINDS = [['guy', 'Guy'], ['girl', 'Girl']];
 // Who the owner is looking for: a guy sees only girls, a girl only guys ('' = not set yet).
-export const seekingKind = (prefs) => prefs.iAm === 'guy' ? 'girl' : prefs.iAm === 'girl' ? 'guy' : '';
+// Shadchan Mode: the user is not looking for anyone, so nothing is narrowed.
+export const seekingKind = (prefs) => isShadchan ? '' : prefs.iAm === 'guy' ? 'girl' : prefs.iAm === 'girl' ? 'guy' : '';
 export const kindLabel = (k) => (KINDS.find(x => x[0] === k) || [, ''])[1];
 export function pron(p) {
   if (p?.kind === 'guy') return { he: 'he', his: 'his', him: 'him', He: 'He', His: 'His' };
@@ -193,3 +195,15 @@ export async function loadPerson(id) {
 }
 
 export const dateOnly = (iso) => (iso ? new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+
+// The "Suggested" short text of a person (person card Short versions; Shadchan Mode Send).
+export function suggestedFor(p) {
+  const A = p.answers || {}, txt = (v) => Array.isArray(v) ? v.filter(Boolean).join(', ') : (v || '');
+  const lines = [p.name || ''];
+  const sum = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
+  if (sum) lines.push('• ' + sum);
+  for (const [k, v] of [['Religious level', A.pLevel], ['Religious background', A.pBackground], ['Languages', p.languages], ['Status', A.pStatus]]) if (txt(v)) lines.push(`• ${k}: ${txt(v)}`);
+  if (p.about) lines.push('', p.about.split(/(?<=[.!?])\s/)[0]);
+  if (p.looking) lines.push('', 'Looking for: ' + p.looking.split(/(?<=[.!?])\s/)[0]);
+  return lines.join('\n').trim();
+}

@@ -47,6 +47,7 @@ const paths = {
   filter: '<path d="M3 5h18l-7 8v6l-4-2v-4z"/>',
   file: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/>',
   chevron: '<path d="M9 5l7 7-7 7"/>',
+  star: '<path d="M12 3.6l2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.2-4.1 5.8-.8z"/>',
   more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
 };
 export function icon(name, size) {

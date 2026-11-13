@@ -4,16 +4,28 @@ import { route, start, currentPath } from './router.js';
 import { h, icon, toast } from './ui.js';
 import { setLabels } from './labels.js';
 import { watchDates } from './calendar.js';
+import { isShadchan, listState } from './mode.js';
 
 // One bottom bar for everything: the slim icon bar (owner choice). Settings is the gear on Home.
-const NAV = [
+// Each mode has its own five places (spec/shadchan/design.md section 5); the bar looks the same.
+const NAV = isShadchan ? [
+  { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
+  { path: '/guys', label: 'Guys', icon: 'profile', id: 'nav.guys', word: true },
+  { path: '/girls', label: 'Girls', icon: 'profile', id: 'nav.girls', word: true },
+  { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
+  { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
+] : [
   { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
   { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
   { path: '/people', label: 'Ideas', icon: 'idea', id: 'nav.people' },
   { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
   { path: '/profile', label: 'My Profile', icon: 'profile', id: 'nav.profile' },
 ];
+const TITLES = isShadchan
+  ? { '/home': 'Home', '/guys': 'Guys', '/girls': 'Girls', '/people': 'Singles', '/shidduchim': 'Shidduchim', '/contacts': 'Contacts', '/settings': 'Settings', '/deleted': 'Recently deleted', '/match': 'Find a match' }
+  : { '/home': 'Home', '/contacts': 'Contacts', '/people': 'Ideas', '/shidduchim': 'Shidduchim', '/profile': 'My Profile', '/settings': 'Settings' };
 
+// Shared by both modes: Home, Contacts, Add Person, the person card, Settings.
 route('/home', () => import('../pages/home.js'));
 route('/home/note/:noteId', () => import('../pages/home.js'));
 route('/contacts', () => import('../pages/contacts.js'));
@@ -21,7 +33,6 @@ route('/contacts/new', () => import('../pages/contact-form.js'));
 route('/contacts/:id/edit', () => import('../pages/contact-form.js'));
 route('/contacts/:id/history', () => import('../pages/contacts.js'));
 route('/contacts/:id', () => import('../pages/contacts.js'));
-route('/people', () => import('../pages/people.js'));
 route('/people/new', () => import('../pages/person-form.js'));
 route('/people/new/from/:sourceId', () => import('../pages/person-form.js'));
 route('/people/new/by/:contactId', () => import('../pages/person-form.js'));
@@ -29,14 +40,26 @@ route('/people/:id/edit', () => import('../pages/person-form.js'));
 route('/people/:id/edit/:section', () => import('../pages/person-form.js'));
 route('/people/:id', () => import('../pages/person-card.js'));
 route('/people/:id/:tab', () => import('../pages/person-card.js'));
-route('/shidduchim', () => import('../pages/shidduchim.js'));
-route('/shidduchim/:id', () => import('../pages/shidduch-detail.js'));
-route('/shidduchim/:id/:tab', () => import('../pages/shidduch-detail.js'));
-route('/profile', () => import('../pages/profile.js'));
-route('/profile/edit', () => import('../pages/person-form.js'));
-route('/profile/edit/:section', () => import('../pages/person-form.js'));
-route('/profile/:tab', () => import('../pages/profile.js'));
 route('/settings', () => import('../pages/settings.js'));
+if (isShadchan) {
+  route('/guys', () => import('../pages/singles.js'));
+  route('/girls', () => import('../pages/singles.js'));
+  route('/people', () => import('../pages/singles.js'));       // shared pages go "back to the list": lands on Guys or Girls
+  route('/shidduchim', () => import('../pages/sh-shidduchim.js'));
+  route('/shidduchim/:id', () => import('../pages/sh-shidduch-detail.js'));
+  route('/shidduchim/:id/:tab', () => import('../pages/sh-shidduch-detail.js'));
+  route('/deleted', () => import('../pages/deleted.js'));
+  route('/match/:id', () => import('../pages/sh-match.js'));
+} else {
+  route('/people', () => import('../pages/people.js'));
+  route('/shidduchim', () => import('../pages/shidduchim.js'));
+  route('/shidduchim/:id', () => import('../pages/shidduch-detail.js'));
+  route('/shidduchim/:id/:tab', () => import('../pages/shidduch-detail.js'));
+  route('/profile', () => import('../pages/profile.js'));
+  route('/profile/edit', () => import('../pages/person-form.js'));
+  route('/profile/edit/:section', () => import('../pages/person-form.js'));
+  route('/profile/:tab', () => import('../pages/profile.js'));
+}
 
 const $ = (s) => document.querySelector(s);
 
@@ -45,8 +68,10 @@ function renderNav() {
   inner.innerHTML = '';
   const path = currentPath();
   for (const it of NAV) {
-    const active = path === it.path || path.startsWith(it.path + '/');
-    inner.append(h('a', { href: '#' + it.path, 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': it.label, title: it.label },
+    // A single's card and Add Person live under /people: they light up the list they came from.
+    const active = path === it.path || path.startsWith(it.path + '/') || (isShadchan && path.startsWith('/people') && listState.last === it.path);
+    // `word`: the name stays visible under the icon (Guys and Girls share one icon).
+    inner.append(h('a', { href: '#' + it.path, class: it.word ? 'with-word' : null, 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': it.label, title: it.label },
       h('span', { class: 'ico', html: icon(it.icon) }).firstChild, h('span', {}, it.label)));
   }
 }
@@ -68,7 +93,7 @@ function wireShell() {
 }
 
 function setTitle(path) {
-  const names = { '/home': 'Home', '/contacts': 'Contacts', '/people': 'Ideas', '/shidduchim': 'Shidduchim', '/profile': 'My Profile', '/settings': 'Settings' };
+  const names = TITLES;
   const key = '/' + path.split('/')[1];
   $('#topbar-title').textContent = names[key] || '';
   document.title = (names[key] ? names[key] + ' · ' : '') + 'ZugDesk';
@@ -79,11 +104,19 @@ async function boot() {
   try { await store.init(); }
   catch (e) { console.error(e); toast('Could not open local storage. Try another browser or exit private mode.', 6000); }
 
+  document.documentElement.dataset.mode = isShadchan ? 'shadchan' : 'single';
   setLabels(store.getPrefs().showLabels);
   applyTheme(); matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', applyTheme);
+  let askedToKeep = false;
   store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key === 'showLabels') setLabels(ch.value);
     if (ch.store === 'prefs' && ch.key === 'theme') applyTheme();
+    // The first time something is saved by hand, ask the browser to keep this site's storage for good
+    // (otherwise some phones clear it when space runs low). Most browsers decide without showing anything.
+    if (ch.type === 'save' && !askedToKeep) {
+      askedToKeep = true;
+      store.storageState().then(st => { if (st === 'not-kept') store.askToKeepStorage(); });
+    }
   });
   wireShell(); renderNav(); watchDates();
 

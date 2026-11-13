@@ -72,14 +72,18 @@ export async function setColor(note, color) {
 
 export async function togglePin(note) { return store.notes.save({ ...note, pinned: !note.pinned }); }
 
-export async function deleteNote(note) {
-  for (const e of await store.events.list()) if (e.noteId === note.id) await store.events.remove(e.id);
-  for (const f of await store.followUps.list()) if (f.noteId === note.id) await store.followUps.save({ ...f, noteId: null });
-  await store.notes.remove(note.id);
+export function deleteNote(note) {
+  return store.asOne(async () => {
+    for (const e of await store.events.list()) if (e.noteId === note.id) await store.events.remove(e.id);
+    for (const f of await store.followUps.list()) if (f.noteId === note.id) await store.unlink(store.followUps, f, 'noteId', note.id);
+    await store.notes.remove(note.id);
+  });
 }
 
 // Delete many notes at once (Home → "Delete all notes"). Same rules as one note.
 export async function deleteNotes(notes) {
+  // Shadchan Mode: one by one, so each note is its own line in Recently deleted.
+  if (store.SOFT_DELETE) { for (const n of notes) await deleteNote(n); return; }
   const ids = new Set(notes.map(n => n.id));
   for (const e of await store.events.list()) if (ids.has(e.noteId)) await store.events.remove(e.id);
   for (const f of await store.followUps.list()) if (ids.has(f.noteId)) await store.followUps.save({ ...f, noteId: null });

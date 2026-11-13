@@ -2,12 +2,18 @@
 // Records: plain objects with { id, createdAt, updatedAt, demo? }.
 // `demo: true` marks fictional seed records so Settings can remove them
 // without touching anything the owner typed.
-import { idb, tx, STORES, DB_VERSION, deleteDatabase } from './db.js';
+//
+// Two modes, two databases (js/mode.js, js/db.js). Everything below works on the database of
+// the mode the app is in; only backup, import and reset touch both.
+import { SINGLE_DB, SHADCHAN_DB } from './db.js';
+import { isShadchan } from './mode.js';
 import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim, makeDemoNotes, makeDemoProfile } from './seed.js';
 
-export const SCHEMA_VERSION = DB_VERSION;
-export const APP_VERSION = '0.8.0';
-export const STAGE = 8; // last finished stage (shown in Settings → About)
+const DB = isShadchan ? SHADCHAN_DB : SINGLE_DB;
+const { idb } = DB;
+export const SCHEMA_VERSION = DB.version;
+export const APP_VERSION = '0.9.0';
+export const STAGE = isShadchan ? 'S6' : 8; // last finished stage of this mode (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -19,14 +25,41 @@ export function newId(prefix = 'r') {
 }
 export const now = () => new Date().toISOString();
 
+// ---------- Recently deleted (Shadchan Mode only) ----------
+// There, remove() does not erase: the record gets `deletedAt` and waits KEEP_DELETED_DAYS in
+// Settings → Recently deleted. list / get / byIndex / count never return such records, so pages
+// need no changes. Single Mode erases at once, as before.
+export const SOFT_DELETE = isShadchan;
+export const KEEP_DELETED_DAYS = 30;
+const alive = (r) => !!r && !r.deletedAt;
+let openBatch = null;
+// Everything removed inside `fn` counts as ONE deletion: one line in Recently deleted, one Restore.
+// Use it wherever deleting one thing also deletes its parts (a person with their originals …).
+export async function asOne(fn) {
+  if (openBatch) return fn();
+  openBatch = newId('del');
+  try { return await fn(); } finally { openBatch = null; }
+}
+// Take one link off a record that stays (e.g. a conversation that also belongs to someone else).
+// `field` holds one id or a list of ids. In Shadchan Mode the link is remembered, so Restore re-links it.
+export async function unlink(col, rec, field, id) {
+  const next = { ...rec, [field]: Array.isArray(rec[field]) ? rec[field].filter(x => x !== id) : null };
+  if (SOFT_DELETE && openBatch) {
+    next.unlinked = [...(rec.unlinked || []), { field, id, batch: openBatch }];
+    next.unlinkedIn = [...new Set([...(rec.unlinkedIn || []), openBatch])];
+  }
+  return col.save(next);
+}
+
 // ---------- generic record API ----------
 function collection(store, prefix) {
+  const soft = SOFT_DELETE;
   return {
     store,
-    list: () => idb.getAll(store),
-    get: (id) => idb.get(store, id),
-    byIndex: (index, value) => idb.byIndex(store, index, value),
-    count: () => idb.count(store),
+    list: soft ? async () => (await idb.getAll(store)).filter(alive) : () => idb.getAll(store),
+    get: soft ? async (id) => { const r = await idb.get(store, id); return alive(r) ? r : undefined; } : (id) => idb.get(store, id),
+    byIndex: soft ? async (index, value) => (await idb.byIndex(store, index, value)).filter(alive) : (index, value) => idb.byIndex(store, index, value),
+    count: soft ? async () => (await idb.count(store)) - (await idb.countIndex(store, 'deletedAt')) : () => idb.count(store),
     async save(rec) {
       const t = now();
       const out = { ...rec, id: rec.id || newId(prefix), createdAt: rec.createdAt || t, updatedAt: t };
@@ -41,8 +74,21 @@ function collection(store, prefix) {
       emit({ store, type: 'saveMany', count: out.length });
       return out;
     },
-    async remove(id) { await idb.delete(store, id); emit({ store, type: 'remove', id }); },
+    async remove(id) {
+      if (soft) {
+        const rec = await idb.get(store, id);
+        if (alive(rec)) { const t = now(); await idb.put(store, { ...rec, deletedAt: t, deletedBatch: openBatch || newId('del'), updatedAt: t }); }
+      } else await idb.delete(store, id);
+      emit({ store, type: 'remove', id });
+    },
   };
+}
+
+// Undo of something made a moment ago: really erase it, in both modes (it never waits in Recently deleted).
+export async function discard(col, ids) {
+  if (!ids.length) return;
+  await idb.deleteMany(col.store, ids);
+  emit({ store: col.store, type: 'remove', count: ids.length });
 }
 
 export const contacts        = collection('contacts', 'c');
@@ -69,6 +115,7 @@ const ALL = [contacts, people, notes, events, followUps, folders, sources, inter
 // ---------- presentation preferences (small, separate from records) ----------
 const PREF_KEY = 'zugdesk.prefs';
 const PREF_DEFAULTS = {
+  mode: 'single',            // 'single' | 'shadchan' — changed only through switchMode() in js/mode.js (it reloads the app)
   showLabels: false,
   theme: 'dark',             // 'light' | 'dark' | 'auto' (match phone) — dark is the default (owner choice)
   contactsLayout: 'a',       // phone view: a | rail | tabs | list | inbox (spec/contacts.md CT-13)
@@ -77,6 +124,7 @@ const PREF_DEFAULTS = {
   personKind: 'guy',         // Add Person: last chosen Guy / Girl
   shidduchimView: 'compact', // Shidduchim list: compact | expanded
   homeSuggestions: true,     // Home: Smart Suggestions dot (blue = on)
+  shHomeBlocks: null,        // Shadchan Home: [{ id, on }] block order and show/hide (null = first layout; pages/sh-home.js)
   profileLang: 'en',         // My Profile: language being viewed / edited
 };
 export function getPrefs() {
@@ -100,13 +148,23 @@ export function setPref(key, value) {
 
 // ---------- meta ----------
 async function getMeta(key) { const r = await idb.get('meta', key); return r ? r.value : undefined; }
-async function setMeta(key, value) { await idb.put('meta', { id: key, value }); }
+async function setMeta(key, value) { await idb.put('meta', { id: key, value, updatedAt: now() }); }
 
 // ---------- init: a new phone starts empty; the demo is one button in Settings ----------
 export const FULL_DEMO_SEED = 200;
 
 export async function init() {
   if (!(await getMeta('seeded'))) await setMeta('seeded', { at: now(), count: 0 });
+  if (isShadchan) { // Shadchan Mode has none of Single Mode's older demo steps
+    await purgeExpired();
+    // Stage S3: a device that already shows the demo singles gets the fictional shidduchim once.
+    if (!(await getMeta('demoShidduchimS3'))) {
+      if (await idb.get('people', 'demo_s_g01')) await loadShadchanDemo();
+      await setMeta('demoShidduchimS3', { at: now() });
+    }
+    await setMeta('schemaVersion', SCHEMA_VERSION);
+    return;
+  }
   // Stage 2: demo contacts loaded before conversations existed get their fictional history once.
   if (!(await getMeta('demoActivityV1'))) {
     await addDemoActivity((await contacts.list()).filter(c => c.demo));
@@ -137,6 +195,7 @@ export async function init() {
 
 // Settings → "Try the demo": 200 fictional contacts plus people, shidduchim, notes and an example profile.
 export async function loadFullDemo() {
+  if (isShadchan) return loadShadchanDemo();
   const added = await loadDemoContacts(FULL_DEMO_SEED);
   await loadDemoPeople(); await loadDemoShidduchim(); await loadDemoNotes(); await loadDemoProfile();
   emit({ store: '*', type: 'import', total: added });
@@ -220,11 +279,42 @@ async function addDemoActivity(demoContacts) {
   if (f2.length) await followUps.saveMany(f2);
 }
 
+// Shadchan Mode's demo: 60 fictional singles (30 guys, 30 girls) with a few made-up contacts,
+// originals, notes and follow-ups. Fixed ids, so loading twice adds nothing; a demo record the
+// user deleted stays deleted. Returns how many singles were added.
+export const SH_DEMO_SINGLES = 60;
+export async function loadShadchanDemo() {
+  const { makeShadchanDemo } = await import('./seed-shadchan.js');
+  const d = makeShadchanDemo();
+  let singles = 0;
+  let newOffers = [];
+  for (const [col, rows] of [[contacts, d.contacts], [people, d.people], [sources, d.sources], [events, d.events], [followUps, d.followUps], [notes, d.notes],
+    [offers, d.offers], [tries, d.tries], [stageEvents, d.stageEvents], [dateEvents, d.dateEvents]]) {
+    const have = new Set(await idb.keys(col.store));
+    const fresh = rows.filter(r => !have.has(r.id));
+    if (fresh.length) await col.saveMany(fresh);
+    if (col === people) singles = fresh.length;
+    if (col === offers) newOffers = fresh;
+  }
+  // The demo couples who are dating or engaged get the status the app would have set by itself.
+  for (const o of newOffers) {
+    const status = o.status === 'progress' ? 'busy' : o.status === 'engaged' ? 'engaged' : null;
+    if (!status) continue;
+    for (const id of [o.guyId, o.girlId]) {
+      const p = await people.get(id);
+      if (p && p.demo && (!p.status || p.status === 'available' || p.status === status)) await idb.put('people', { ...p, status, busyUntil: null, statusBy: o.id });
+    }
+  }
+  emit({ store: '*', type: 'import', total: singles });
+  return singles;
+}
+
 // Removes every record flagged demo:true in every store. Owner-typed data stays.
+// (Read straight from the database, so demo records waiting in Recently deleted go too.)
 export async function removeDemoData() {
   let removed = 0;
   for (const col of ALL) {
-    const all = await col.list();
+    const all = await idb.getAll(col.store);
     const ids = all.filter(r => r.demo).map(r => r.id);
     if (ids.length) { await idb.deleteMany(col.store, ids); removed += ids.length; }
   }
@@ -238,51 +328,178 @@ export async function counts() {
   return out;
 }
 
-// ---------- export / import / reset ----------
-export async function exportAll() {
+// ---------- Recently deleted: list, restore, erase ----------
+// One entry per deletion: { batch, at, items: [{ store, rec }] }, newest first.
+export async function listDeleted() {
+  if (!SOFT_DELETE) return [];
+  const groups = new Map();
+  for (const col of ALL) {
+    for (const rec of await idb.byIndex(col.store, 'deletedAt')) {
+      const key = rec.deletedBatch || rec.id;
+      const g = groups.get(key) || groups.set(key, { batch: key, at: rec.deletedAt, items: [] }).get(key);
+      if (rec.deletedAt > g.at) g.at = rec.deletedAt;
+      g.items.push({ store: col.store, rec });
+    }
+  }
+  return [...groups.values()].sort((x, y) => y.at.localeCompare(x.at));
+}
+// Puts back everything one deletion removed, and re-links what it had unlinked.
+export async function restoreDeleted(batch) {
+  if (!SOFT_DELETE) return 0;
+  let count = 0;
+  for (const col of ALL) {
+    const out = [];
+    const rows = new Map();
+    for (const r of await idb.byIndex(col.store, 'deletedAt')) if ((r.deletedBatch || r.id) === batch) rows.set(r.id, r);
+    for (const r of await idb.byIndex(col.store, 'unlinkedIn', batch)) if (!rows.has(r.id)) rows.set(r.id, r);
+    for (const r of rows.values()) {
+      const next = { ...r, updatedAt: now() };
+      if (r.deletedAt && (r.deletedBatch || r.id) === batch) { delete next.deletedAt; delete next.deletedBatch; count++; }
+      for (const u of (r.unlinked || []).filter(u => u.batch === batch)) {
+        if (Array.isArray(next[u.field])) { if (!next[u.field].includes(u.id)) next[u.field] = [...next[u.field], u.id]; }
+        else if (next[u.field] == null) next[u.field] = u.id;
+      }
+      forgetUnlinks(next, new Set([batch]));
+      out.push(next);
+    }
+    if (out.length) await idb.putMany(col.store, out);
+  }
+  emit({ store: '*', type: 'restore', count });
+  return count;
+}
+function forgetUnlinks(rec, batches) {
+  if (!rec.unlinked) return;
+  rec.unlinked = rec.unlinked.filter(u => !batches.has(u.batch));
+  rec.unlinkedIn = (rec.unlinkedIn || []).filter(b => !batches.has(b));
+  if (!rec.unlinked.length) { delete rec.unlinked; delete rec.unlinkedIn; }
+}
+// Erases one deletion for good ("Delete forever").
+export async function eraseDeleted(batch) {
+  if (!SOFT_DELETE) return 0;
+  let count = 0;
+  for (const col of ALL) {
+    const ids = (await idb.byIndex(col.store, 'deletedAt')).filter(r => (r.deletedBatch || r.id) === batch).map(r => r.id);
+    if (ids.length) { await idb.deleteMany(col.store, ids); count += ids.length; }
+    const marked = await idb.byIndex(col.store, 'unlinkedIn', batch);
+    if (marked.length) { marked.forEach(r => forgetUnlinks(r, new Set([batch]))); await idb.putMany(col.store, marked); }
+  }
+  emit({ store: '*', type: 'erase', count });
+  return count;
+}
+// Runs when the app opens: erases what has waited longer than KEEP_DELETED_DAYS.
+export async function purgeExpired() {
+  if (!SOFT_DELETE) return 0;
+  const cutoff = new Date(Date.now() - KEEP_DELETED_DAYS * 86400000).toISOString();
+  let count = 0;
+  for (const col of ALL) {
+    const ids = await idb.keysByIndex(col.store, 'deletedAt', IDBKeyRange.upperBound(cutoff));
+    if (ids.length) { await idb.deleteMany(col.store, ids); count += ids.length; }
+  }
+  return count;
+}
+
+// ---------- keeping the data: permanent storage and the last backup ----------
+// Browsers may clear a site's storage when the device runs low on space, unless the site asked
+// to keep it. 'kept' | 'not-kept' | 'unsupported'.
+export async function storageState() {
+  if (!navigator.storage || !navigator.storage.persisted) return 'unsupported';
+  try { return (await navigator.storage.persisted()) ? 'kept' : 'not-kept'; } catch { return 'unsupported'; }
+}
+export async function askToKeepStorage() {
+  if (!navigator.storage || !navigator.storage.persist) return false;
+  try { return await navigator.storage.persist(); } catch { return false; }
+}
+const BACKUP_KEY = 'zugdesk.lastBackupAt';
+export function lastBackupAt() { try { return localStorage.getItem(BACKUP_KEY) || null; } catch { return null; } }
+export function noteBackupMade() { try { localStorage.setItem(BACKUP_KEY, now()); } catch {} emit({ store: 'prefs', type: 'backup' }); }
+
+// ---------- export / import / reset (one file holds both modes) ----------
+async function dump(db, files) {
   const data = {};
-  for (const name of Object.keys(STORES)) data[name] = await idb.getAll(name);
+  for (const name of Object.keys(db.stores)) if (files || name !== 'attachments') data[name] = await db.idb.getAll(name);
+  return data;
+}
+// `data` is Single Mode (same place as before Shadchan Mode existed, so old backups still load);
+// `shadchan.data` is Shadchan Mode.
+// files: false leaves attachments out (`noFiles: true`); importing such a file never touches the files on the device.
+// Locking the file with a password is js/backup.js.
+export async function exportAll({ files = true } = {}) {
   return {
-    app: 'ZugDesk', appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION,
-    exportedAt: now(), prefs: getPrefs(), data,
+    app: 'ZugDesk', appVersion: APP_VERSION, schemaVersion: SINGLE_DB.version,
+    exportedAt: now(), prefs: getPrefs(), ...(files ? {} : { noFiles: true }), data: await dump(SINGLE_DB, files),
+    shadchan: { schemaVersion: SHADCHAN_DB.version, data: await dump(SHADCHAN_DB, files) },
   };
+}
+// Attached files on this device, both modes (for the backup sheet).
+export async function fileCount() {
+  return (await SINGLE_DB.idb.count('attachments')) + (await SHADCHAN_DB.idb.count('attachments'));
 }
 
 export function validateBackup(json) {
   if (!json || typeof json !== 'object') return 'Not a JSON object';
   if (json.app !== 'ZugDesk') return 'This file is not a ZugDesk backup';
   if (typeof json.schemaVersion !== 'number') return 'Backup has no schema version';
-  if (json.schemaVersion > SCHEMA_VERSION) return `Backup is from a newer app (schema ${json.schemaVersion}); update the app first`;
+  if (json.schemaVersion > SINGLE_DB.version) return `Backup is from a newer app (schema ${json.schemaVersion}); update the app first`;
   if (!json.data || typeof json.data !== 'object') return 'Backup has no data section';
+  if (json.shadchan != null) {
+    if (typeof json.shadchan !== 'object' || !json.shadchan.data || typeof json.shadchan.data !== 'object') return 'Backup has a broken Shadchan Mode section';
+    if (json.shadchan.schemaVersion > SHADCHAN_DB.version) return `Backup is from a newer app (Shadchan schema ${json.shadchan.schemaVersion}); update the app first`;
+  }
   return null;
 }
+export const backupRows = (json) => [json.data, json.shadchan && json.shadchan.data].filter(Boolean)
+  .reduce((n, d) => n + Object.values(d).reduce((m, a) => m + (Array.isArray(a) ? a.length : 0), 0), 0);
 
-// mode 'replace' wipes current records first; 'merge' keeps current records and
-// overwrites same-id records with the backup's copy.
+async function loadInto(db, data, mode, noFiles) {
+  const names = Object.keys(db.stores).filter(n => !(noFiles && n === 'attachments'));
+  const stats = { total: 0, keptHere: 0 };
+  // Merge (phone and computer in step, S7): for a record that is on both sides, the copy changed last wins.
+  // Deletes are marks with a newer updatedAt, so a delete on one device carries over too.
+  const here = {};
+  if (mode !== 'replace') for (const name of names) here[name] = new Map((await db.idb.getAll(name)).map(r => [r.id, r]));
+  await db.tx(names, 'readwrite', (s) => {
+    for (const name of names) {
+      if (mode === 'replace') s[name].clear();
+      const rows = Array.isArray(data[name]) ? data[name] : [];
+      for (const r of rows) {
+        if (!r || !r.id) continue;
+        const mine = here[name] && here[name].get(r.id);
+        if (mine && (mine.updatedAt || '') > (r.updatedAt || '')) { stats.keptHere++; continue; }
+        s[name].put(r); stats.total++;
+      }
+    }
+    s.meta.put({ id: 'seeded', value: { at: now(), imported: true } });
+    s.meta.put({ id: 'schemaVersion', value: db.version });
+  });
+  return stats;
+}
+
+// mode 'replace' wipes current records first; 'merge' keeps current records and, for a record on both sides,
+// keeps whichever copy was changed last (so moving the file between phone and computer never loses newer work).
+// A backup made before Shadchan Mode has no Shadchan part: Shadchan Mode records are then left alone.
+// Returns { total: records written, keptHere: records skipped because this device's copy is newer }.
 export async function importAll(json, mode = 'replace') {
   const err = validateBackup(json);
   if (err) throw new Error(err);
-  const names = Object.keys(STORES);
-  let total = 0;
-  await tx(names, 'readwrite', (s) => {
-    for (const name of names) {
-      if (mode === 'replace') s[name].clear();
-      const rows = Array.isArray(json.data[name]) ? json.data[name] : [];
-      for (const r of rows) { if (r && r.id) { s[name].put(r); total++; } }
-    }
-    s.meta.put({ id: 'seeded', value: { at: now(), imported: true } });
-    s.meta.put({ id: 'schemaVersion', value: SCHEMA_VERSION });
-  });
+  const a = await loadInto(SINGLE_DB, json.data, mode, json.noFiles);
+  const b = json.shadchan ? await loadInto(SHADCHAN_DB, json.shadchan.data, mode, json.noFiles) : { total: 0, keptHere: 0 };
+  const total = a.total + b.total, keptHere = a.keptHere + b.keptHere;
   if (json.prefs && typeof json.prefs === 'object') {
-    for (const [k, v] of Object.entries(json.prefs)) if (k in PREF_DEFAULTS) setPref(k, v);
+    // The mode is this device's own choice; a backup never switches it.
+    for (const [k, v] of Object.entries(json.prefs)) if (k in PREF_DEFAULTS && k !== 'mode') setPref(k, v);
   }
   emit({ store: '*', type: 'import', total });
-  return total;
+  return { total, keptHere };
 }
 
+// Deletes both modes' records and the settings. The app stays in the mode it is in.
 export async function resetAll({ reseed = true } = {}) {
-  await deleteDatabase();
-  try { localStorage.removeItem(PREF_KEY); } catch {}
+  await SINGLE_DB.deleteDatabase();
+  await SHADCHAN_DB.deleteDatabase();
+  try {
+    localStorage.removeItem(PREF_KEY); localStorage.removeItem(BACKUP_KEY);
+    if (isShadchan) localStorage.setItem(PREF_KEY, JSON.stringify({ mode: 'shadchan', theme: 'dark', darkDefaultV1: true }));
+  } catch {}
   if (reseed) await init(); else await setMeta('seeded', { at: now(), count: 0 });
   emit({ store: '*', type: 'reset' });
 }
@@ -329,7 +546,8 @@ export const CHOICE_DEFAULTS = {
   ages: ['30 and under'],
   communities: ['Chabad', 'Haredi', 'Litvish', 'Bukharian', 'Sephardi', 'Breslev', 'Dati Leumi', 'Modern Orthodox', 'Yeshivish'],
   languages: ['English', 'Hebrew', 'Russian', 'Yiddish'],
-  roles: ['shadchan', 'reference', 'friend', 'family', 'helper'],
+  // Shadchan Mode's contacts are everyone who is not a single (spec/shadchan/design.md 6.5).
+  roles: isShadchan ? ['parent', 'shadchan', 'reference', 'rav', 'other'] : ['shadchan', 'reference', 'friend', 'family', 'helper'],
 };
 export const CHOICE_NAMES = { ages: 'Ages they work with', communities: 'Religious groups', languages: 'Languages', roles: 'Roles' };
 // Add Person lists (spec/add-person.md AP-06 / AP-10). Same storage, own keys.

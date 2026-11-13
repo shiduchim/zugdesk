@@ -108,13 +108,15 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-11_
+_Last updated: 2026-11-13 (S7 done)_
 
 ### In progress
-- (nothing)
+- Shadchan Mode S1–S7 all built on branch `claude/eloquent-thompson-tchp32` (PR open). S7 = in step by moving the backup file and choosing Merge (owner: nothing online for now).
 
 ### Next steps
-- Owner has not made the PR yet for branch claude/tweaks-ended-shidduch (say "make the PR").
+- **Owner:** try on phone and computer: Export on one, send the file to yourself, Import → Merge on the other. Then merge the PR.
+- **Owner:** decide the address and run the test round: `spec/shadchan/test-round.md`.
 
 ### Notes / blockers
-- 
+- Not testable from here: where each phone saves a downloaded file, opening it from WhatsApp/email, iPhone storage, real NetFree / TAG filters.
+- Optional screen lock (design.md section 7) is not built; nobody asked for it yet.

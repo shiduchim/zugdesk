@@ -220,3 +220,16 @@ main.content:has(.dock),main.content:has(.form-foot),main.content:has(.me-foot){
 .fchip[aria-pressed="true"]{background:var(--selected-bg);border-color:var(--selected-edge);font-weight:600}
 
 
+/* Slim bar: items marked with-word keep a small name under the icon (Guys and Girls share one icon). */
+@media (max-width:1023.98px){
+  body.shell-slim .bottom-nav a.with-word span:not(.ico){display:block;font-size:var(--nav-word-font);line-height:1;margin-top:2px}
+  body.shell-slim .bottom-nav a.with-word svg{width:var(--nav-word-icon);height:var(--nav-word-icon)}
+  body.shell-slim .bottom-nav a.with-word[aria-current="page"]::after{margin-top:2px}
+}
+
+/* Backup sheet (pages/backup-sheet.js; opened from Settings and Shadchan Home) */
+.backup-pw{display:flex;flex-direction:column;gap:10px;margin:4px 0 8px}
+.backup-check{display:flex;align-items:center;gap:8px;min-height:var(--touch-min);font-size:var(--font-sm);color:var(--muted)}
+.backup-warn{margin:0;padding:10px 12px;border-radius:var(--radius-sm);background:var(--warn-bg);color:var(--warn);font-size:var(--font-sm)}
+.backup-msg{min-height:1.2em;margin:6px 0 0}
+.backup-msg:empty{display:none}

@@ -7,6 +7,9 @@ import * as N from './notes-data.js';
 import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from './home-data.js';
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
 import { recordInterest } from './idea-flow.js';
+import { isShadchan, modeLabel } from '../js/mode.js';
+// Shadchan Mode builds Home from blocks (pages/sh-home.js); Single Mode never loads it.
+const SHH = isShadchan ? await import('./sh-home.js') : null;
 
 const STAR = '<svg class="star" viewBox="230 215 533 605" width="12" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M 491 228 L 477 233 L 463 245 L 417 324 L 405 337 L 397 343 L 384 350 L 361 355 L 292 354 L 271 356 L 258 363 L 247 376 L 243 388 L 243 400 L 246 411 L 291 489 L 296 507 L 297 525 L 290 549 L 245 627 L 243 646 L 246 657 L 252 667 L 260 674 L 271 679 L 292 681 L 359 680 L 376 683 L 398 693 L 407 700 L 418 713 L 462 790 L 470 798 L 483 805 L 501 807 L 517 802 L 530 791 L 576 712 L 592 695 L 598 691 L 617 683 L 633 680 L 718 680 L 730 676 L 736 672 L 744 663 L 750 647 L 749 630 L 745 620 L 701 544 L 697 530 L 696 517 L 698 502 L 703 487 L 747 411 L 750 400 L 750 387 L 743 371 L 734 362 L 721 356 L 708 354 L 624 354 L 608 349 L 595 342 L 575 322 L 528 242 L 523 237 L 510 230 Z M 493 255 L 503 256 L 509 262 L 554 339 L 564 351 L 585 367 L 602 375 L 627 381 L 712 381 L 717 383 L 723 391 L 723 398 L 679 475 L 670 505 L 671 536 L 676 553 L 683 568 L 723 637 L 722 647 L 713 654 L 620 655 L 597 662 L 585 668 L 571 678 L 559 690 L 542 716 L 512 770 L 507 776 L 500 780 L 490 779 L 484 774 L 440 698 L 422 678 L 408 668 L 385 658 L 364 654 L 279 654 L 272 648 L 270 643 L 270 638 L 274 629 L 317 554 L 323 530 L 323 506 L 318 484 L 311 469 L 273 405 L 270 397 L 271 389 L 277 383 L 283 381 L 374 380 L 395 374 L 407 368 L 425 355 L 437 342 L 483 263 L 487 258 Z"/></svg>';
 const FU_FIRST = 10, HIST_FIRST = 5, HIST_STEP = 50;
@@ -15,7 +18,7 @@ const fine = () => window.matchMedia('(hover:hover) and (pointer:fine)').matches
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 
 let root = null, unsub = null, timer = 0, gen = 0;
-let D = null, X = null, IX = null;
+let D = null, X = null, IX = null, SH = null;
 let U = { expanded: null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
 let drafts = {};
 const els = {};
@@ -23,9 +26,10 @@ const els = {};
 export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
 
 export async function render(container, params) {
-  swipeTabs(container, { keys: () => PHONE.matches ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
+  swipeTabs(container, { keys: () => PHONE.matches && !SHH ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
   root = container;
   root.classList.add('home-page', 'wide');
+  if (SHH) root.classList.add('sh-home');
   U = { expanded: params.noteId || null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
   if (params.noteId) section = 'notes';
   try { drafts = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; } catch { drafts = {}; }
@@ -36,15 +40,17 @@ export async function render(container, params) {
   els.notes = h('section', { class: 'home-notes', 'data-id': 'home.notes' });
   els.fus = h('section', { class: 'home-panel home-followups', 'data-id': 'home.followups' });
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
-  els.grid = h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
+  els.grid = SHH ? h('div', { class: 'shh-blocks', 'data-id': 'home.blocks' }) : h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
   root.append(h('div', { class: 'home-wrap' },
     // Title and tagline removed to save phone screen space (owner request); tabs go first.
     // Phone has no top bar; Settings sits at the end of the tab row, using no extra space (owner request).
-    h('div', { class: 'home-tabline' }, tabRow(),
-      h('a', { class: 'icon-btn home-settings', href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') })), els.search, els.results, els.composer, els.grid));
+    h('div', { class: 'home-tabline' }, SHH ? h('span', { class: 'spacer' }) : tabRow(),
+      // Shadchan Mode says so under the gear (no extra width), so it is always clear which mode is open.
+      h('a', { class: 'icon-btn home-settings' + (isShadchan ? ' has-mode' : ''), href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') },
+        isShadchan ? h('span', { class: 'home-mode', 'data-id': 'home.mode' }, modeLabel()) : null)), els.search, els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
-    if (ch.store === 'prefs' && ch.key !== 'homeSuggestions') return;
+    if (ch.store === 'prefs' && ch.key !== 'homeSuggestions' && !(SHH && (ch.key === 'shHomeBlocks' || ch.type === 'backup'))) return;
     if (ch.store === 'meta') return;
     clearTimeout(timer); timer = setTimeout(() => reload(), 120);
   });
@@ -53,14 +59,14 @@ export async function render(container, params) {
 
 async function reload(first = false) {
   const token = ++gen;
-  const [d, stageEvents, offers, interests, activity, shares] = await Promise.all([
-    N.loadNotes(), store.stageEvents.list(), store.offers.list(), store.interests.list(), store.activity.list(), store.shares.list()]);
+  const [d, stageEvents, offers, interests, activity, shares, sh] = await Promise.all([
+    N.loadNotes(), store.stageEvents.list(), store.offers.list(), store.interests.list(), store.activity.list(), store.shares.list(), SHH ? SHH.load() : null]);
   if (token !== gen || !root) return;
-  D = d; IX = nameIndex(D);
+  D = d; IX = nameIndex(D); SH = sh;
   X = { stageEvents, offersById: new Map(offers.map(o => [o.id, o])), interests, activity, shares };
   keepFocus(() => {
     if (first) drawComposer();
-    drawNotes(); drawFollowUps(); drawHistory(); if (U.q) drawSearch();
+    drawNotes(); drawFollowUps(); drawHistory(); drawBlocks(); if (U.q) drawSearch();
     tabCounts(); applySection();
   });
   if (first && U.expanded) setTimeout(() => root?.querySelector(`[data-note="${CSS.escape(U.expanded)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
@@ -368,7 +374,7 @@ function tabRow() {
   return els.tabs;
 }
 function applySection() {
-  if (!root) return;
+  if (!root || SHH) return; // Shadchan Home has no tabs: every shown block is on the page
   const phone = PHONE.matches;
   els.tabs?.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', b.dataset.id === 'home.tab-' + section ? 'true' : 'false'));
   els.composer.classList.toggle('hidden', phone && section !== 'notes');
@@ -377,6 +383,8 @@ function applySection() {
   els.hist.classList.toggle('hidden', phone && section !== 'history');
 }
 function showSection(k) { section = k; applySection(); }
+// Shadchan Mode: arrange the blocks. Notes stay on the page while a note is open, even if hidden.
+function drawBlocks() { if (SHH && root && SH) SHH.draw(els.grid, { notes: els.notes, fus: els.fus, hist: els.hist }, SH, D, { keepNotes: !!U.expanded }); }
 function tabCounts() {
   if (!els.tabs) return;
   const c = { notes: shownNotes().length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
@@ -448,7 +456,7 @@ function noteCard(n) {
     composer('note:' + n.id));
 }
 function expand(id) {
-  U.expanded = id; N.closeMenu(); showSection('notes'); drawNotes();
+  U.expanded = id; N.closeMenu(); showSection('notes'); drawNotes(); drawBlocks();
   const ta = root?.querySelector(`textarea[data-key="note:${CSS.escape(id)}"]`);
   if (ta) { ta.focus({ preventScroll: true }); ta.closest('.note-card')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
 }
@@ -459,7 +467,7 @@ function drawFollowUps() {
   const open = openFollowUps(D.followUps);
   const shown = U.fuAll ? open : open.slice(0, FU_FIRST);
   els.fus.innerHTML = '';
-  els.fus.append(secHead('To do', 'Follow Ups', open.length, 'home.followups-head'));
+  els.fus.append(SHH ? h('div', { class: 'note-group-title', 'data-id': 'home.followups-head' }, 'My follow-ups ', h('span', { class: 'count' }, String(open.length))) : secHead('To do', 'Follow Ups', open.length, 'home.followups-head'));
   if (!open.length) { els.fus.append(h('p', { class: 'note home-empty' }, 'Nothing waiting. Tap Follow Up while writing a note to add one.')); return; }
   els.fus.append(h('ul', { class: 'fu-lines' }, shown.map(fuRow)));
   if (open.length > FU_FIRST) els.fus.append(h('button', { type: 'button', class: 'section-expand', 'data-id': 'home.followups-more', 'aria-expanded': U.fuAll ? 'true' : 'false',
@@ -544,7 +552,8 @@ function drawSearch() {
   const notes = D.notes.filter(n => has(n.title) || (D.entries.get(n.id) || []).some(e => has(e.text)));
   if (notes.length) groups.push(['Notes', notes.slice(0, 8).map(n => resultRow(n.title, (D.entries.get(n.id) || []).map(e => e.text).find(has) || '', null, () => openNote(n.id)))]);
   const people = D.people.filter(p => has(p.name) || has(p.city) || has(p.occupation));
-  if (people.length) groups.push(['Suggested people', people.slice(0, 8).map(p => resultRow(store.personName(p), [p.age, p.city, p.occupation].filter(Boolean).join(' · '), `#/people/${encodeURIComponent(p.id)}`))]);
+  if (SH) { const sh = SHH.searchShidduchim(SH, has); if (sh.length) groups.push([`Shidduchim${sh.length > 8 ? ` · ${sh.length}` : ''}`, sh.slice(0, 8).map(r => resultRow(r.title, r.sub, r.href))]); }
+  if (people.length) groups.push([SHH ? `Singles${people.length > 8 ? ` · ${people.length}` : ''}` : 'Suggested people', people.slice(0, 8).map(p => resultRow(store.personName(p), [p.age, p.city, p.occupation].filter(Boolean).join(' · '), `#/people/${encodeURIComponent(p.id)}`))]);
   const contacts = D.contacts.filter(c => has(store.displayName(c)) || has(c.city));
   if (contacts.length) groups.push([`Contacts${contacts.length > 8 ? ` · ${contacts.length}` : ''}`, contacts.slice(0, 8).map(c => resultRow(store.displayName(c), [c.city, ...(c.roles || [])].filter(Boolean).join(' · '), `#/contacts/${encodeURIComponent(c.id)}`))]);
   const convs = D.events.filter(e => !e.noteId && has(e.text));

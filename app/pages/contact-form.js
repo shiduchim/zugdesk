@@ -5,12 +5,13 @@ import * as store from '../js/store.js';
 import { h, icon, toast, sheet, promptText, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { S } from './contacts-data.js';
+import { isShadchan } from '../js/mode.js';
 
 const TITLES = ['Mrs.', 'Rabbi', 'Rebbetzin', 'Mr.', 'Dr.'];
 const STATUS = [['waiting', 'Waiting'], ['follow-up', 'Follow-up'], ['active', 'Active']];
 const METHODS = ['WhatsApp', 'Phone call', 'Email', 'Text message'];
 const FAMILIARITY = ['Never spoke', 'Talked by phone', 'Met in person', 'Know personally', 'Would recommend'];
-const ROLE_LABEL = { shadchan: 'Shadchan', reference: 'Reference', friend: 'Friend', family: 'Family', helper: 'Helper' };
+const ROLE_LABEL = { shadchan: 'Shadchan', reference: 'Reference', friend: 'Friend', family: 'Family', helper: 'Helper', parent: 'Parent', rav: 'Rav', other: 'Other' };
 const MAX_FILE = 5 * 1024 * 1024;
 
 let root = null, gen = 0;
@@ -37,7 +38,7 @@ export async function render(container, params = {}) {
 
   const v = {
     title: c?.title || '', name: c ? ([c.firstName, c.lastName].filter(Boolean).join(' ') || c.name || '') : '',
-    roles: c?.roles?.length ? [...c.roles] : ['shadchan'],
+    roles: c?.roles?.length ? [...c.roles] : isShadchan ? [] : ['shadchan'], // Shadchan Mode: a new contact is as often a parent, so nothing is pre-chosen
     status: c?.status && c.status !== 'none' ? c.status : '', preferredContact: c?.preferredContact || '',
     ages: [...(c?.ages || [])], communities: [...(c?.communities || [])], languages: [...(c?.languages || [])],
     familiarity: c?.familiarity || '',
@@ -141,23 +142,25 @@ export async function render(container, params = {}) {
   root.append(
     h('div', { class: 'page-head' },
       h('a', { class: 'icon-btn', href: editing ? `#/contacts/${encodeURIComponent(id)}` : '#/contacts', 'aria-label': 'Back', 'data-id': 'shadchan.back', html: icon('back') }),
-      h('h1', {}, editing ? 'Edit contact' : 'Add Shadchan')),
+      h('h1', {}, editing ? 'Edit contact' : isShadchan ? 'Add Contact' : 'Add Shadchan')),
     h('p', { class: 'note intro' }, 'Everything is optional except the name. Leave anything you don’t know empty.'),
     form);
 
   function cancel() { navigate(editing ? `/contacts/${encodeURIComponent(id)}` : '/contacts'); }
 
   async function del() {
-    if (!(await confirmDialog({ title: 'Delete this contact?', text: `${store.displayName(c)} will be removed from this phone, with their follow-ups and attachments. Conversation entries linked to someone else stay for them. This cannot be undone.`, ok: 'Delete', danger: true, dataId: 'shadchan.delete-dialog' }))) return;
-    for (const f of await store.followUps.byIndex('contactId', id)) await store.followUps.remove(f.id);
-    for (const a of existingAtts) await store.attachments.remove(a.id);
-    for (const e of await store.events.byIndex('contactIds', id)) {
-      const rest = (e.contactIds || []).filter(x => x !== id);
-      if (rest.length || (e.personIds || []).length) await store.events.save({ ...e, contactIds: rest }); else await store.events.remove(e.id);
-    }
-    await store.contacts.remove(id);
+    if (!(await confirmDialog({ title: 'Delete this contact?', text: `${store.displayName(c)} will be removed from this phone, with their follow-ups and attachments. Conversation entries linked to someone else stay for them. ${store.SOFT_DELETE ? 'You can put it back for 30 days from Settings → Recently deleted.' : 'This cannot be undone.'}`, ok: 'Delete', danger: true, dataId: 'shadchan.delete-dialog' }))) return;
+    await store.asOne(async () => { // one deletion: Shadchan Mode can restore it whole from Recently deleted
+      for (const f of await store.followUps.byIndex('contactId', id)) await store.followUps.remove(f.id);
+      for (const a of existingAtts) await store.attachments.remove(a.id);
+      for (const e of await store.events.byIndex('contactIds', id)) {
+        const rest = (e.contactIds || []).filter(x => x !== id);
+        if (rest.length || (e.personIds || []).length) await store.unlink(store.events, e, 'contactIds', id); else await store.events.remove(e.id);
+      }
+      await store.contacts.remove(id);
+    });
     if (S.selectedId === id) S.selectedId = null;
-    toast('Contact deleted'); navigate('/contacts');
+    toast(store.SOFT_DELETE ? 'Contact deleted. It waits 30 days in Settings → Recently deleted' : 'Contact deleted', store.SOFT_DELETE ? 5000 : undefined); navigate('/contacts');
   }
 
   async function save() {
