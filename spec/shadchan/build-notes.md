@@ -169,3 +169,13 @@ device's files) and is locked with a password by default (section 10).
 - S6 size check: every page of both modes at 320 / 360 / 390 / 430 / 768 / 1280 px with the demo: no sideways scroll, no "null",
   no errors, no request outside the app's address.
 - Address and the test round: `test-round.md` (owner decisions). S7 sync must read and write the same backup JSON (locked) as its unit.
+
+## 11. What S7 added (phone and computer in step, by file)
+
+- Owner decision: **nothing online for now** (no Dropbox, no mailbox). Devices stay in step by moving the backup file.
+- `store.importAll(json, 'merge')` now keeps, for each record on both sides, the copy with the later `updatedAt` (the backup's copy wins on a tie
+  or when neither has one). Returns `{ total, keptHere }`. Shadchan Mode deletes are marks with a newer `updatedAt`, so they carry over;
+  Single Mode still erases at once, so its deletes do not carry over. `setMeta` now stamps `updatedAt` so choices and categories merge the same way.
+- Settings → Backup has the how-to (`settings.in-step`). Merge texts in `backup-sheet.js` say "changed last wins".
+- Known limits: something erased for good (Delete forever, 30-day clean-up, Undo of a new record) can come back from an older file of the other device,
+  as a deleted item. Settings (prefs) still come from the file. A later online way only has to move the same file and call Merge.

@@ -108,18 +108,15 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-13 (S6 app part done)_
+_Last updated: 2026-11-13 (S7 done)_
 
 ### In progress
-- Shadchan Mode stages S1–S7 (ROADMAP.md). **S1–S5 done; S6 app part done** (locked backup, size check) on branch `claude/eloquent-thompson-tchp32`.
-- How it is built: `spec/shadchan/build-notes.md` (section 10 is new from S6). Approved design: `spec/shadchan/design.md`.
+- Shadchan Mode S1–S7 all built on branch `claude/eloquent-thompson-tchp32` (PR open). S7 = in step by moving the backup file and choosing Merge (owner: nothing online for now).
 
 ### Next steps
-- **Owner:** decide the address and run the test round: `spec/shadchan/test-round.md` (recommended: own name on the same GitHub Pages; Claude adds the CNAME file once the name is bought).
-- **S7 (Fable):** phone and computer in step, chosen from the testers' answers (question 3). Its unit is the same locked backup JSON.
+- **Owner:** try on phone and computer: Export on one, send the file to yourself, Import → Merge on the other. Then merge the PR.
+- **Owner:** decide the address and run the test round: `spec/shadchan/test-round.md`.
 
 ### Notes / blockers
-- Owner should try on the phone: Settings → Backup → Export backup with a password, then Import it and type the password; check where the phone saved the file.
-- Owner should still try S3–S5 on the phone (see ROADMAP.md and the S5 notes in git history).
-- Not testable from here: iPhone / Android "keep storage permanently", a real NetFree / TAG filter, WhatsApp Share-to-app, WhatsApp opening from Send / Remind, where each phone saves a downloaded backup file.
+- Not testable from here: where each phone saves a downloaded file, opening it from WhatsApp/email, iPhone storage, real NetFree / TAG filters.
 - Optional screen lock (design.md section 7) is not built; nobody asked for it yet.

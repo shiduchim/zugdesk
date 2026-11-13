@@ -148,7 +148,7 @@ export function setPref(key, value) {
 
 // ---------- meta ----------
 async function getMeta(key) { const r = await idb.get('meta', key); return r ? r.value : undefined; }
-async function setMeta(key, value) { await idb.put('meta', { id: key, value }); }
+async function setMeta(key, value) { await idb.put('meta', { id: key, value, updatedAt: now() }); }
 
 // ---------- init: a new phone starts empty; the demo is one button in Settings ----------
 export const FULL_DEMO_SEED = 200;
@@ -452,33 +452,44 @@ export const backupRows = (json) => [json.data, json.shadchan && json.shadchan.d
 
 async function loadInto(db, data, mode, noFiles) {
   const names = Object.keys(db.stores).filter(n => !(noFiles && n === 'attachments'));
-  let total = 0;
+  const stats = { total: 0, keptHere: 0 };
+  // Merge (phone and computer in step, S7): for a record that is on both sides, the copy changed last wins.
+  // Deletes are marks with a newer updatedAt, so a delete on one device carries over too.
+  const here = {};
+  if (mode !== 'replace') for (const name of names) here[name] = new Map((await db.idb.getAll(name)).map(r => [r.id, r]));
   await db.tx(names, 'readwrite', (s) => {
     for (const name of names) {
       if (mode === 'replace') s[name].clear();
       const rows = Array.isArray(data[name]) ? data[name] : [];
-      for (const r of rows) { if (r && r.id) { s[name].put(r); total++; } }
+      for (const r of rows) {
+        if (!r || !r.id) continue;
+        const mine = here[name] && here[name].get(r.id);
+        if (mine && (mine.updatedAt || '') > (r.updatedAt || '')) { stats.keptHere++; continue; }
+        s[name].put(r); stats.total++;
+      }
     }
     s.meta.put({ id: 'seeded', value: { at: now(), imported: true } });
     s.meta.put({ id: 'schemaVersion', value: db.version });
   });
-  return total;
+  return stats;
 }
 
-// mode 'replace' wipes current records first; 'merge' keeps current records and
-// overwrites same-id records with the backup's copy.
+// mode 'replace' wipes current records first; 'merge' keeps current records and, for a record on both sides,
+// keeps whichever copy was changed last (so moving the file between phone and computer never loses newer work).
 // A backup made before Shadchan Mode has no Shadchan part: Shadchan Mode records are then left alone.
+// Returns { total: records written, keptHere: records skipped because this device's copy is newer }.
 export async function importAll(json, mode = 'replace') {
   const err = validateBackup(json);
   if (err) throw new Error(err);
-  let total = await loadInto(SINGLE_DB, json.data, mode, json.noFiles);
-  if (json.shadchan) total += await loadInto(SHADCHAN_DB, json.shadchan.data, mode, json.noFiles);
+  const a = await loadInto(SINGLE_DB, json.data, mode, json.noFiles);
+  const b = json.shadchan ? await loadInto(SHADCHAN_DB, json.shadchan.data, mode, json.noFiles) : { total: 0, keptHere: 0 };
+  const total = a.total + b.total, keptHere = a.keptHere + b.keptHere;
   if (json.prefs && typeof json.prefs === 'object') {
     // The mode is this device's own choice; a backup never switches it.
     for (const [k, v] of Object.entries(json.prefs)) if (k in PREF_DEFAULTS && k !== 'mode') setPref(k, v);
   }
   emit({ store: '*', type: 'import', total });
-  return total;
+  return { total, keptHere };
 }
 
 // Deletes both modes' records and the settings. The app stays in the mode it is in.

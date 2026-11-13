@@ -91,6 +91,7 @@ export async function render(root) {
 
     section('Backup', 'settings.backup',
       h('p', { class: 'note' }, 'Everything lives only on this device. Export saves one file, with both modes in it, that you can keep or move to another phone or computer. It is locked with a password you choose; a forgotten password cannot be recovered. Import brings it back.'),
+      h('p', { class: 'note', 'data-id': 'settings.in-step' }, 'Phone and computer: on the device you used last, Export backup. Move the file to the other device (email it to yourself, WhatsApp it to yourself, or a USB stick). There, Import backup and choose Merge. Whatever was changed last wins, so nothing newer is lost.'),
       h('p', { class: 'note', 'data-id': 'settings.last-backup' }, lastBackup ? `Last backup made on this device: ${store.formatDate(lastBackup)}.` : 'No backup has been made on this device yet.'),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn', 'data-id': 'settings.export-btn', onClick: async () => {

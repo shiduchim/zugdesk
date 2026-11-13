@@ -103,16 +103,16 @@ export async function importBackup(file) {
   const files = json.noFiles ? ' It has no attached files, so the files on this device stay.' : '';
   const replace = await confirmDialog({
     title: 'Import this backup?',
-    text: `${rows} records from ${new Date(json.exportedAt).toLocaleString()}. ${scope}${files} “Replace” deletes what is on this device first; “Merge” keeps it and adds the backup on top.`,
+    text: `${rows} records from ${new Date(json.exportedAt).toLocaleString()}. ${scope}${files} “Replace” deletes what is on this device first; “Merge” keeps it and brings in what is new or changed later in the backup. Use Merge to keep phone and computer in step.`,
     ok: 'Replace', cancel: 'Merge', dataId: 'settings.import-dialog',
   });
   // Cancel in this dialog means Merge; closing with Escape also lands on merge — ask once more for safety.
   if (!replace) {
-    const merge = await confirmDialog({ title: 'Merge backup into current data?', text: 'Records with the same id are overwritten by the backup copy; everything else is kept.', ok: 'Merge', dataId: 'settings.merge-dialog' });
+    const merge = await confirmDialog({ title: 'Merge backup into current data?', text: 'Anything that is on both sides keeps the copy that was changed last. Nothing on this device is removed, except what was deleted on the other device.', ok: 'Merge', dataId: 'settings.merge-dialog' });
     if (!merge) { toast('Import cancelled'); return; }
   }
   try {
-    const n = await store.importAll(json, replace ? 'replace' : 'merge');
-    toast(`Imported ${n} records`);
+    const r = await store.importAll(json, replace ? 'replace' : 'merge');
+    toast(r.keptHere ? `Brought in ${r.total} records; kept ${r.keptHere} that were newer on this device` : `Imported ${r.total} records`, 5000);
   } catch (e) { console.error(e); toast('Import failed: ' + e.message, 5000); }
 }
