@@ -41,7 +41,7 @@
 .sp-star svg{width:var(--sg-star-size);height:var(--sg-star-size)}
 .sp-star[aria-pressed="true"] svg{fill:currentColor}
 .sp-stale{color:var(--warn)}
-.sp-find{align-self:stretch;width:100%;min-height:var(--sp-find-height)}
+.sp-find{align-self:stretch;width:100%;min-height:var(--sp-find-height);margin-top:var(--gap)}
 /* Stage S3 — Shidduchim with two sides. The cards, bubbles, bar and details reuse shidduchim.css;
    only what is new in Shadchan Mode is here. */
 .shs-search{margin-bottom:10px}
