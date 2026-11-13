@@ -13,7 +13,7 @@ const DB = isShadchan ? SHADCHAN_DB : SINGLE_DB;
 const { idb } = DB;
 export const SCHEMA_VERSION = DB.version;
 export const APP_VERSION = '0.9.0';
-export const STAGE = isShadchan ? 'S3' : 8; // last finished stage of this mode (shown in Settings → About)
+export const STAGE = isShadchan ? 'S6' : 8; // last finished stage of this mode (shown in Settings → About)
 
 const listeners = new Set();
 export function subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); }
@@ -414,19 +414,25 @@ export function lastBackupAt() { try { return localStorage.getItem(BACKUP_KEY) |
 export function noteBackupMade() { try { localStorage.setItem(BACKUP_KEY, now()); } catch {} emit({ store: 'prefs', type: 'backup' }); }
 
 // ---------- export / import / reset (one file holds both modes) ----------
-async function dump(db) {
+async function dump(db, files) {
   const data = {};
-  for (const name of Object.keys(db.stores)) data[name] = await db.idb.getAll(name);
+  for (const name of Object.keys(db.stores)) if (files || name !== 'attachments') data[name] = await db.idb.getAll(name);
   return data;
 }
 // `data` is Single Mode (same place as before Shadchan Mode existed, so old backups still load);
 // `shadchan.data` is Shadchan Mode.
-export async function exportAll() {
+// files: false leaves attachments out (`noFiles: true`); importing such a file never touches the files on the device.
+// Locking the file with a password is js/backup.js.
+export async function exportAll({ files = true } = {}) {
   return {
     app: 'ZugDesk', appVersion: APP_VERSION, schemaVersion: SINGLE_DB.version,
-    exportedAt: now(), prefs: getPrefs(), data: await dump(SINGLE_DB),
-    shadchan: { schemaVersion: SHADCHAN_DB.version, data: await dump(SHADCHAN_DB) },
+    exportedAt: now(), prefs: getPrefs(), ...(files ? {} : { noFiles: true }), data: await dump(SINGLE_DB, files),
+    shadchan: { schemaVersion: SHADCHAN_DB.version, data: await dump(SHADCHAN_DB, files) },
   };
+}
+// Attached files on this device, both modes (for the backup sheet).
+export async function fileCount() {
+  return (await SINGLE_DB.idb.count('attachments')) + (await SHADCHAN_DB.idb.count('attachments'));
 }
 
 export function validateBackup(json) {
@@ -444,8 +450,8 @@ export function validateBackup(json) {
 export const backupRows = (json) => [json.data, json.shadchan && json.shadchan.data].filter(Boolean)
   .reduce((n, d) => n + Object.values(d).reduce((m, a) => m + (Array.isArray(a) ? a.length : 0), 0), 0);
 
-async function loadInto(db, data, mode) {
-  const names = Object.keys(db.stores);
+async function loadInto(db, data, mode, noFiles) {
+  const names = Object.keys(db.stores).filter(n => !(noFiles && n === 'attachments'));
   let total = 0;
   await db.tx(names, 'readwrite', (s) => {
     for (const name of names) {
@@ -465,8 +471,8 @@ async function loadInto(db, data, mode) {
 export async function importAll(json, mode = 'replace') {
   const err = validateBackup(json);
   if (err) throw new Error(err);
-  let total = await loadInto(SINGLE_DB, json.data, mode);
-  if (json.shadchan) total += await loadInto(SHADCHAN_DB, json.shadchan.data, mode);
+  let total = await loadInto(SINGLE_DB, json.data, mode, json.noFiles);
+  if (json.shadchan) total += await loadInto(SHADCHAN_DB, json.shadchan.data, mode, json.noFiles);
   if (json.prefs && typeof json.prefs === 'object') {
     // The mode is this device's own choice; a backup never switches it.
     for (const [k, v] of Object.entries(json.prefs)) if (k in PREF_DEFAULTS && k !== 'mode') setPref(k, v);

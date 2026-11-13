@@ -4,6 +4,7 @@ import { h, icon, section, toast, confirmDialog } from '../js/ui.js';
 import { LAYOUTS, SORTS, load as loadData } from './contacts-data.js';
 import { viewSheet } from './contacts-panels.js';
 import { MODE, isShadchan, switchMode } from '../js/mode.js';
+import { exportSheet, importBackup } from './backup-sheet.js';
 
 let unsub = null;
 
@@ -33,7 +34,7 @@ export async function render(root) {
     h('input', { type: 'radio', name, value, checked: current === value || null, onChange: () => onChange(value) }),
     h('span', {}, label, h('small', {}, hint)));
 
-  const fileInput = h('input', { type: 'file', accept: 'application/json,.json', 'data-id': 'settings.import-file', onChange: (e) => importFile(e.target.files[0], root) });
+  const fileInput = h('input', { type: 'file', accept: 'application/json,.json', 'data-id': 'settings.import-file', onChange: async (e) => { const f = e.target.files[0]; e.target.value = ''; await importBackup(f); } });
 
   root.append(
     h('div', { class: 'page-head' }, h('h1', {}, 'Settings')),
@@ -89,14 +90,11 @@ export async function render(root) {
       h('a', { class: 'btn', href: '#/deleted', 'data-id': 'settings.deleted-btn' }, h('span', { html: icon('trash') }).firstChild, 'Open Recently deleted')) : null,
 
     section('Backup', 'settings.backup',
-      h('p', { class: 'note' }, 'Everything lives only on this phone. Export saves one file, with both modes in it, that you can keep or move to a new phone. Import brings it back.'),
+      h('p', { class: 'note' }, 'Everything lives only on this device. Export saves one file, with both modes in it, that you can keep or move to another phone or computer. It is locked with a password you choose; a forgotten password cannot be recovered. Import brings it back.'),
       h('p', { class: 'note', 'data-id': 'settings.last-backup' }, lastBackup ? `Last backup made on this device: ${store.formatDate(lastBackup)}.` : 'No backup has been made on this device yet.'),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn', 'data-id': 'settings.export-btn', onClick: async () => {
-          const data = await store.exportAll();
-          const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-          store.downloadJSON(data, `zugdesk-backup-${stamp}.json`); store.noteBackupMade(); toast('Backup file created');
-          if (live()) { root.innerHTML = ''; render(root); }
+          if (await exportSheet() === 'made' && live()) { root.innerHTML = ''; render(root); }
         } }, h('span', { html: icon('download') }).firstChild, 'Export backup'),
         h('button', { class: 'btn', 'data-id': 'settings.import-btn', onClick: () => fileInput.click() }, h('span', { html: icon('upload') }).firstChild, 'Import backup'),
         fileInput),
@@ -142,28 +140,3 @@ let redrawTimer = 0;
 export function destroy() { unsub && unsub(); unsub = null; gen++; clearTimeout(redrawTimer); }
 
 function fact(k, v) { return h('div', { class: 'fact' }, h('dt', {}, k), h('dd', {}, v)); }
-
-async function importFile(file, root) {
-  if (!file) return;
-  let json;
-  try { json = JSON.parse(await file.text()); } catch { toast('That file is not valid JSON'); return; }
-  const err = store.validateBackup(json);
-  if (err) { toast(err, 5000); return; }
-  const rows = store.backupRows(json);
-  // A backup made before Shadchan Mode existed only holds Single Mode.
-  const scope = json.shadchan ? 'It holds both modes.' : 'It holds Single Mode only, so Shadchan Mode records on this phone are not touched.';
-  const replace = await confirmDialog({
-    title: 'Import this backup?',
-    text: `${rows} records from ${new Date(json.exportedAt).toLocaleString()}. ${scope} “Replace” deletes what is on this phone first; “Merge” keeps it and adds the backup on top.`,
-    ok: 'Replace', cancel: 'Merge', dataId: 'settings.import-dialog',
-  });
-  // Cancel in this dialog means Merge; closing with Escape also lands on merge — ask once more for safety.
-  if (!replace) {
-    const merge = await confirmDialog({ title: 'Merge backup into current data?', text: 'Records with the same id are overwritten by the backup copy; everything else is kept.', ok: 'Merge', dataId: 'settings.merge-dialog' });
-    if (!merge) { toast('Import cancelled'); return; }
-  }
-  try {
-    const n = await store.importAll(json, replace ? 'replace' : 'merge');
-    toast(`Imported ${n} records`);
-  } catch (e) { console.error(e); toast('Import failed: ' + e.message, 5000); }
-}

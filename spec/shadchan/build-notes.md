@@ -70,8 +70,8 @@ In Shadchan Mode `store.<collection>.remove(id)` only marks the record (`deleted
 One file: `{ app, schemaVersion, prefs, data: <Single Mode>, shadchan: { schemaVersion, data } }`.
 A backup from before Shadchan Mode has no `shadchan` part: importing it leaves Shadchan Mode alone.
 The mode itself is never taken from a backup. `store.lastBackupAt()` / `noteBackupMade()` are ready
-for the backup reminder (S4). Attachments are still inside the same file: splitting them out and
-locking the file with a password is S6.
+for the backup reminder (S4). Since S6 the file can leave attachments out (`noFiles: true`; importing it never touches the
+device's files) and is locked with a password by default (section 10).
 
 ## 5. Rules that came out of S1
 
@@ -157,3 +157,15 @@ locking the file with a password is S6.
   `shSendTicks` pref. After “Yes, I sent it” it calls `setAnswer(m, side, 'asked', { note })`; `note` is a history line (`kind: 'sent'`)
   written before the Asked line, and Undo removes both. Send buttons replace Mark asked only in the offer round; after a date, Mark asked stays.
 - `suggestedFor(p)` moved from `person-card.js` to `people-data.js` (shared by Single Mode's Short versions and Send). No change in Single Mode.
+
+## 10. What S6 added (locked backup, size check)
+
+- `js/backup.js`: `makeBackup({ password, files })`, `lock()`, `unlock()`, `isLocked()`. Locked file =
+  `{ app, locked: 1, exportedAt, noFiles?, kdf: PBKDF2-SHA-256 310 000 rounds + salt, cipher: AES-GCM + iv, zip: 'gzip' | '', data }`
+  (base64). The inside is the normal backup JSON, so `validateBackup` / `importAll` are unchanged. Nothing about the password is stored.
+- `pages/backup-sheet.js`: `exportSheet()` (lock on by default, password twice, include files tick) and `importBackup(file)`
+  (asks the password, then the old Replace / Merge questions). Used by Settings and by Home's backup reminder. Styles in `base.css`.
+- `store.exportAll({ files })`, `store.fileCount()`. Locking needs `crypto.subtle`, i.e. the https address (or localhost).
+- S6 size check: every page of both modes at 320 / 360 / 390 / 430 / 768 / 1280 px with the demo: no sideways scroll, no "null",
+  no errors, no request outside the app's address.
+- Address and the test round: `test-round.md` (owner decisions). S7 sync must read and write the same backup JSON (locked) as its unit.

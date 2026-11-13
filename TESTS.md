@@ -22,6 +22,8 @@
 - Home (S4), with the demo loaded: blocks show To do, At a glance, Notes; “Your move” rows match the Shidduchim cards; “Mark … asked” moves a row from Your move to Waiting; Got an answer → Yes takes it off Waiting and offers Undo; Remind shows the message and WhatsApp/Copy; Edit Home show/hide and Up/Down change Home at once, all hidden shows “Your Home is empty”, Back to the first layout restores it; Settings → Home → Edit Home opens the same sheet; backup reminder shows until Back up now; search “stern” lists Shidduchim. Single Mode Home still has its three tabs.
 - Find a match (S5): from a single's card, the list starts with their age wish and Available as tags; rows say Idea / Offer / Ended for pairs already tried and sink them under Already tried; an age mismatch shows as a note; Save as idea makes one idea (Shidduchim → Ideas); Not a fit moves the row under Not a fit, Undo and Take off Not a fit work; Guys / Girls order does not change. Home → No open shidduch opens Find a match.
 - Send (S5): Suggest to her side on an idea opens Send; ticks change the preview; Copy then “Not sent” records nothing; “Yes, I sent it” marks her side Asked, adds “Sent … profile to …” to History, puts it in Waiting on Home, and remembers the ticks. Undo puts it back.
+- Locked backup (S6): Settings → Export backup opens “Make a backup” with the lock on; under 6 characters or two different passwords are refused; the file is unreadable (no names inside); Import asks the password, a wrong one says so and stays open, the right one restores every record. Lock off makes a plain file. “Include attached files” off: importing it keeps the files on the device. Home's “Back up now” opens the same sheet.
+- Every page of both modes at 320 / 360 / 390 / 430 / 768 / 1280 px with the demo: no sideways scroll, no “null”, no console errors.
 - Export holds both modes; Reset empties both; Import brings both back; a backup made before Shadchan Mode still loads and leaves Shadchan Mode alone.
 
 ## Manual (I check on my phone)
@@ -32,6 +34,7 @@
 - [ ] Add a person and a shadchan; they appear in the lists
 - [ ] Shadchan Mode → Guys: type a city in search, open Filters and set an age; tap a single, change Status and the star
 - [ ] Shadchan Mode → Shidduchim: tap a bubble and choose an answer; open a card and arrange a date; end one and tick who was told
+- [ ] Settings → Backup → Export backup with a password; then Import that file and type the password (on the phone, check where the file was saved)
 - [ ] Settings → Mode → Shadchan: the bottom bar changes; Guys → Try the demo shows 30 guys; Settings → Mode → Single brings my own things back
 
 ## Regression (add one line per fixed bug or approved feature)

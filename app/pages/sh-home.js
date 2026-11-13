@@ -74,7 +74,6 @@ const T = {
   backupNever: 'No backup has been made on this device yet.',
   backupOld: (n) => `Last backup was ${n} days ago.`,
   backupNow: 'Back up now',
-  backupDone: 'Backup file created',
   // Search
   searchGroup: 'Shidduchim',
 };
@@ -315,11 +314,7 @@ function drawBackup(el, SH, D) {
   if (!hasData || (days !== null && days < BACKUP_DAYS)) { el.replaceChildren(); return; }
   el.replaceChildren(h('div', { class: 'shh-backup', 'data-id': 'home.backup-reminder' },
     h('span', {}, days === null ? T.backupNever : T.backupOld(days)),
-    h('button', { type: 'button', class: 'linkish', 'data-id': 'home.backup-now', onClick: async () => {
-      const data = await store.exportAll();
-      const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
-      store.downloadJSON(data, `zugdesk-backup-${stamp}.json`); store.noteBackupMade(); toast(T.backupDone);
-    } }, T.backupNow)));
+    h('button', { type: 'button', class: 'linkish', 'data-id': 'home.backup-now', onClick: () => import('./backup-sheet.js').then(m => m.exportSheet()) }, T.backupNow)));
 }
 
 // ---------- Edit Home (also opened from Settings) ----------

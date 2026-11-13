@@ -108,18 +108,18 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-12 (S5 done)_
+_Last updated: 2026-11-13 (S6 app part done)_
 
 ### In progress
-- Shadchan Mode is being built in stages S1–S7 (ROADMAP.md). **S1–S5 are done** on branch `claude/eloquent-thompson-tchp32`.
-- How it is built: `spec/shadchan/build-notes.md` (read it first; section 9 is new from S5). Approved design: `spec/shadchan/design.md`.
+- Shadchan Mode stages S1–S7 (ROADMAP.md). **S1–S5 done; S6 app part done** (locked backup, size check) on branch `claude/eloquent-thompson-tchp32`.
+- How it is built: `spec/shadchan/build-notes.md` (section 10 is new from S6). Approved design: `spec/shadchan/design.md`.
 
 ### Next steps
-- **S6 (Opus):** check everything at phone and computer sizes; locked backup file (password); decide the address (design.md section 9); test round with 3–5 shadchanim.
+- **Owner:** decide the address and run the test round: `spec/shadchan/test-round.md` (recommended: own name on the same GitHub Pages; Claude adds the CNAME file once the name is bought).
+- **S7 (Fable):** phone and computer in step, chosen from the testers' answers (question 3). Its unit is the same locked backup JSON.
 
 ### Notes / blockers
-- Owner should try S5 on the phone: a starred single's card → Find a match → tap a row → Save as idea / Not a fit; Shidduchim → Ideas → open it → Suggest to her side → WhatsApp → Yes, I sent it; Home shows it under Waiting.
-- Decisions made in S5 the owner may want changed: Find a match starts with Available only; Not a fit rows are hidden until Show them; the shadchan's own number (role Shadchan) is never put in the message; the first line is “I have a suggestion for X: Y.”
-- Owner should still try S3 and S4 on the phone (see ROADMAP.md).
-- Not testable from here: iPhone / Android "keep storage permanently", a real NetFree / TAG filter, WhatsApp Share-to-app, WhatsApp opening from Send / Remind, sending files through the phone's share menu.
-- Filter and sync facts in design.md section 2 are partly unconfirmed. The address question (design.md section 9) must be settled before real data (S6).
+- Owner should try on the phone: Settings → Backup → Export backup with a password, then Import it and type the password; check where the phone saved the file.
+- Owner should still try S3–S5 on the phone (see ROADMAP.md and the S5 notes in git history).
+- Not testable from here: iPhone / Android "keep storage permanently", a real NetFree / TAG filter, WhatsApp Share-to-app, WhatsApp opening from Send / Remind, where each phone saves a downloaded backup file.
+- Optional screen lock (design.md section 7) is not built; nobody asked for it yet.
