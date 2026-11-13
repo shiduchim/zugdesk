@@ -26,7 +26,7 @@ const els = {};
 export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); PHONE.removeEventListener('change', applySection); }
 
 export async function render(container, params) {
-  swipeTabs(container, { keys: () => PHONE.matches && !SHH ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
+  swipeTabs(container, { keys: () => PHONE.matches ? ['notes', 'followups', 'history'] : [], current: () => section, go: (k) => showSection(k) });
   root = container;
   root.classList.add('home-page', 'wide');
   if (SHH) root.classList.add('sh-home');
@@ -42,11 +42,10 @@ export async function render(container, params) {
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
   els.grid = SHH ? h('div', { class: 'shh-blocks', 'data-id': 'home.blocks' }) : h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
   root.append(h('div', { class: 'home-wrap' },
-    // Owner request: a tiny Single / Shadchan switch sits on the search row, right of a shorter search box.
-    // Shadchan Home has no tabs, so its top row is: search · switch · gear (no empty gear row).
-    // Single Mode keeps its tab row with the gear, then search · switch underneath.
-    SHH ? null : h('div', { class: 'home-tabline' }, tabRow(), settingsLink()),
-    h('div', { class: 'home-searchline', 'data-id': 'home.searchline' }, els.search, modeToggle(), SHH ? settingsLink() : null),
+    // Owner request, both modes: top row is search · tiny Single / Shadchan switch · gear;
+    // the Notes / To Do List / History tabs sit underneath.
+    h('div', { class: 'home-searchline', 'data-id': 'home.searchline' }, els.search, modeToggle(), settingsLink()),
+    h('div', { class: 'home-tabline' }, tabRow()),
     els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
@@ -364,7 +363,7 @@ function secHead(eyebrow, title, count, id) {
 // each has its own screen. On a wide screen the tabs are hidden and all sections show in columns.
 // Tabs inside Home, not navigation destinations (spec/home.md keeps both on Home).
 const PHONE = window.matchMedia('(max-width: 899px)');
-const SECTIONS = [['notes', 'Notes'], ['followups', 'Follow Ups'], ['history', 'History']];
+const SECTIONS = [['notes', 'Notes'], ['followups', 'To Do List'], ['history', 'History']];
 let section = 'notes';
 function tabRow() {
   els.tabs = h('div', { class: 'home-tabs', role: 'tablist', 'aria-label': 'Home sections', 'data-id': 'home.tabs' },
@@ -374,20 +373,32 @@ function tabRow() {
   return els.tabs;
 }
 function applySection() {
-  if (!root || SHH) return; // Shadchan Home has no tabs: every shown block is on the page
+  if (!root) return;
   const phone = PHONE.matches;
   els.tabs?.querySelectorAll('[role="tab"]').forEach(b => b.setAttribute('aria-selected', b.dataset.id === 'home.tab-' + section ? 'true' : 'false'));
+  if (SHH) return applyShSection(phone);
   els.composer.classList.toggle('hidden', phone && section !== 'notes');
   els.notes.classList.toggle('hidden', phone && section !== 'notes');
   els.fus.classList.toggle('hidden', phone && section !== 'followups');
   els.hist.classList.toggle('hidden', phone && section !== 'history');
 }
 function showSection(k) { section = k; applySection(); }
+// Shadchan Mode on a phone: Notes = New Note and the blocks chosen in Edit Home (not To do / History);
+// To Do List = the To do block; History = the History block. Those two show on their tab even if
+// hidden in Edit Home. On a wide screen the tabs are hidden and the Edit Home blocks all show.
+function applyShSection(phone) {
+  els.composer.classList.toggle('hidden', phone && section !== 'notes');
+  for (const node of els.grid.children) {
+    const tab = node.dataset.tab || 'notes', off = node.dataset.off === '1';
+    node.classList.toggle('hidden', phone ? tab !== section : off);
+  }
+}
 // Shadchan Mode: arrange the blocks. Notes stay on the page while a note is open, even if hidden.
 function drawBlocks() { if (SHH && root && SH) SHH.draw(els.grid, { notes: els.notes, fus: els.fus, hist: els.hist }, SH, D, { keepNotes: !!U.expanded }); }
 function tabCounts() {
   if (!els.tabs) return;
-  const c = { notes: shownNotes().length, followups: openFollowUps(D.followUps).length, history: buildHistory(D, X).length };
+  const moves = SHH && SH ? SH.list.filter(m => m.step.kind === 'move').length : 0; // Shadchan To Do List also holds Your move
+  const c = { notes: shownNotes().length, followups: openFollowUps(D.followUps).length + moves, history: buildHistory(D, X).length };
   els.tabs.querySelectorAll('[data-count]').forEach(el => { el.textContent = String(c[el.dataset.count] ?? ''); });
 }
 
