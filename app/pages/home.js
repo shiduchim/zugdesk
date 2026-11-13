@@ -7,7 +7,7 @@ import * as N from './notes-data.js';
 import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from './home-data.js';
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
 import { recordInterest } from './idea-flow.js';
-import { isShadchan, modeLabel } from '../js/mode.js';
+import { MODE, MODES, isShadchan, modeLabel, switchMode } from '../js/mode.js';
 // Shadchan Mode builds Home from blocks (pages/sh-home.js); Single Mode never loads it.
 const SHH = isShadchan ? await import('./sh-home.js') : null;
 
@@ -33,7 +33,7 @@ export async function render(container, params) {
   U = { expanded: params.noteId || null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
   if (params.noteId) section = 'notes';
   try { drafts = JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}') || {}; } catch { drafts = {}; }
-  els.search = h('input', { class: 'input home-search', type: 'search', dir: 'auto', placeholder: 'Search notes, people, conversations…', 'aria-label': 'Search everything', 'data-id': 'home.search',
+  els.search = h('input', { class: 'input home-search', type: 'search', dir: 'auto', placeholder: 'Search…', 'aria-label': 'Search notes, people, conversations', 'data-id': 'home.search',
     onInput: (e) => { U.q = e.target.value; drawSearch(); } });
   els.results = h('section', { class: 'home-results hidden', 'data-id': 'home.search-results', 'aria-live': 'polite' });
   els.composer = h('div', { class: 'home-composer-slot' });
@@ -42,12 +42,12 @@ export async function render(container, params) {
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
   els.grid = SHH ? h('div', { class: 'shh-blocks', 'data-id': 'home.blocks' }) : h('div', { class: 'home-grid' }, els.notes, els.fus, els.hist);
   root.append(h('div', { class: 'home-wrap' },
-    // Title and tagline removed to save phone screen space (owner request); tabs go first.
-    // Phone has no top bar; Settings sits at the end of the tab row, using no extra space (owner request).
-    h('div', { class: 'home-tabline' }, SHH ? h('span', { class: 'spacer' }) : tabRow(),
-      // Shadchan Mode says so under the gear (no extra width), so it is always clear which mode is open.
-      h('a', { class: 'icon-btn home-settings' + (isShadchan ? ' has-mode' : ''), href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') },
-        isShadchan ? h('span', { class: 'home-mode', 'data-id': 'home.mode' }, modeLabel()) : null)), els.search, els.results, els.composer, els.grid));
+    // Owner request: a tiny Single / Shadchan switch sits on the search row, right of a shorter search box.
+    // Shadchan Home has no tabs, so its top row is: search · switch · gear (no empty gear row).
+    // Single Mode keeps its tab row with the gear, then search · switch underneath.
+    SHH ? null : h('div', { class: 'home-tabline' }, tabRow(), settingsLink()),
+    h('div', { class: 'home-searchline', 'data-id': 'home.searchline' }, els.search, modeToggle(), SHH ? settingsLink() : null),
+    els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' && ch.key !== 'homeSuggestions' && !(SHH && (ch.key === 'shHomeBlocks' || ch.type === 'backup'))) return;
@@ -576,3 +576,19 @@ function resultRow(title, sub, href, onClick) {
     : h('button', { type: 'button', class: 'result-row', 'data-id': 'home.search-result', onClick }, inner));
 }
 
+
+// Two-choice switch between Single Mode and Shadchan Mode. Switching reloads the app (each mode has its own records).
+function modeToggle() {
+  return h('div', { class: 'home-mode-toggle', role: 'radiogroup', 'aria-label': 'Mode', 'data-id': 'home.mode-toggle' },
+    MODES.map(([value, label]) => h('button', {
+      type: 'button', role: 'radio', class: 'home-mode-opt' + (value === MODE ? ' on' : ''),
+      'aria-checked': value === MODE ? 'true' : 'false', 'data-id': 'home.mode-toggle.' + value,
+      onClick: () => { if (value !== MODE) switchMode(value); },
+    }, label)));
+}
+
+// The gear. Shadchan Mode also names the mode under it (no extra width).
+function settingsLink() {
+  return h('a', { class: 'icon-btn home-settings' + (isShadchan ? ' has-mode' : ''), href: '#/settings', 'aria-label': 'Settings', title: 'Settings', 'data-id': 'home.settings', html: icon('settings') },
+    isShadchan ? h('span', { class: 'home-mode', 'data-id': 'home.mode' }, modeLabel()) : null);
+}

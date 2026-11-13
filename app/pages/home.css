@@ -250,3 +250,10 @@
 .home-settings.has-mode{flex-direction:column;gap:2px;width:auto;min-width:var(--touch-min);padding:0 1px;text-decoration:none}
 .home-settings.has-mode svg{width:var(--mode-gear);height:var(--mode-gear)}
 .home-mode{font-family:var(--font-mono);font-size:var(--mode-tag-font);line-height:1;letter-spacing:.03em;text-transform:uppercase;color:var(--muted)}
+
+/* Search row: shorter search box, then the tiny Single / Shadchan switch (and the gear in Shadchan Mode) */
+.home-searchline{display:flex;align-items:center;gap:var(--mode-toggle-row-gap)}
+.home-searchline>.home-search{flex:1;min-width:0}
+.home-mode-toggle{display:inline-flex;flex:none;gap:var(--mode-toggle-gap);padding:var(--mode-toggle-pad);background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-pill)}
+.home-mode-opt{min-height:var(--mode-toggle-height);padding:0 var(--mode-toggle-x);border:0;border-radius:var(--radius-pill);background:transparent;color:var(--muted);font:inherit;font-size:var(--mode-toggle-font);font-weight:600;line-height:1;cursor:pointer}
+.home-mode-opt.on{background:var(--accent);color:var(--accent-text)}
