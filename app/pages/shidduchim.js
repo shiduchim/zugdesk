@@ -4,13 +4,14 @@
 // The arrow on a card opens that one card's one-tap Stage / answer choices, Add update and Open details.
 // Make Match is removed in single mode (owner request): it belongs to a future shadchan mode.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, swipeTabs } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, swipeTabs, keepOrder } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import * as sh from './shidduch-data.js';
 import { addMic, savePending, voiceChips } from '../js/voice.js';
 const VP = {}; // voice recordings waiting for Save, per shidduch (memory only)
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
+const rank = new Map(); // card order for this visit (keepOrder)
 const S = { lane: 'offers', menu: null, updateId: null, updateText: '', open: null }; // open: the one card showing quick actions // survives leaving the page
 let root = null, gen = 0, unsub = null, timer = 0, A = null, docClick = null, docKey = null;
 
@@ -24,6 +25,7 @@ export function destroy() {
 export async function render(container) {
   root = container;
   root.classList.add('sh-page');
+  rank.clear(); // a fresh visit sorts by latest change again
   swipeTabs(root, { keys: () => sh.LANES.map(l => l[0]), current: () => S.lane, go: (k) => { S.lane = k; S.menu = null; S.updateId = null; draw(); } });
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(true), 80); } });
@@ -46,6 +48,7 @@ async function draw(keepScroll = false) {
   const list = all.list.filter(m => m.lane === S.lane).sort((a, b) => S.lane === 'ended'
     ? (b.cur.t.endedAt || b.o.updatedAt || '').localeCompare(a.cur.t.endedAt || a.o.updatedAt || '')
     : (b.o.updatedAt || '').localeCompare(a.o.updatedAt || ''));
+  const shown = keepOrder(rank, list, m => m.o.id);
   const intro = { offers: 'Waiting for answers.' };
 
   root.innerHTML = '';
@@ -57,7 +60,7 @@ async function draw(keepScroll = false) {
         onClick: () => { S.lane = k; S.menu = null; S.updateId = null; draw(); } }, l, h('span', { class: 'sh-num' }, counts[k])))),
     intro[S.lane] ? h('p', { class: 'note sh-listhead', 'data-id': 'shidduchim.intro' }, intro[S.lane]) : '',
     h('div', { class: 'sh-matches', 'data-id': 'shidduchim.list' },
-      list.length ? list.map(m => S.open === m.o.id ? expandedCard(m) : compactCard(m))
+      shown.length ? shown.map(m => S.open === m.o.id ? expandedCard(m) : compactCard(m))
         : h('div', { class: 'sh-blank', 'data-id': 'shidduchim.empty' }, h('h3', {}, 'Nothing here yet'),
           h('p', {}, all.list.length ? 'Shidduchim appear here as their status changes.' : 'Someone moves here from Ideas when you and they both say yes.'))));
   if (keepScroll) window.scrollTo(0, y);
@@ -101,8 +104,32 @@ function statusRow(m, mode) {
   const compactAnswers = mode === 'compact' && (st === 'ended' || !sh.bothYes(t));
   if (compactAnswers) return h('div', { class: 'sh-answers', 'aria-label': 'Current answers' }, answerBubble(m, 'me'), answerBubble(m, 'them'), st === 'ended' ? h('span', { class: 'sh-ended-word' }, 'Ended') : null);
   if (st === 'ended') return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage ended' }, 'Ended'));
+  if (st === 'progress') { // owner request: every In Progress card shows where it stands, both answers, and what is next
+    const where = progressWhere(m);
+    return [h('div', { class: 'sh-card-sub', 'data-id': 'shidduchim.where' }, h('span', { class: 'sh-stage dating' }, where[0]), where[1] ? h('span', {}, '·') : null, where[1] ? h('span', { dir: 'auto' }, where[1]) : null),
+      mode === 'compact' ? h('div', { class: 'sh-answers', 'aria-label': 'Current answers' }, answerBubble(m, 'me'), answerBubble(m, 'them')) : null];
+  }
   const next = sh.summary(t, m.cur.dates).next;
   return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage' + (stg.startsWith('Date') ? ' dating' : '') }, stg), next ? h('span', {}, '·') : null, next ? h('span', { dir: 'auto' }, next) : null);
+}
+
+// In Progress: [stage, detail] for the first line, and the one "what is next" line under the bar.
+const upcomingDate = (m) => m.cur.dates.filter(d => d.status === 'Arranged').sort((a, b) => (a.when || '').localeCompare(b.when || ''))[0];
+const lastHappened = (m) => Math.max(0, ...m.cur.dates.filter(d => d.status === 'Happened').map(sh.dateNum));
+function progressWhere(m) {
+  const up = upcomingDate(m);
+  if (up) return [`Date ${sh.dateNum(up)}`, sh.whenNice(up.when)];
+  const n = lastHappened(m);
+  return n ? [`After Date ${n}`, ''] : [sh.stageWord(m.cur.t, m.cur.dates), ''];
+}
+function progressNext(m) {
+  const t = m.cur.t;
+  if (upcomingDate(m)) return 'Nothing to do until the date';
+  const mine = t.myAnswer === 'Yes', theirs = t.theirAnswer === 'Yes';
+  if (!mine && !theirs) return 'Waiting for both answers';
+  if (!mine) return 'Your answer is needed';
+  if (!theirs) return `Waiting for ${sh.personFirst(m)}'s answer`;
+  return `Arrange Date ${lastHappened(m) + 1}`;
 }
 
 function cardSummary(m, mode) {
@@ -115,6 +142,7 @@ function cardSummary(m, mode) {
         m.tries.length > 1 ? h('span', { class: 'sh-try' }, sh.tryName(m.tries.length)) : null),
       statusRow(m, mode),
       bar(t, m.cur.dates, { dim: st === 'ended' }),
+      st === 'progress' ? h('div', { class: 'sh-barhint', dir: 'auto', 'data-id': 'shidduchim.next' }, progressNext(m)) : null,
       st === 'ended' && t.endedReason ? h('div', { class: 'sh-barhint', dir: 'auto' }, t.endedReason) : null));
 }
 

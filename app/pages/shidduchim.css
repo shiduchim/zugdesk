@@ -54,6 +54,7 @@
 .sh-answers{position:relative;z-index:2;display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:7px;pointer-events:none}
 .sh-answer-cell{display:inline-flex;pointer-events:auto}
 .sh-tag{display:inline-flex;align-items:center;gap:5px;min-height:var(--sh-bubble-height);padding:4px 11px;border-radius:var(--radius-pill);border:1px solid transparent;font-size:var(--font-sm);font-weight:600;white-space:nowrap;background:var(--sh-wait-bg);color:var(--sh-wait-text);border-color:var(--sh-wait-edge);cursor:pointer;font-family:inherit}
+.sh-tag strong{display:inline-block;min-width:var(--sh-answer-min);text-align:start}
 .sh-tag small{font-weight:500;font-size:var(--font-xs);opacity:.9}
 .sh-tag.yes,.sh-option.yes,.sh-choice.yes.active{background:var(--sh-yes-bg);color:var(--sh-yes-text);border-color:var(--sh-yes-edge)}
 .sh-tag.no,.sh-option.no,.sh-choice.no.active{background:var(--sh-no-bg);color:var(--sh-no-text);border-color:var(--sh-no-edge)}

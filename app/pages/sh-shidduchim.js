@@ -1,10 +1,10 @@
 // Shidduchim in Shadchan Mode — Ideas · Offers · In Progress · Ended (spec/shadchan/design.md 6.4).
 // One card per couple: both names, an answer bubble for his side and her side (tap = floating
-// choices), the progress bar, and either "Your move" or the days waiting. The arrow on a card
+// choices), the progress bar, and one next-step line under the bar. The arrow on a card
 // opens its quick actions. The lane is never chosen by hand: it follows from the answers and dates.
 // Look: Single Mode's Shidduchim (shidduchim.css) plus the shs-… rules in singles.css.
 import * as store from '../js/store.js';
-import { h, icon, toast, swipeTabs } from '../js/ui.js';
+import { h, icon, toast, swipeTabs, keepOrder } from '../js/ui.js';
 import { norm } from './singles-data.js';
 import * as sd from './sh-shidduch-data.js';
 import { bar, barDim, endDialog, newIdeaSheet } from './sh-shidduch-parts.js';
@@ -24,6 +24,7 @@ const T = {
   elsewhere: (list) => `Also found in: ${list.join(', ')}`,
   demoHint: 'Want to look around first? Load the fictional demo in Guys or Girls.',
   yourMove: 'Your move',
+  nothingYet: 'Nothing to do until the date',
   afterDate: (n) => `After Date ${n}`,
   changeAnswer: (side, name) => `${side} · ${name}`,
   endedPanel: 'This try has ended',
@@ -52,6 +53,7 @@ const T = {
   bothSides: 'Both sides',
 };
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
+const rank = new Map(); // card order for this visit (keepOrder)
 const S = { lane: 'offers', menu: null, updateId: null, updateText: '', open: null, q: '', picked: false }; // survives leaving the page
 let root = null, gen = 0, unsub = null, timer = 0, A = null, docClick = null, docKey = null;
 
@@ -65,6 +67,7 @@ export function destroy() {
 export async function render(container) {
   root = container;
   root.classList.add('sh-page', 'shs-page');
+  rank.clear(); // a fresh visit sorts by latest change again
   swipeTabs(root, { keys: () => sd.LANES, current: () => S.lane, go: (k) => setLane(k) });
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => load(), 80); } });
@@ -115,7 +118,7 @@ function drawList() {
   const counts = { ideas: 0, offers: 0, progress: 0, ended: 0 };
   for (const m of hits) counts[m.lane]++;
   const when = (m) => (S.lane === 'ended' ? m.cur.t.endedAt || m.cur.t.engagedAt : null) || m.o.updatedAt || '';
-  const list = hits.filter(m => m.lane === S.lane).sort((a, b) => when(b).localeCompare(when(a)));
+  const list = keepOrder(rank, hits.filter(m => m.lane === S.lane).sort((a, b) => when(b).localeCompare(when(a))), m => m.o.id);
   const others = words.length ? sd.LANES.filter(l => l !== S.lane && counts[l]).map(l => `${sd.laneLabel(l)} (${counts[l]})`) : [];
 
   box.innerHTML = '';
@@ -136,12 +139,6 @@ function drawList() {
 // ---------- one card ----------
 const openHref = (m, tab = '') => `#/shidduchim/${encodeURIComponent(m.o.id)}${tab}`;
 
-function stepTag(m) {
-  const st = m.step;
-  if (st.kind === 'move') return h('span', { class: 'shs-move', 'data-id': 'shidduchim.your-move' }, T.yourMove);
-  if (st.kind === 'wait') return h('span', { class: 'shs-days', 'data-id': 'shidduchim.days' }, sd.T.days(st.days));
-  return null;
-}
 
 function answerBubble(m, side) {
   const rec = m.round.rec, v = sd.ans(rec, side), id = m.o.id;
@@ -166,8 +163,15 @@ function answerBubble(m, side) {
 function statusRow(m) {
   const t = m.cur.t, r = m.round;
   if (t.phase === 'engaged') return h('div', { class: 'sh-card-sub' }, h('span', { class: 'shs-engaged', 'data-id': 'shidduchim.engaged' }, m.step.text));
-  if (r.kind === 'date' && r.upcoming) return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage dating' }, sd.T.stage.date(r.n)), h('span', {}, '·'), h('span', { dir: 'auto' }, sd.whenNice(r.rec.when)),
-    t.phase === 'ended' ? h('span', { class: 'sh-ended-word' }, sd.T.stage.ended) : null);
+  if (r.kind === 'date' && r.upcoming) {
+    // Owner request: a coming date still shows the answers that led to it (read-only; the new date asks nothing yet).
+    const live = m.cur.dates.filter(d => d.status !== 'Cancelled' && d !== r.rec), before = live.length ? live[live.length - 1] : t;
+    const pill = (side) => h('span', { class: 'sh-tag ' + sd.answerClass(sd.ans(before, side)), 'data-id': 'shidduchim.answer-before-' + side },
+      h('small', {}, sd.T.side[side] + ':'), h('strong', {}, sd.answerLabel(sd.ans(before, side))));
+    return [h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage dating' }, sd.T.stage.date(r.n)), h('span', {}, '·'), h('span', { dir: 'auto' }, sd.whenNice(r.rec.when)),
+      t.phase === 'ended' ? h('span', { class: 'sh-ended-word' }, sd.T.stage.ended) : null),
+      t.phase === 'ended' ? null : h('div', { class: 'sh-answers', 'aria-label': 'Answers before this date' }, pill('guy'), pill('girl'))];
+  }
   return h('div', { class: 'sh-answers', 'aria-label': 'Answers' },
     r.kind === 'date' ? h('span', { class: 'shs-round', 'data-id': 'shidduchim.round' }, T.afterDate(r.n)) : null,
     answerBubble(m, 'guy'), answerBubble(m, 'girl'),
@@ -176,7 +180,7 @@ function statusRow(m) {
 
 function card(m) {
   const id = m.o.id, t = m.cur.t, open = S.open === id, names = sd.coupleName(m);
-  const hint = m.step.kind === 'move' ? m.step.text : t.phase === 'ended' ? [sd.endedLine(t), t.endedReason].filter(Boolean).join(' · ') : m.step.kind === 'wait' ? m.step.text : '';
+  const hint = m.step.kind === 'move' ? m.step.text : t.phase === 'ended' ? [sd.endedLine(t), t.endedReason].filter(Boolean).join(' · ') : m.step.kind === 'wait' ? m.step.text : m.round.kind === 'date' && m.round.upcoming ? T.nothingYet : '';
   return h('article', { class: 'sh-match shs-card' + (open ? ' shs-open' : ' compact') + (S.menu && S.menu.id === id ? ' menu-open' : ''), 'aria-label': names, 'data-id': 'shidduchim.card' },
     h('a', { class: 'sh-card-open', href: openHref(m, m.lane === 'progress' ? '/dates' : ''), 'aria-label': T.openFor(names), 'data-id': 'shidduchim.card-open' }),
     h('button', { type: 'button', class: 'icon-btn sh-expand-btn' + (open ? ' open' : ''), 'aria-expanded': open ? 'true' : 'false', 'aria-label': open ? T.hideActions : T.showActions, 'data-id': 'shidduchim.card-expand', html: icon('chevron'),
@@ -184,7 +188,7 @@ function card(m) {
     h('div', { class: 'sh-card-main' },
       h('div', { class: 'sh-card-names' },
         h('div', { class: 'sh-names', dir: 'auto' }, sd.fullName(m, 'guy'), ' ', h('span', { class: 'sh-dash' }, '–'), ' ', sd.fullName(m, 'girl')),
-        h('span', { class: 'shs-side' }, m.tries.length > 1 ? h('span', { class: 'sh-try' }, sd.tryName(m.tries.length)) : null, stepTag(m))),
+        h('span', { class: 'shs-side' }, m.tries.length > 1 ? h('span', { class: 'sh-try' }, sd.tryName(m.tries.length)) : null)),  // owner: no Your move / days badge; the line under the bar says it
       statusRow(m),
       bar(m.cur, { dim: barDim(m.cur) }),
       hint ? h('div', { class: 'sh-barhint' + (m.step.kind === 'move' ? ' shs-hint-move' : ''), dir: 'auto', 'data-id': 'shidduchim.hint' }, hint) : null),

@@ -96,7 +96,7 @@ Color direction (provisionally approved): teal \#28B6AD for early steps; purple 
 
 - Answer colors: Yes = soft green; No = soft peach; Thinking = soft yellow; Waiting (not answered yet) = neutral pale gray. Name and answer remain readable together.
 
-- Once both have Yes on an active match, hide the two Compact answer bubbles and restore the original simple stage / next-date information and unchanged 11-segment progress bar.
+- In Progress cards (owner request, Nov 2026) always show three things: where it stands (“Date 2 · Wed, Nov 18 · 7:00 PM” or “After Date 1”), both answer bubbles, and one next-step line under the bar (“Nothing to do until the date”, “Your answer is needed”, “Waiting for Sara's answer”, “Waiting for both answers”, “Arrange Date 3”). Offers cards keep the old rule: once both have Yes, the bubbles give way to the stage / next line.
 
 - Compact in Ended: retain the two colored answer bubbles, then show only the label “Ended” after them; omit duplicate Ended badges and “Ended by \[person\]” prose on the list. Keep provenance and reason in Details and History.
 

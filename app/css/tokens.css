@@ -169,6 +169,7 @@
   --sh-calendar-bg:#F1EEFF;--sh-calendar-text:#7C66BE;
   --sh-card-pad:14px;
   --sh-bubble-height:36px;
+  --sh-answer-min:4.4em; /* answer word in a bubble keeps one width: Yes ↔ Thinking does not shift the row */
   --sh-choice-height:44px;
   --sh-panel-width:276px;
   --sh-ended-panel-bg:var(--danger-bg);
