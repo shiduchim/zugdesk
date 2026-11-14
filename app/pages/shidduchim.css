@@ -218,3 +218,4 @@ a.sh-who:hover{text-decoration:underline}
 .shs-afterbox-who .shs-meta{margin:0}
 .shs-afterbox .sh-ans-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
 .shs-afterbox .sh-ans{padding:0 2px;font-size:var(--font-xs);min-height:40px}
+.sh-foot{display:flex;justify-content:flex-end;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}

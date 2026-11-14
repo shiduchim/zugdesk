@@ -46,17 +46,16 @@ async function draw(keepScroll = false) {
   const list = all.list.filter(m => m.lane === S.lane).sort((a, b) => S.lane === 'ended'
     ? (b.cur.t.endedAt || b.o.updatedAt || '').localeCompare(a.cur.t.endedAt || a.o.updatedAt || '')
     : (b.o.updatedAt || '').localeCompare(a.o.updatedAt || ''));
-  const intro = { offers: 'Both said yes. Checking references and setting up Date 1.', progress: 'Dating.', ended: 'The history is kept, even when a match ends.' };
+  const intro = { offers: 'Waiting for answers.' };
 
   root.innerHTML = '';
   root.append(
     h('div', { class: 'page-head sh-head', 'data-id': 'shidduchim.head' },
-      h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'), h('p', { class: 'note' }, 'Every shidduch, from first offer to what happens next.'))),
+      h('div', { class: 'sh-head-text' }, h('h1', {}, 'Shidduchim'))),
     h('div', { class: 'sh-tabbar', role: 'tablist', 'aria-label': 'Shidduchim lanes', 'data-id': 'shidduchim.lanes' },
       sh.LANES.map(([k, l]) => h('button', { type: 'button', role: 'tab', class: 'sh-tab', 'aria-selected': S.lane === k ? 'true' : 'false', 'data-id': 'shidduchim.lane-' + k,
         onClick: () => { S.lane = k; S.menu = null; S.updateId = null; draw(); } }, l, h('span', { class: 'sh-num' }, counts[k])))),
-    h('div', { class: 'sh-listhead' },
-      h('div', { class: 'sh-listhead-text' }, h('h2', {}, sh.laneLabel(S.lane)), h('p', { class: 'note' }, intro[S.lane]))),
+    intro[S.lane] ? h('p', { class: 'note sh-listhead', 'data-id': 'shidduchim.intro' }, intro[S.lane]) : '',
     h('div', { class: 'sh-matches', 'data-id': 'shidduchim.list' },
       list.length ? list.map(m => S.open === m.o.id ? expandedCard(m) : compactCard(m))
         : h('div', { class: 'sh-blank', 'data-id': 'shidduchim.empty' }, h('h3', {}, 'Nothing here yet'),
@@ -119,7 +118,7 @@ function cardSummary(m, mode) {
       st === 'ended' && t.endedReason ? h('div', { class: 'sh-barhint', dir: 'auto' }, t.endedReason) : null));
 }
 
-const openHref = (m) => `#/shidduchim/${encodeURIComponent(m.o.id)}`;
+const openHref = (m) => `#/shidduchim/${encodeURIComponent(m.o.id)}${m.lane === 'progress' ? '/dates' : ''}`; // dating couples open on Dates
 const openDetails = (m) => navigate(`/shidduchim/${encodeURIComponent(m.o.id)}`);
 
 // One card at a time opens its quick actions (owner request: replaces the Compact / Expanded switch).
@@ -170,9 +169,9 @@ function updateForm(m) {
     if (!text.value.trim() && !pend.audio?.length) { toast('Write a few words or record a voice note first'); text.focus(); return; }
     const r = await sh.addNote(m, text.value.trim() || 'Voice note', await savePending(pend));
     S.updateId = null; S.updateText = '';
-    toast('Dated update saved in History', 2600, { label: 'Undo', run: () => r.undo().then(() => toast('Last change undone')) });
+    toast('Update saved', 2600, { label: 'Undo', run: () => r.undo().then(() => toast('Last change undone')) });
   } },
-    h('label', { for: 'sh-update-' + m.o.id }, 'What happened? ', h('span', { class: 'note' }, 'Saved with today’s date and time')),
+    h('label', { for: 'sh-update-' + m.o.id }, 'What happened?'),
     addMic(Object.assign(text, { id: 'sh-update-' + m.o.id }), { dataId: 'shidduchim.update-mic', pend: VP[m.o.id] || (VP[m.o.id] = {}) }),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduchim.update-cancel', onClick: () => { S.updateId = null; draw(true); } }, 'Cancel'),
@@ -209,17 +208,17 @@ export async function endDialog(m, { side = null, afterEnd = null } = {}) {
   const reason = h('textarea', { class: 'input', rows: 2, dir: 'auto', placeholder: 'Only if known', 'data-id': 'end-sheet.reason' });
   const source = h('input', { class: 'input', dir: 'auto', placeholder: 'e.g. the shadchan', 'data-id': 'end-sheet.source' });
   const who = side ? null : bubbles({ options: [['unknown', 'Not specified'], ['me', 'Me'], ['them', sh.personFirst(m)], ['both', 'Both']], selected: ['unknown'], multi: false, dataId: 'end-sheet.who', onChange: (v) => { endedBy = v || 'unknown'; } });
-  const res = await sheet({ title: side ? 'End this shidduch?' : 'Move this shidduch to Ended?', dataId: 'end-sheet',
+  const res = await sheet({ title: 'End this shidduch?', dataId: 'end-sheet',
     body: [
-      h('p', {}, side ? `${sh.sideFull(m, side)} said No. ` : '', 'Answers, dates and history stay saved. The ended try keeps its progress in gray.'),
+      h('p', {}, side ? `${sh.sideFull(m, side)} said No. ` : '', 'History stays saved.'),
       who ? h('div', { class: 'field' }, h('label', {}, 'Who ended it? (optional)'), who) : null,
       h('div', { class: 'field' }, h('label', {}, 'Reason (optional)'), reason),
       h('div', { class: 'field' }, h('label', {}, 'Who told you? (optional)'), source)],
-    actions: [{ id: 'end', label: 'Move to Ended', danger: true, run: async () => {
+    actions: [{ id: 'end', label: 'End shidduch', danger: true, run: async () => {
       const r = await sh.endTry(m, { endedBy, reason: reason.value, source: source.value, saidNo: !!side });
       if (!r) return false;
       S.lane = 'ended'; S.menu = null;
-      toast('Moved to Ended · history preserved', 2600, { label: 'Undo', run: () => undoTo(r.undo, m.lane) });
+      toast('Ended', 2600, { label: 'Undo', run: () => undoTo(r.undo, m.lane) });
       afterEnd && afterEnd();
     } }] });
   if (res === null) draw(true);

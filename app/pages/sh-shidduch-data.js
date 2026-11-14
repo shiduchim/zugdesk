@@ -17,10 +17,10 @@ import { removeAudio } from '../js/voice.js';
 export const T = {
   lanes: { ideas: 'Ideas', offers: 'Offers', progress: 'In Progress', ended: 'Ended' },
   laneIntro: {
-    ideas: 'Only you know about these. Nobody was asked yet.',
-    offers: 'At least one side was asked. Waiting for answers, or checking references.',
-    progress: 'Dating.',
-    ended: 'Finished: ended or engaged. The history is kept.',
+    ideas: 'Nobody was asked yet.',
+    offers: 'Waiting for answers.',
+    progress: '',
+    ended: '',
   },
   answers: { '': 'Not asked', asked: 'Asked', thinking: 'Thinking', yes: 'Yes', no: 'No' },
   side: { guy: 'His side', girl: 'Her side' },
