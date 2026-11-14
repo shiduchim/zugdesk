@@ -114,10 +114,10 @@ _Last updated: 2026-11-14 (Claude paste import step 3 built: feature done)_
 - Claude paste import step 1: `app/pages/claude-import.js` (+ css). Home "Paste from AI" (`home.paste-claude`) and notepad chip (`home.claude-chip`); preview `bulk.*`; Settings → Claude instructions (`settings.claude-text`, FORMAT_VERSION 1). Duplicate helpers now shared: `findPersonDup` / `fillEmpty` (people-data.js), `findContactDuplicate` (contacts-data.js).
 - Claude paste import step 2: [To do] cards are real Follow Ups (Date + Time boxes in the preview, `bulk.todo-text` / `bulk.todo-date` / `bulk.todo-time`; `whenOf()` reads `YYYY-MM-DD HH:MM (words)`). Linked to full names found in the text and to the whole-paste note. Instructions text unchanged (FORMAT_VERSION still 1).
 - Claude paste import step 3: [Update] / [Date] cards find the shidduch for the Pair (`findPairs`, both modes), owner confirms (`bulk.shidduch-pick` / `bulk.shidduch-note`), answer side + value (`bulk.answer-*`), date Date/Time/Where (`bulk.date-*`). Saves through shidduch-data.js / sh-shidduch-data.js (`snapshot` now exported for the paste's Undo). Instructions text changed: FORMAT_VERSION 2 (`Who:` / `Answer:` in [Update]).
-- Owner still to do: in Claude make a Project "ZugDesk", paste Settings → Claude instructions → Copy into its instructions; Claude Settings → Privacy → turn off "Help improve Claude".
+- Owner set up the Claude Project (version 1 text) before step 3; needs only to re-copy the version 2 text.
 
 ### Next
-- Claude paste import is complete (steps 1–3). Owner: copy the new Claude instructions (version 2) into the Claude Project.
+- Claude paste import is complete (steps 1–3). Owner: replace the Project's instructions with the version 2 text (Settings → Claude instructions → Copy).
 - Owner phone type (iPhone/Android) still unknown; if Android, Share Target is an optional extra.
 
 ### Notes / blockers
