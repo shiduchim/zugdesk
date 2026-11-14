@@ -108,14 +108,15 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-14 (Claude paste import step 1 built)_
+_Last updated: 2026-11-14 (Claude paste import step 2 built)_
 
 ### Done this session (branch `claude/happy-newton-wgb0pz`)
 - Claude paste import step 1: `app/pages/claude-import.js` (+ css). Home "Paste from AI" (`home.paste-claude`) and notepad chip (`home.claude-chip`); preview `bulk.*`; Settings → Claude instructions (`settings.claude-text`, FORMAT_VERSION 1). Duplicate helpers now shared: `findPersonDup` / `fillEmpty` (people-data.js), `findContactDuplicate` (contacts-data.js).
+- Claude paste import step 2: [To do] cards are real Follow Ups (Date + Time boxes in the preview, `bulk.todo-text` / `bulk.todo-date` / `bulk.todo-time`; `whenOf()` reads `YYYY-MM-DD HH:MM (words)`). Linked to full names found in the text and to the whole-paste note. Instructions text unchanged (FORMAT_VERSION still 1).
 - Owner still to do: in Claude make a Project "ZugDesk", paste Settings → Claude instructions → Copy into its instructions; Claude Settings → Privacy → turn off "Help improve Claude".
 
 ### Next
-- Step 2: [To do] → real follow-ups (When: → due date). Step 3: [Update] / [Date] → find the shidduch for the Pair, confirm, record answer / date. Today all three are notes linked to the names.
+- Step 3: [Update] / [Date] → find the shidduch for the Pair, confirm, record answer / date. Today Update / Date are notes linked to the names.
 - Owner phone type (iPhone/Android) still unknown; if Android, Share Target is an optional extra.
 
 ### Notes / blockers

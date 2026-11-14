@@ -36,6 +36,7 @@
 - A shadchan named only on a single becomes one contact, linked to every single that names them.
 - Undo after Add: nothing from the paste is left (not in Recently deleted either) and the New Note text comes back.
 - Phone `+1 …` is saved as `001…`; no plus sign shows anywhere.
+- [To do] (step 2): `When: 2026-11-17 14:30 (next Tuesday)` fills Date and Time and shows “You wrote: next Tuesday”; a When with no YYYY-MM-DD leaves Date empty and says “Claude wrote …”. After Add it is a Follow Up on Home (time added as “· at 14:30”), linked to the full names in its text (this paste first, then saved people / contacts) and to the whole-paste note; Undo removes it.
 
 ## Manual (I check on my phone)
 - [ ] Close and reopen the app: it loads, Home shows

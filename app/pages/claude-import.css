@@ -32,3 +32,6 @@
 .ed-head h2{white-space:nowrap}
 [data-id="home.paste-claude"]{white-space:nowrap;padding:0 8px;flex:0 0 auto;font-size:var(--font-sm)}
 @media (max-width:359px){.ed-head h2{font-size:var(--font-base)}.ed-head{gap:2px}}
+.bulk-row:has(.bulk-time){flex-wrap:wrap}
+.bulk-row:has(.bulk-time) .bulk-field{flex:1 1 180px}
+.bulk-row .bulk-field:has(.bulk-time){flex:1 0 120px;max-width:160px}

@@ -1,4 +1,4 @@
-// Claude paste import (spec/build-handoff.md → Session handoff, step 1).
+// Claude paste import (spec/build-handoff.md → Session handoff, steps 1–2).
 // The owner writes call notes to a Claude Project "ZugDesk"; Claude answers with ONE block:
 //   ZUGDESK 1 · [Single] · [Shadchan] · [To do] · [Update] · [Date] · Unclear: … · END
 // This module finds that block in any pasted text, shows a preview (edit, include, duplicates),
@@ -166,6 +166,20 @@ export function phoneOf(v) {
 const ageOf = (v) => ((v || '').match(/\d{1,3}/) || [''])[0];
 const splitPair = (v) => (v || '').split(/\s+and\s+|\s+ו(?=\S)|\s*[&/,]\s*|\s+-\s+|\s+with\s+|\s+עם\s+/i).map(s => s.trim()).filter(Boolean);
 
+// "2026-11-17 14:00 (next Tuesday)" → { date: '2026-11-17', time: '14:00', words: 'next Tuesday' }.
+// No ISO date → date stays empty; the owner picks one (nothing is guessed).
+export function whenOf(v) {
+  const s = (v || '').trim();
+  const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T,]+(\d{1,2})[:.](\d{2}))?/);
+  const words = ((s.match(/\(([^)]*)\)/) || [])[1] || '').trim();
+  if (!m) return { date: '', time: '', words };
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (isNaN(d) || d.getMonth() !== Number(m[2]) - 1) return { date: '', time: '', words };
+  const two = (n) => String(n).padStart(2, '0');
+  const time = m[4] != null && Number(m[4]) < 24 ? `${two(m[4])}:${m[5]}` : '';
+  return { date: `${m[1]}-${two(m[2])}-${two(m[3])}`, time, words };
+}
+
 async function buildModel(parsed) {
   const [people, contacts] = await Promise.all([store.people.list(), store.contacts.list()]);
   const prefs = store.getPrefs();
@@ -189,6 +203,11 @@ async function buildModel(parsed) {
       c.dup = findContactDuplicate(contacts, { name: c.name, phone: c.phone });
       c.action = c.dup ? 'update' : 'new';
       model.cards.push(c);
+    } else if (it.type === 'todo') {
+      const w = whenOf(f.when);
+      const extra = Object.entries(f).filter(([k]) => !['text', 'when', 'pair'].includes(k)).map(([k, v]) => `${k[0].toUpperCase() + k.slice(1)}: ${v}`);
+      model.cards.push({ ...base, text: [f.text, ...extra].filter(Boolean).join('\n').trim(), due: w.date, time: w.time, whenWords: w.words,
+        whenRaw: w.date ? '' : (f.when || '').trim(), pair: splitPair(f.pair), action: 'new' });
     } else {
       const lines = [];
       if (f.pair) lines.push(f.pair);
@@ -305,6 +324,14 @@ function cardEl(c, i, m, draw, relabel) {
     if (c.note) wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, c.note));
     if (c.fromSingle) wrap.append(h('p', { class: 'note' }, 'Named as a shadchan above.'));
     if (c.dup) wrap.append(dupChoice(c, `Already have ${store.displayName(c.dup)}${c.dup.phone ? ' · ' + c.dup.phone : ''}`, draw, true));
+  } else if (c.type === 'todo') {
+    wrap.append(field('What to do', c, 'text', 'bulk.todo-text', relabel),
+      h('div', { class: 'bulk-row' },
+        field('Date', c, 'due', 'bulk.todo-date', null, { type: 'date', dir: 'ltr' }),
+        field('Time', c, 'time', 'bulk.todo-time', null, { type: 'time', dir: 'ltr', class: 'input bulk-time' })));
+    if (c.whenWords) wrap.append(h('p', { class: 'note', dir: 'auto' }, `You wrote: “${c.whenWords}”`));
+    if (c.whenRaw) wrap.append(h('p', { class: 'note bulk-need', dir: 'auto' }, `Claude wrote “${c.whenRaw}”. Choose the date, or leave it empty.`));
+    wrap.append(h('p', { class: 'note' }, 'Saved as a Follow Up on Home' + (c.pair.length ? ', for ' + c.pair.join(' and ') : '') + '.'));
   } else {
     wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, c.text || '(empty)'),
       h('p', { class: 'note' }, 'Saved as a note for now' + (c.pair.length ? ', linked to ' + c.pair.join(' and ') : '') + '.'));
@@ -333,7 +360,7 @@ const noPlus = (t) => (t || '').replace(/\+\s?(?=\d)/g, '00'); // owner rule: no
 async function saveAll(m, text) {
   text = noPlus(text);
   const batch = store.newId('imp');
-  const made = { contacts: [], people: [], sources: [], notes: [], events: [] };
+  const made = { contacts: [], people: [], sources: [], notes: [], events: [], followUps: [] };
   const before = { contacts: [], people: [] }; // records changed, as they were
   const t = store.now();
   const take = (c) => c.include && c.action !== 'skip';
@@ -401,12 +428,23 @@ async function saveAll(m, text) {
     const ct = byName.get(n) || m.contacts.find(x => norm(store.displayName(x)) === n || norm(x.name) === n);
     return ct ? { contactId: ct.id } : null;
   };
-  // 3. To do / Update / Date / other: notes linked to the names (later steps make them real)
-  const allC = new Set([...byName.values()].map(x => x.id)), allP = new Set([...personByName.values()].map(x => x.id));
-  for (const c of m.cards.filter(c => !['single', 'shadchan'].includes(c.type) && take(c))) {
+  // Names a card is about: its Pair line, else full names found in its text (this paste first, then saved people / contacts).
+  const known = [...personByName.keys(), ...byName.keys(),
+    ...[...allPeople.map(x => norm(x.name)), ...m.contacts.map(x => norm(store.displayName(x)))].filter(n => n.includes(' '))].filter(Boolean);
+  const linksOf = (c) => {
     const pIds = [], cIds = [];
-    const names = c.pair.length ? c.pair : [...personByName.keys(), ...byName.keys()].filter(n => n && norm(c.text).includes(n));
+    const t = ' ' + norm(c.text) + ' ';
+    const names = c.pair.length ? c.pair : [...new Set(known)].filter(n => t.includes(' ' + n + ' '));
     for (const n of names) { const l = findLink(n); if (l?.personId) pIds.push(l.personId); if (l?.contactId) cIds.push(l.contactId); }
+    return { pIds: [...new Set(pIds)], cIds: [...new Set(cIds)] };
+  };
+  const allC = new Set([...byName.values()].map(x => x.id)), allP = new Set([...personByName.values()].map(x => x.id));
+  // 3a. To do: real Follow Ups (made after the whole-paste note, so they can point to it)
+  const todos = m.cards.filter(c => c.type === 'todo' && take(c)).map(c => ({ c, ...linksOf(c) }));
+  for (const x of todos) { x.pIds.forEach(id => allP.add(id)); x.cIds.forEach(id => allC.add(id)); }
+  // 3b. Update / Date / other: notes linked to the names (a later step makes them real)
+  for (const c of m.cards.filter(c => !['single', 'shadchan', 'todo'].includes(c.type) && take(c))) {
+    const { pIds, cIds } = linksOf(c);
     pIds.forEach(id => allP.add(id)); cIds.forEach(id => allC.add(id));
     const title = `${TYPE_LABEL[c.type]}${c.pair.length ? ': ' + c.pair.join(' and ') : ': ' + (c.text.split('\n')[0] || '').slice(0, 40)}`;
     const { note, entry } = await createNote({ title, text: c.text, contactIds: [...new Set(cIds)], personIds: [...new Set(pIds)] });
@@ -415,6 +453,13 @@ async function saveAll(m, text) {
   // 4. the whole paste as one note, linked to everyone in it
   const { note, entry } = await createNote({ title: 'From Claude · ' + store.formatDate(t), text, contactIds: [...allC], personIds: [...allP] });
   made.notes.push(note.id); made.events.push(entry.id);
+  for (const { c, pIds, cIds } of todos) {
+    let text = c.text.trim() || 'Follow up';
+    if (c.time && !text.includes(c.time)) text += ' · at ' + c.time;
+    const fu = await store.followUps.save({ noteId: note.id, contactId: cIds[0] || null, personId: pIds[0] || null, kind: 'task',
+      text, dueAt: /^\d{4}-\d{2}-\d{2}$/.test(c.due || '') ? c.due : null, done: false, importBatch: batch });
+    made.followUps.push(fu.id);
+  }
   return { batch, made, before, count: counted(m).length };
 }
 
