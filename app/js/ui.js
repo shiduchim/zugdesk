@@ -160,6 +160,16 @@ export function bubbles({ options, selected = [], multi = true, dataId, onChange
 // The page container is shared, so the listeners go on once and each page registers its own
 // tabs with swipeTabs(root, { keys, current, go }) and clears them with swipeTabs(root, null).
 // Ignores the left-edge swipe that opens the menu, typing, and things that scroll sideways.
+// Owner request: cards stay where they are while you work on the page (a changed answer must not
+// send the card to the top). `rank` is a Map kept for the visit; cards new to the list go on top.
+export function keepOrder(rank, list, idOf) {
+  const known = list.filter(x => rank.has(idOf(x))).sort((a, b) => rank.get(idOf(a)) - rank.get(idOf(b)));
+  const fresh = list.filter(x => !rank.has(idOf(x)));
+  let top = Math.min(0, ...rank.values());
+  for (let i = fresh.length - 1; i >= 0; i--) rank.set(idOf(fresh[i]), --top);
+  return [...fresh, ...known];
+}
+
 export function swipeTabs(el, cfg) {
   el.__swipe = cfg;
   if (el.__swipeOn || !cfg) return;

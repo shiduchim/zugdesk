@@ -4,7 +4,7 @@
 // opens its quick actions. The lane is never chosen by hand: it follows from the answers and dates.
 // Look: Single Mode's Shidduchim (shidduchim.css) plus the shs-… rules in singles.css.
 import * as store from '../js/store.js';
-import { h, icon, toast, swipeTabs } from '../js/ui.js';
+import { h, icon, toast, swipeTabs, keepOrder } from '../js/ui.js';
 import { norm } from './singles-data.js';
 import * as sd from './sh-shidduch-data.js';
 import { bar, barDim, endDialog, newIdeaSheet } from './sh-shidduch-parts.js';
@@ -53,6 +53,7 @@ const T = {
   bothSides: 'Both sides',
 };
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
+const rank = new Map(); // card order for this visit (keepOrder)
 const S = { lane: 'offers', menu: null, updateId: null, updateText: '', open: null, q: '', picked: false }; // survives leaving the page
 let root = null, gen = 0, unsub = null, timer = 0, A = null, docClick = null, docKey = null;
 
@@ -66,6 +67,7 @@ export function destroy() {
 export async function render(container) {
   root = container;
   root.classList.add('sh-page', 'shs-page');
+  rank.clear(); // a fresh visit sorts by latest change again
   swipeTabs(root, { keys: () => sd.LANES, current: () => S.lane, go: (k) => setLane(k) });
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => load(), 80); } });
@@ -116,7 +118,7 @@ function drawList() {
   const counts = { ideas: 0, offers: 0, progress: 0, ended: 0 };
   for (const m of hits) counts[m.lane]++;
   const when = (m) => (S.lane === 'ended' ? m.cur.t.endedAt || m.cur.t.engagedAt : null) || m.o.updatedAt || '';
-  const list = hits.filter(m => m.lane === S.lane).sort((a, b) => when(b).localeCompare(when(a)));
+  const list = keepOrder(rank, hits.filter(m => m.lane === S.lane).sort((a, b) => when(b).localeCompare(when(a))), m => m.o.id);
   const others = words.length ? sd.LANES.filter(l => l !== S.lane && counts[l]).map(l => `${sd.laneLabel(l)} (${counts[l]})`) : [];
 
   box.innerHTML = '';
