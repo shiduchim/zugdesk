@@ -35,3 +35,5 @@
 .bulk-row:has(.bulk-time){flex-wrap:wrap}
 .bulk-row:has(.bulk-time) .bulk-field{flex:1 1 180px}
 .bulk-row .bulk-field:has(.bulk-time){flex:1 0 120px;max-width:160px}
+.bulk-sh-row{display:flex;align-items:center;justify-content:space-between;gap:var(--gap);min-width:0}
+.bulk-sh-row span{min-width:0;overflow-wrap:anywhere}
