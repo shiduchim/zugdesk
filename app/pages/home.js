@@ -8,6 +8,7 @@ import { nameIndex, recognize, firstSentence, buildHistory, openFollowUps } from
 import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
 import { recordInterest } from './idea-flow.js';
 import { MODE, MODES, isShadchan, switchMode } from '../js/mode.js';
+import * as CI from './claude-import.js';
 // Shadchan Mode builds Home from blocks (pages/sh-home.js); Single Mode never loads it.
 const SHH = isShadchan ? await import('./sh-home.js') : null;
 
@@ -116,6 +117,10 @@ function composer(key) {
     const t = isNew && d.targetNoteId ? D.notes.find(n => n.id === d.targetNoteId) : null;
     if (t) target.append(h('span', { dir: 'auto' }, `Will be added to “${t.title}” as a dated update. `),
       h('button', { type: 'button', class: 'linkish', 'data-id': 'home.new-note.target-cancel', onClick: () => { d.targetNoteId = null; persist(); sync(); } }, 'Make it a new note instead'));
+    // Claude paste import: a "ZUGDESK n" block pasted into New Note can be added in one go.
+    const things = isNew && CI.hasBlock(d.text) ? CI.countThings(CI.parseBlock(d.text)) : 0;
+    if (things) target.append(h('button', { type: 'button', class: 'btn small primary claude-chip', 'data-id': 'home.claude-chip',
+      onClick: () => importFromNote() }, `Add ${things} thing${things === 1 ? '' : 's'} from this note`));
     drawFoot(key, foot, writing, sync);
   };
   ta.addEventListener('input', () => { d.text = ta.value; persist(); grow(ta); sync(); });
@@ -129,12 +134,26 @@ function composer(key) {
       h('span', { class: 'suggest-dot-core' }));
     const title = h('input', { class: 'ed-title', dir: 'auto', placeholder: 'Title (optional)', 'aria-label': 'Note title (optional)', value: d.title, 'data-id': 'home.new-note.title',
       onInput: (e) => { d.title = e.target.value; persist(); } });
-    wrap.append(h('div', { class: 'ed-head' }, h('h2', {}, ico('edit'), 'New Note'), h('span', { class: 'spacer' }), pin, dot), title);
+    const fromClaude = h('button', { type: 'button', class: 'btn small mini', 'data-id': 'home.paste-claude', onClick: pasteClaude }, 'Paste from Claude');
+    wrap.append(h('div', { class: 'ed-head' }, h('h2', {}, ico('edit'), 'New Note'), h('span', { class: 'spacer' }), pin, dot), h('div', { class: 'claude-row' }, fromClaude), title);
   }
   wrap.append(h('div', { class: 'ed-wrap' }, mirror, ta), target, hints, foot);
   sync();
   setTimeout(() => grow(ta), 0);
   return wrap;
+}
+
+// ---------- Claude paste import (pages/claude-import.js) ----------
+function pasteClaude() {
+  return CI.pasteFromClaude({ fallback: () => root?.querySelector('textarea[data-key="new"]')?.focus() });
+}
+// The pasted block becomes records; the New Note box is emptied, and Undo puts the words back.
+async function importFromNote() {
+  const d = draft('new'), kept = { text: d.text, title: d.title };
+  await CI.openImport(d.text, {
+    onSaved: () => { d.text = ''; d.title = ''; persist(); drawComposer(); },
+    onUndone: () => { const n = draft('new'); if (!n.text.trim()) { n.text = kept.text; n.title = kept.title; persist(); drawComposer(); } },
+  });
 }
 
 // The foot's buttons are made once per editor (so an open dropdown keeps its anchor);

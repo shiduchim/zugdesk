@@ -30,6 +30,13 @@ export const LAYOUTS = [
 
 export const roleLabel = (r) => ({ shadchan: 'Shadchan', reference: 'Reference', friend: 'Friend', family: 'Family', helper: 'Helper', other: 'Other' })[r] || (r ? r[0].toUpperCase() + r.slice(1) : r);
 
+// Same name, or the same phone (last 9 digits, at least 7). Add Shadchan and the Claude paste import.
+export function findContactDuplicate(all, rec) {
+  const norm = (s) => (s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const n = norm(rec.name), d = store.phoneDigits(rec.phone);
+  return all.find(x => (n && (norm([x.firstName, x.lastName].filter(Boolean).join(' ') || x.name) === n || norm(store.displayName(x)) === n)) || (d.length >= 7 && store.phoneDigits(x.phone) === d)) || null;
+}
+
 export let D = null;
 
 export async function load() {

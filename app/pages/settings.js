@@ -5,6 +5,7 @@ import { LAYOUTS, SORTS, load as loadData } from './contacts-data.js';
 import { viewSheet } from './contacts-panels.js';
 import { MODE, isShadchan, switchMode } from '../js/mode.js';
 import { exportSheet, importBackup } from './backup-sheet.js';
+import { CLAUDE_INSTRUCTIONS, FORMAT_VERSION, copyInstructions } from './claude-import.js';
 
 let unsub = null;
 
@@ -54,6 +55,16 @@ export async function render(root) {
     section('Help Claude edit the app', 'settings.labels',
       toggle('settings.show-labels', 'Show labels', 'Overlays every element’s name. Tap a label to copy it, then paste it in your request (e.g. “contacts.add-btn bigger”).',
         prefs.showLabels, (v) => { store.setPref('showLabels', v); toast(v ? 'Labels on — tap one to copy its name' : 'Labels off'); })),
+
+    section('Claude instructions', 'settings.claude-text',
+      h('p', { class: 'note' }, 'Write your call notes to Claude; it answers with one block you copy and add on Home with “Paste from Claude”. One time only: in Claude make a Project called ZugDesk, then paste this text into the project’s instructions.'),
+      h('p', { class: 'note' }, `Format ${FORMAT_VERSION}. When the app gets a new format, copy the text again and replace the old one in Claude.`),
+      h('div', { class: 'btn-row' },
+        h('button', { class: 'btn', type: 'button', 'data-id': 'settings.claude-copy', onClick: copyInstructions }, 'Copy the instructions')),
+      h('details', { class: 'claude-text', 'data-id': 'settings.claude-show' },
+        h('summary', {}, 'Show the text'),
+        h('pre', { class: 'claude-pre', dir: 'auto' }, CLAUDE_INSTRUCTIONS)),
+      h('p', { class: 'note' }, 'Privacy: in Claude, open Settings → Privacy and turn off “Help improve Claude”.')),
 
     section('Contacts view', 'settings.contacts-layout',
       h('p', { class: 'note' }, `Phone view now: ${(LAYOUTS.find(l => l[0] === prefs.contactsLayout) || LAYOUTS[0])[1]}. Also changeable from the View button on Contacts. On a computer, Contacts always uses the three-area view.`),

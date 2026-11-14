@@ -1,0 +1,26 @@
+/* Claude paste import: Home button / chip, the "Add from Claude" preview, Settings text. Tokens only. */
+.claude-chip{margin-top:var(--gap)}
+.bulk-body{gap:var(--gap)}
+.bulk-card{border:1px solid var(--card-edge);border-radius:var(--radius);background:var(--card-bg);padding:10px 12px;display:flex;flex-direction:column;gap:var(--gap)}
+.bulk-card.off{opacity:.6}
+.bulk-head{display:flex;align-items:center;gap:var(--gap);min-width:0}
+.bulk-head .spacer{flex:1}
+.bulk-include{min-height:0;padding:0;gap:var(--gap);flex:0 0 auto}
+.bulk-include .toggle-text{font-size:var(--font-sm);color:var(--muted)}
+.bulk-field{display:flex;flex-direction:column;gap:2px;margin:0;min-width:0;flex:1}
+.bulk-label{font-size:var(--font-sm);color:var(--muted)}
+.bulk-row{display:flex;gap:var(--gap);min-width:0}
+.bulk-row .input.short{max-width:80px}
+.bulk-row .bulk-field:has(.short){flex:0 0 80px}
+.bulk-kind{margin:0;align-self:flex-start}
+.bulk-kind.need{border-color:var(--warn)}
+.bulk-need{color:var(--warn)}
+.bulk-text{white-space:pre-wrap;overflow-wrap:anywhere;font-size:var(--font-sm);background:var(--original-bg);border-radius:var(--radius);padding:8px 10px}
+.bulk-dup{border-top:1px solid var(--border);padding-top:var(--gap);display:flex;flex-direction:column;gap:6px}
+.bulk-dup-btns{display:flex;flex-wrap:wrap;gap:6px}
+.bulk-unclear{background:var(--warn-bg);color:var(--warn)}
+.bulk-unclear ul{margin:4px 0 0;padding-inline-start:18px}
+.claude-text summary{cursor:pointer;color:var(--link);font-size:var(--font-sm);min-height:var(--touch-min);display:flex;align-items:center}
+.claude-pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--original-font);font-size:var(--font-sm);background:var(--original-bg);border-radius:var(--radius);padding:10px 12px;margin:0;max-height:50vh;overflow:auto}
+.clip-helper{position:fixed;opacity:0;pointer-events:none}
+.claude-row{display:flex;margin:2px 0 var(--gap-sm)}
