@@ -185,7 +185,7 @@ function datesView(m) {
     U.dateEdit !== null ? dateForm(m) : null,
     list.length ? h('div', { class: 'sh-dates', 'data-id': 'shidduch.dates-list' }, list.map(d => h('button', { type: 'button', class: 'sh-dateitem', 'data-id': 'shidduch.date', onClick: () => { U.dateEdit = d.id; draw(m.o.id, true).then(() => root?.querySelector('[data-id="shidduch.date-form"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })); } },
       h('span', { class: 'sh-calendar' }, sh.dateNum(d)),
-      h('span', { class: 'sh-dateinfo' }, h('strong', {}, `Date ${sh.dateNum(d)} · ${d.status}`), h('small', { dir: 'auto' }, sh.whenNice(d.when), d.where ? ' · ' + d.where : '')),
+      h('span', { class: 'sh-dateinfo' }, h('strong', {}, `Date ${sh.dateNum(d)} · ${d.status}`), h('small', { dir: 'auto' }, sh.whenNice(d.when), d.where ? ' · ' + d.where : '', d.audioIds?.length ? ' · voice note' : '')),
       ico('chevron'))))
       : h('div', { class: 'sh-blank plain' }, h('h3', {}, 'No dates yet'), h('p', {}, 'Use “Arrange a date” when both people are ready.')),
     h('div', { class: 'note' }, 'Dates only colour the progress bar after they are marked Happened. Cancelled dates stay in the list. Dates past the eighth keep their real number even though the bar stops at Date 8.'),
@@ -202,16 +202,17 @@ function dateForm(m) {
   const status = h('select', { class: 'input', id: 'sh-date-status', 'data-id': 'shidduch.date-status' }, ['Arranged', 'Happened', 'Cancelled'].map(x => h('option', { value: x, selected: x === (d?.status || 'Arranged') || null }, x)));
   const feedback = h('textarea', { class: 'input', id: 'sh-date-feedback', rows: 3, dir: 'auto', placeholder: 'Optional notes about the date', 'data-id': 'shidduch.date-feedback' }, d?.feedback || '');
   const fld = (label, el) => h('div', { class: 'field' }, h('label', { for: el.id }, label), el);
+  const fbPend = VP['date:' + (d?.id || 'new')] || (VP['date:' + (d?.id || 'new')] = {});
   return h('form', { class: 'sh-formbox', 'data-id': 'shidduch.date-form', onSubmit: async (e) => {
     e.preventDefault();
     if (!when.value) { toast('Choose a date and time'); when.focus(); return; }
-    await sh.saveDate(m, d, { when: when.value, where: where.value, status: status.value, feedback: feedback.value });
+    await sh.saveDate(m, d, { when: when.value, where: where.value, status: status.value, feedback: feedback.value, audioIds: await savePending(fbPend) });
     U.dateEdit = null; toast('Date saved');
   } },
     h('h3', {}, isNew ? 'Arrange a date' : `Edit Date ${n}`),
     h('div', { class: 'sh-form-grid' },
       h('div', { class: 'sh-form-row' }, fld('When', when), fld('Where', where)),
-      fld('Status', status), fld('Feedback (private)', feedback)),
+      fld('Status', status), h('div', { class: 'field' }, h('label', { for: feedback.id }, 'Feedback (private)'), addMic(feedback, { dataId: 'shidduch.date-feedback-mic', pend: fbPend }), voiceChips(d?.audioIds, 'shidduch.date-voice'))),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduch.date-cancel', onClick: () => { U.dateEdit = null; draw(m.o.id, true); } }, 'Cancel'),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduch.date-save' }, 'Save date')));

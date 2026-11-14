@@ -11,6 +11,7 @@
 // The lane (Ideas / Offers / In Progress / Ended) is never typed: it follows from the answers and dates.
 import * as store from '../js/store.js';
 import { singlesIndex, statusOf } from './singles-data.js';
+import { removeAudio } from '../js/voice.js';
 
 // Words, in one place (other languages later).
 export const T = {
@@ -307,7 +308,9 @@ export async function snapshot(m) {
     people: people.filter(Boolean).map(p => ({ id: p.id, status: p.status ?? null, busyUntil: p.busyUntil ?? null, statusBy: p.statusBy ?? null })) };
   return async () => {
     await store.tries.save(before.t);
-    await store.discard(store.stageEvents, (await store.stageEvents.byIndex('tryId', t.id)).filter(e => !evIds.has(e.id)).map(e => e.id));
+    const gone = (await store.stageEvents.byIndex('tryId', t.id)).filter(e => !evIds.has(e.id));
+    await store.discard(store.attachments, gone.flatMap(e => e.audioIds || []));
+    await store.discard(store.stageEvents, gone.map(e => e.id));
     const now = await store.dateEvents.byIndex('tryId', t.id);
     await store.discard(store.dateEvents, now.filter(d => !before.dates.has(d.id)).map(d => d.id));
     for (const d of now) { const was = before.dates.get(d.id); if (was && JSON.stringify(was) !== JSON.stringify(d)) await store.dateEvents.save(was); }
@@ -485,10 +488,13 @@ export async function saveDate(m, d, { when, where, status }) {
 }
 
 // Private feedback each side gave after a date. Not a history line: it stays on the date.
-export async function saveFeedback(d, { guy = '', girl = '' }) {
+export async function saveFeedback(d, { guy = '', girl = '', audio = {} }) {
   const cur = await store.dateEvents.get(d.id); if (!cur) return null;
   let rec = cur;
-  for (const [s, text] of [['guy', guy], ['girl', girl]]) rec = withSide(rec, s, { ...sideOf(rec, s), feedback: text.trim() });
+  for (const [s, text] of [['guy', guy], ['girl', girl]]) {
+    const old = sideOf(rec, s).audioIds || [], add = audio[s] || [];
+    rec = withSide(rec, s, { ...sideOf(rec, s), feedback: text.trim(), ...(old.length || add.length ? { audioIds: [...old, ...add] } : {}) });
+  }
   return store.dateEvents.save(rec);
 }
 
@@ -528,8 +534,8 @@ export function removeShidduch(m) {
   return store.asOne(async () => {
     await releaseAuto(m);
     for (const v of m.tries) {
-      for (const e of await store.stageEvents.byIndex('tryId', v.t.id)) await store.stageEvents.remove(e.id);
-      for (const d of await store.dateEvents.byIndex('tryId', v.t.id)) await store.dateEvents.remove(d.id);
+      for (const e of await store.stageEvents.byIndex('tryId', v.t.id)) { await removeAudio(e.audioIds); await store.stageEvents.remove(e.id); }
+      for (const d of await store.dateEvents.byIndex('tryId', v.t.id)) { for (const s of SIDES) await removeAudio(sideOf(d, s).audioIds); await store.dateEvents.remove(d.id); }
       await store.tries.remove(v.t.id);
     }
     await store.offers.remove(m.o.id);

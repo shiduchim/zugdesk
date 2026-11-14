@@ -5,6 +5,7 @@
 // ShidduchTry = one attempt; StageEvent = one history line; DateEvent = one date.
 // Data always goes through store.js; pages never keep their own copies.
 import * as store from '../js/store.js';
+import { removeAudio } from '../js/voice.js';
 
 export const LANES = [['offers', 'Offers'], ['progress', 'In Progress'], ['ended', 'Ended']];
 export const ANSWERS = ['Yes', 'Thinking', 'No'];
@@ -138,7 +139,7 @@ export async function snapshot(m) {
   return async () => {
     await store.offers.save(before.o);
     await store.tries.save(before.t);
-    for (const e of await store.stageEvents.byIndex('tryId', before.t.id)) if (!evIds.has(e.id)) await store.stageEvents.remove(e.id);
+    for (const e of await store.stageEvents.byIndex('tryId', before.t.id)) if (!evIds.has(e.id)) { await removeAudio(e.audioIds); await store.stageEvents.remove(e.id); }
     for (const d of await store.dateEvents.byIndex('tryId', before.t.id)) if (!dtIds.has(d.id)) await store.dateEvents.remove(d.id);
   };
 }
@@ -227,11 +228,11 @@ export async function addNote(m, text, audioIds = []) {
 }
 
 // Arrange or edit a date. A changed status/time/place writes exactly one history line.
-export async function saveDate(m, d, { when, where, status, feedback }) {
+export async function saveDate(m, d, { when, where, status, feedback, audioIds = [] }) {
   const t = m.cur.t;
   const isNew = !d;
   const n = isNew ? Math.max(0, ...m.cur.dates.map(dateNum)) + 1 : dateNum(d);
-  const rec = await store.dateEvents.save({ ...(d || { tryId: t.id, offerId: t.offerId, n }), when, where: where.trim(), status, feedback: feedback.trim(), at: d?.at || store.now() });
+  const rec = await store.dateEvents.save({ ...(d || { tryId: t.id, offerId: t.offerId, n }), when, where: where.trim(), status, feedback: feedback.trim(), audioIds: [...(d?.audioIds || []), ...audioIds], at: d?.at || store.now() });
   const changed = isNew || d.status !== status || d.when !== when || d.where !== where.trim();
   if (changed) {
     const verb = status.toLowerCase();

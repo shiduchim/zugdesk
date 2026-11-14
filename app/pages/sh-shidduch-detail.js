@@ -312,7 +312,7 @@ function dateCard(m, d) {
   const n = sd.dateNum(d), r = m.round, live = sd.isOpen(m.cur.t);
   const current = r.kind === 'date' && r.rec.id === d.id && !r.upcoming;
   const behind = d.status === 'Happened' || (d.status === 'Arranged' && current);
-  const fb = sd.SIDES.map(s => [s, sd.sideOf(d, s).feedback]).filter(x => x[1]);
+  const fb = sd.SIDES.map(s => [s, sd.sideOf(d, s).feedback, sd.sideOf(d, s).audioIds]).filter(x => x[1] || x[2]?.length);
   return h('div', { class: 'shs-date' + (d.status === 'Cancelled' ? ' shs-dim' : ''), 'data-id': 'shidduch.date' },
     h('div', { class: 'shs-date-head' },
       h('span', { class: 'sh-calendar' }, n),
@@ -321,18 +321,19 @@ function dateCard(m, d) {
     behind ? h('div', { class: 'shs-after', 'data-id': 'shidduch.after-date' },
       current && live ? sd.SIDES.map(s => h('label', { class: 'shs-after-side' }, h('span', { class: 'sh-answerlabel' }, sd.T.side[s]), answerSelect(m, s, 'shidduch.after-' + s)))
         : h('div', { class: 'shs-tags' }, answerTag(d, 'guy'), answerTag(d, 'girl'))) : null,
-    fb.length ? h('div', { class: 'shs-feedback', 'data-id': 'shidduch.date-feedback' }, fb.map(([s, text]) => h('p', { dir: 'auto' }, h('span', { class: 'sh-answerlabel' }, sd.T.side[s] + ' '), text))) : null,
+    fb.length ? h('div', { class: 'shs-feedback', 'data-id': 'shidduch.date-feedback' }, fb.map(([s, text, aIds]) => h('div', {}, h('p', { dir: 'auto' }, h('span', { class: 'sh-answerlabel' }, sd.T.side[s] + ' '), text || ''), voiceChips(aIds, 'shidduch.date-voice')))) : null,
     behind ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.feedback-btn', onClick: () => feedbackSheet(m, d) }, T.feedback) : null);
 }
 
 async function feedbackSheet(m, d) {
+  const pg = {}, pw = {}; // voice notes per side, saved with Save
   const box = (s) => { const a = h('textarea', { class: 'input', rows: 3, dir: 'auto', 'data-id': 'sh-feedback.' + s }); a.value = sd.sideOf(d, s).feedback || ''; return a; };
   const guy = box('guy'), girl = box('girl');
   await sheet({ title: T.feedbackTitle(sd.dateNum(d)), dataId: 'sh-feedback',
     body: [h('p', { class: 'note' }, T.feedbackNote),
-      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.guy, sd.fullName(m, 'guy'))), guy),
-      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.girl, sd.fullName(m, 'girl'))), girl)],
-    actions: [{ id: 'save', label: T.saveSource, primary: true, run: async () => { await sd.saveFeedback(d, { guy: guy.value, girl: girl.value }); toast(T.feedbackSaved); } }] });
+      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.guy, sd.fullName(m, 'guy'))), addMic(guy, { dataId: 'sh-feedback.guy-mic', pend: pg })),
+      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.girl, sd.fullName(m, 'girl'))), addMic(girl, { dataId: 'sh-feedback.girl-mic', pend: pw }))],
+    actions: [{ id: 'save', label: T.saveSource, primary: true, run: async () => { await sd.saveFeedback(d, { guy: guy.value, girl: girl.value, audio: { guy: await savePending(pg), girl: await savePending(pw) } }); toast(T.feedbackSaved); } }] });
 }
 
 function dateForm(m) {
