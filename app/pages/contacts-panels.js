@@ -5,6 +5,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, promptText, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
+import { addMic, savePending, voiceChips, removeAudio } from '../js/voice.js';
 import { isShadchan } from '../js/mode.js';
 import { S, D, LAYOUTS, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel, optionsFor, clearFilters, fresh } from './contacts-data.js';
 
@@ -187,11 +188,12 @@ function composer(c) {
   const date = h('input', { class: 'input date', type: 'date', value: d.date, 'data-id': 'contact.composer.date', 'aria-label': 'Date', onChange: (e) => { d.date = e.target.value; } });
   return h('section', { class: 'psec composer', 'data-id': 'contact.composer' },
     h('h3', { class: 'eyebrow' }, 'Record a conversation or note'),
-    text,
+    addMic(text, { dataId: 'contact.composer.mic', pend: d }),
     h('div', { class: 'composer-foot' }, type, date,
       h('button', { class: 'btn primary', type: 'button', 'data-id': 'contact.composer.save', onClick: async () => {
-        if (!d.text.trim()) { toast('Write a few words first'); text.focus(); return; }
-        await store.recordEvent({ contactIds: [c.id], type: d.type === '_unknown' ? '' : d.type, text: d.text, at: atFromDate(d.date) });
+        if (!d.text.trim() && !d.audio?.length) { toast('Write a few words or record a voice note first'); text.focus(); return; }
+        const audioIds = await savePending(d, { contactId: c.id });
+        await store.recordEvent({ contactIds: [c.id], type: d.type === '_unknown' ? '' : d.type, text: d.text.trim() || 'Voice note', at: atFromDate(d.date), audioIds });
         S.drafts[c.id] = { text: '', type: '_unknown', date: today() };
         toast('Saved to conversation history');
       } }, 'Save')),
@@ -227,14 +229,15 @@ export function eventItem(e, c, latest) {
       h('span', { class: 'via' }, store.eventTypeLabel(e.type)),
       latest ? h('span', { class: 'chip' }, 'Latest') : null,
       h('time', { datetime: e.at }, dateOnly(e.at))),
-    h('p', { dir: 'auto' }, e.text),
+    e.audioIds?.length && e.text === 'Voice note' ? null : h('p', { dir: 'auto' }, e.text),
+    voiceChips(e.audioIds, 'contact.event.voice'),
     others.length ? h('div', { class: 'note' }, 'Also linked: ' + others.join(', ')) : null,
     h('div', { class: 'tl-actions' },
       e.noteId ? h('a', { class: 'linkish', href: `#/home/note/${encodeURIComponent(e.noteId)}`, 'data-id': 'contact.event.home-note' }, 'Open Home note') : null,
       h('button', { class: 'linkish', type: 'button', 'data-id': 'contact.event.edit', onClick: () => eventSheet(e) }, 'Edit'),
       h('button', { class: 'linkish danger-text', type: 'button', 'data-id': 'contact.event.delete', onClick: async () => {
         if (await confirmDialog({ title: 'Delete this entry?', text: 'It disappears from every place it is linked to.', ok: 'Delete', danger: true, dataId: 'contact.event.delete-dialog' })) {
-          await store.events.remove(e.id); toast('Entry deleted');
+          await store.asOne(async () => { await removeAudio(e.audioIds); await store.events.remove(e.id); }); toast('Entry deleted');
         }
       } }, 'Delete')));
 }

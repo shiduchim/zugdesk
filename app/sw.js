@@ -1,10 +1,10 @@
 // Service worker: makes ZugDesk installable and usable offline.
 // Strategy: network first (so updates arrive as soon as they are published),
 // cache fallback when offline. Bump CACHE when the shell changes shape.
-const CACHE = 'zugdesk-v31';
+const CACHE = 'zugdesk-v32';
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
-  './css/fonts.css', './css/tokens.css', './css/theme-dark.css', './css/base.css',
+  './css/fonts.css', './css/tokens.css', './css/theme-dark.css', './css/base.css', './css/voice.css', './js/voice.js',
   './fonts/inter-latin-wght-normal.woff2', './fonts/jetbrains-mono-latin-wght-normal.woff2',
   './js/app.js', './js/mode.js', './js/store.js', './js/db.js', './js/seed.js', './js/seed-shadchan.js', './js/router.js', './js/ui.js', './js/labels.js', './js/calendar.js', './js/backup.js',
   './pages/home.js', './pages/home.css', './pages/contacts.js', './pages/contacts.css', './pages/contacts-data.js', './pages/contacts-panels.js',
