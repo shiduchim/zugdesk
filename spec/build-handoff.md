@@ -108,15 +108,40 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-13 (S7 done)_
+_Last updated: 2026-11-14 (Claude paste import planned, not built)_
 
 ### In progress
-- Shadchan Mode S1–S7 all built on branch `claude/eloquent-thompson-tchp32` (PR open). S7 = in step by moving the backup file and choosing Merge (owner: nothing online for now).
+- Shadchan Mode S1–S7 built (earlier PR). This session (branch `claude/pensive-shannon-tqoklr`): Find a match button moved to bottom of the single panel, full width, 38px (`--sp-find-height`). No PR yet.
 
-### Next steps
-- **Owner:** try on phone and computer: Export on one, send the file to yourself, Import → Merge on the other. Then merge the PR.
-- **Owner:** decide the address and run the test round: `spec/shadchan/test-round.md`.
+### Next: build "Claude paste import" (owner approved the plan; Opus · Medium; checkpoint first)
+Start a new chat with: "Read CLAUDE.md. Build the Claude paste import from Session handoff".
+Goal: owner writes call notes on PC → Claude (a "ZugDesk" Claude Project) replies with ONE block in a code box → owner copies it in the Claude phone app → pastes in ZugDesk Home → preview → Save → Undo.
+Rejected (researched with Opus + Fable): links (iPhone PWA storage separate from Safari), Gmail sync, Google Sheet, in-app AI, instructions fetched from GitHub (Claude fetch unreliable/cached), Claude Skills.
+Format (labelled lines, never pipes; one field per line; unknown labels → about/note):
+```
+ZUGDESK 1
+[Single]
+Name: / Kind: Guy|Girl / Age: / City: / Job: / Shadchan: <name> / About:
+[Shadchan]
+Name: / Phone: <digits, 0 or 00> / City: / Note:
+[To do]  Text: / When: YYYY-MM-DD HH:MM (+ original words)
+[Update] Pair: A and B / Text:
+[Date]   Pair: A and B / When: / Where:
+Unclear: <anything doubtful>
+END
+```
+Step 1 to build:
+- New `app/pages/claude-import.js` (+ css, tokens only, add to service worker cache). Find `ZUGDESK n` anywhere, stop at END/fence/end. Clean lines: code fences, leading `- * • >`, `**`, bidi marks, NBSP, full-width colon. Split on FIRST colon only. Take label words from `extract()` in people-data.js (Hebrew too) but not its logic (first match only; `-` separator misfires).
+- Home: "Paste from Claude" button (clipboard pattern from `pasteClipboard()` in person-form.js incl. long-press fallback) and detect the header when pasted into the notepad → chip "Add N things from this note".
+- Preview sheet (`sheet()` in js/ui.js), cards scrolled up/down: Include switch, tap to edit name/age/city/job, Guy|Girl buttons required before Save, New / "Already have X" (Update fills empty only / Save as new / Skip). People dup: lift find+merge from `save()` in person-form.js (~634–660) into people-data.js helpers. Contact dup: move `findDuplicate` from contact-form.js to contacts-data.js; phone = last 9 digits. Same shadchan in several items → one contact; link Single.Shadchan by name inside the block. New contact shape like `addToContacts()` in person-form.js.
+- Each person keeps its own block as an original (`store.sources.save`); whole paste saved as one note linked to all (`createNote`). To do / Update / Date / unknown sections: for now saved as notes linked to the names (later steps make them real follow-ups / shidduch answers / dates).
+- One Save "Add N things", toast Undo 8s: one batch id, reuse batch erase/restore in store.js; restore updated people.
+- Settings → "Claude instructions": one constant with FORMAT_VERSION and the full instruction text (keep names as typed, never invent, doubts under Unclear, put block in a code box, digits-only phones, Kind line), Copy button. Old version in a paste → still import, then "Your Claude text is old, tap to copy the new one".
+- data-id on everything (`home.paste-claude`, `bulk.*`, `settings.claude-text`), no visible plus signs, check 360/390 px, add TESTS.md fixtures (fenced, unfenced, chatter before, Hebrew, missing fields, bullets, old version, duplicate, undo).
+- Owner then: create Claude Project "ZugDesk", paste the copied instructions into its instructions box; tell owner Settings → Privacy → turn off "help improve Claude".
+Later steps: (2) To do → follow-ups, (3) Update/Date → match existing shidduch, confirm.
+Owner phone type (iPhone/Android) still unknown; if Android, Share Target is an optional extra.
 
 ### Notes / blockers
-- Not testable from here: where each phone saves a downloaded file, opening it from WhatsApp/email, iPhone storage, real NetFree / TAG filters.
+- Not testable from here: where each phone saves a downloaded file, opening it from WhatsApp/email, iPhone storage, real NetFree / TAG filters, clipboard on the owner's phone.
 - Optional screen lock (design.md section 7) is not built; nobody asked for it yet.
