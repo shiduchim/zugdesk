@@ -148,20 +148,7 @@ export async function render(container, params = {}) {
 
   function cancel() { navigate(editing ? `/contacts/${encodeURIComponent(id)}` : '/contacts'); }
 
-  async function del() {
-    if (!(await confirmDialog({ title: 'Delete this contact?', text: `${store.displayName(c)} will be removed from this phone, with their follow-ups and attachments. Conversation entries linked to someone else stay for them. ${store.SOFT_DELETE ? 'You can put it back for 30 days from Settings → Recently deleted.' : 'This cannot be undone.'}`, ok: 'Delete', danger: true, dataId: 'shadchan.delete-dialog' }))) return;
-    await store.asOne(async () => { // one deletion: Shadchan Mode can restore it whole from Recently deleted
-      for (const f of await store.followUps.byIndex('contactId', id)) await store.followUps.remove(f.id);
-      for (const a of existingAtts) await store.attachments.remove(a.id);
-      for (const e of await store.events.byIndex('contactIds', id)) {
-        const rest = (e.contactIds || []).filter(x => x !== id);
-        if (rest.length || (e.personIds || []).length) await store.unlink(store.events, e, 'contactIds', id); else await store.events.remove(e.id);
-      }
-      await store.contacts.remove(id);
-    });
-    if (S.selectedId === id) S.selectedId = null;
-    toast(store.SOFT_DELETE ? 'Contact deleted. It waits 30 days in Settings → Recently deleted' : 'Contact deleted', store.SOFT_DELETE ? 5000 : undefined); navigate('/contacts');
-  }
+  function del() { return deleteContact(c); }
 
   async function save() {
     const fd = new FormData(form);
@@ -238,4 +225,22 @@ async function manageChoices(choices, onSave) {
     actions: [{ id: 'reset', label: 'Restore defaults', run: () => { for (const k of Object.keys(store.CHOICE_DEFAULTS)) work[k] = store.CHOICE_DEFAULTS[k].map(v => ({ v, hidden: false })); draw(); return false; } },
       { id: 'save', label: 'Save choices', primary: true }] });
   if (res === 'save') { await onSave(work); toast('Choices saved'); }
+}
+
+// Shared by the Edit page and the contact card (contact.delete-btn).
+export async function deleteContact(c) {
+const id = c.id;
+const existingAtts = await store.attachments.byIndex('contactId', id);
+  if (!(await confirmDialog({ title: 'Delete this contact?', text: `${store.displayName(c)} will be removed from this phone, with their follow-ups and attachments. Conversation entries linked to someone else stay for them. ${store.SOFT_DELETE ? 'You can put it back for 30 days from Settings → Recently deleted.' : 'This cannot be undone.'}`, ok: 'Delete', danger: true, dataId: 'shadchan.delete-dialog' }))) return;
+  await store.asOne(async () => { // one deletion: Shadchan Mode can restore it whole from Recently deleted
+    for (const f of await store.followUps.byIndex('contactId', id)) await store.followUps.remove(f.id);
+    for (const a of existingAtts) await store.attachments.remove(a.id);
+    for (const e of await store.events.byIndex('contactIds', id)) {
+      const rest = (e.contactIds || []).filter(x => x !== id);
+      if (rest.length || (e.personIds || []).length) await store.unlink(store.events, e, 'contactIds', id); else await store.events.remove(e.id);
+    }
+    await store.contacts.remove(id);
+  });
+  if (S.selectedId === id) S.selectedId = null;
+  toast(store.SOFT_DELETE ? 'Contact deleted. It waits 30 days in Settings → Recently deleted' : 'Contact deleted', store.SOFT_DELETE ? 5000 : undefined); navigate('/contacts');
 }

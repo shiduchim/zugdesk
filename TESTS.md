@@ -65,3 +65,4 @@
 - Home, both modes: top row search · switch · gear; tabs Notes / To Do List / History underneath (phone). Shadchan phone tabs: Notes = New Note + Edit Home blocks, To Do List = To do block (Your move + follow-ups, count includes Your move), History = History block, even if hidden in Edit Home; swipe moves between them. Wide screen: tabs hidden, Edit Home blocks show.
 - Home → New Note: “Paste from AI” sits in the header between New Note and Pin, on one line at 320 / 360 / 390 px.
 - Add from Claude preview: cards have a gap between them, a coloured left strip (Single blue, Shadchan green, To do yellow) and a top band “1 of 3 · Single · Name”; no “null” under Guy / Girl.
+- Contact card has a red Delete link (`contact.delete-btn`, next to Edit / Move to folder) in both modes; it asks first, then deletes exactly like the Edit page Delete.

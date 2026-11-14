@@ -80,6 +80,7 @@ function actions(c) {
     h('div', { class: 'pa-links' },
       link('contact.edit-btn', 'Edit', () => navigate(`/contacts/${encodeURIComponent(c.id)}/edit`)),
       link('contact.folder-btn', 'Move to folder', () => folderSheet(c)),
+      h('button', { class: 'linkish danger-text', type: 'button', 'data-id': 'contact.delete-btn', onClick: async () => { const m = await import('./contact-form.js'); m.deleteContact(c); } }, 'Delete'),
       // Single Mode only (My Profile). Shadchan Mode sends a single's profile from the shidduch (stage S5).
       isShadchan ? null : link('contact.share-btn', 'Send my profile', async () => { const m = await import('./profile-share.js'); m.openShare({ contactId: c.id }); })));
 }
