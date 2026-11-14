@@ -298,7 +298,7 @@ function touch(m, t) {
 
 // Undo for one change: puts back the shidduch, its try, its dates and the two singles' status,
 // and erases the history lines and dates the change added.
-async function snapshot(m) {
+export async function snapshot(m) {
   const t = m.cur.t;
   const [evs, dts, people] = await Promise.all([store.stageEvents.byIndex('tryId', t.id), store.dateEvents.byIndex('tryId', t.id),
     Promise.all(SIDES.map(s => store.people.get(m.o[s + 'Id'])))]);

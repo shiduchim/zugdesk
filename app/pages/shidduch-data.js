@@ -131,7 +131,7 @@ async function log(t, text, { source = '', eventAt = null, kind = 'note' } = {})
 
 // Snapshot for Undo on quick list changes: restores the try + offer and removes history
 // lines written by the change. Nothing else is touched.
-async function snapshot(m) {
+export async function snapshot(m) {
   const evIds = new Set(m.cur.events.map(e => e.id));
   const dtIds = new Set(m.cur.dates.map(d => d.id));
   const before = { o: { ...m.o }, t: { ...m.cur.t } };
