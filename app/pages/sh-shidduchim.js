@@ -1,6 +1,6 @@
 // Shidduchim in Shadchan Mode — Ideas · Offers · In Progress · Ended (spec/shadchan/design.md 6.4).
 // One card per couple: both names, an answer bubble for his side and her side (tap = floating
-// choices), the progress bar, and either "Your move" or the days waiting. The arrow on a card
+// choices), the progress bar, and one next-step line under the bar. The arrow on a card
 // opens its quick actions. The lane is never chosen by hand: it follows from the answers and dates.
 // Look: Single Mode's Shidduchim (shidduchim.css) plus the shs-… rules in singles.css.
 import * as store from '../js/store.js';
@@ -139,12 +139,6 @@ function drawList() {
 // ---------- one card ----------
 const openHref = (m, tab = '') => `#/shidduchim/${encodeURIComponent(m.o.id)}${tab}`;
 
-function stepTag(m) {
-  const st = m.step;
-  if (st.kind === 'move') return h('span', { class: 'shs-move', 'data-id': 'shidduchim.your-move' }, T.yourMove);
-  if (st.kind === 'wait') return h('span', { class: 'shs-days', 'data-id': 'shidduchim.days' }, sd.T.days(st.days));
-  return null;
-}
 
 function answerBubble(m, side) {
   const rec = m.round.rec, v = sd.ans(rec, side), id = m.o.id;
@@ -194,7 +188,7 @@ function card(m) {
     h('div', { class: 'sh-card-main' },
       h('div', { class: 'sh-card-names' },
         h('div', { class: 'sh-names', dir: 'auto' }, sd.fullName(m, 'guy'), ' ', h('span', { class: 'sh-dash' }, '–'), ' ', sd.fullName(m, 'girl')),
-        h('span', { class: 'shs-side' }, m.tries.length > 1 ? h('span', { class: 'sh-try' }, sd.tryName(m.tries.length)) : null, stepTag(m))),
+        h('span', { class: 'shs-side' }, m.tries.length > 1 ? h('span', { class: 'sh-try' }, sd.tryName(m.tries.length)) : null)),  // owner: no Your move / days badge; the line under the bar says it
       statusRow(m),
       bar(m.cur, { dim: barDim(m.cur) }),
       hint ? h('div', { class: 'sh-barhint' + (m.step.kind === 'move' ? ' shs-hint-move' : ''), dir: 'auto', 'data-id': 'shidduchim.hint' }, hint) : null),
