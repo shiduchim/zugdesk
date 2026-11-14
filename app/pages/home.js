@@ -9,6 +9,7 @@ import { offerForPerson, setAnswer, endTry } from './shidduch-data.js';
 import { recordInterest } from './idea-flow.js';
 import { MODE, MODES, isShadchan, switchMode } from '../js/mode.js';
 import * as CI from './claude-import.js';
+import { addMic, savePending, voiceChips } from '../js/voice.js';
 // Shadchan Mode builds Home from blocks (pages/sh-home.js); Single Mode never loads it.
 const SHH = isShadchan ? await import('./sh-home.js') : null;
 
@@ -86,6 +87,7 @@ function keepFocus(fn) {
 function draft(key) {
   return drafts[key] || (drafts[key] = { title: '', text: '', color: 'plain', pinned: false, contactIds: [], personIds: [], followUp: null, waiting: false, answer: null, targetNoteId: null });
 }
+const voicePend = {}; // recordings waiting for Save, per editor key (kept in memory only)
 function persist() {
   const keep = {};
   for (const [k, d] of Object.entries(drafts)) if (d.text.trim() || d.title.trim() || k === 'new') keep[k] = d;
@@ -109,10 +111,10 @@ function composer(key) {
   const sync = () => {
     const a = recognize(d.text, IX, D);
     mirror.innerHTML = suggestionsOn() ? highlighted(d.text, a) : esc(d.text) + '\n';
-    const writing = !!d.text.trim();
+    const writing = !!d.text.trim() || !!voicePend[key]?.audio?.length;
     wrap.classList.toggle('writing', writing);
     hints.innerHTML = '';
-    if (writing && suggestionsOn()) hints.append(h('div', { class: 'suggest-head' }, h('span', { html: STAR }).firstChild, h('span', {}, 'Suggestions')), chips(key, a, sync));
+    if (d.text.trim() && suggestionsOn()) hints.append(h('div', { class: 'suggest-head' }, h('span', { html: STAR }).firstChild, h('span', {}, 'Suggestions')), chips(key, a, sync));
     target.innerHTML = '';
     const t = isNew && d.targetNoteId ? D.notes.find(n => n.id === d.targetNoteId) : null;
     if (t) target.append(h('span', { dir: 'auto' }, `Will be added to “${t.title}” as a dated update. `),
@@ -137,7 +139,10 @@ function composer(key) {
     const fromClaude = h('button', { type: 'button', class: 'btn small mini', 'data-id': 'home.paste-claude', onClick: pasteClaude }, 'Paste from AI');
     wrap.append(h('div', { class: 'ed-head' }, h('h2', {}, ico('edit'), 'New Note'), fromClaude, h('span', { class: 'spacer' }), pin, dot), title);
   }
-  wrap.append(h('div', { class: 'ed-wrap' }, mirror, ta), target, hints, foot);
+  const edWrap = h('div', { class: 'ed-wrap' }, mirror, ta);
+  const pend = voicePend[key] || (voicePend[key] = {});
+  const voice = addMic(ta, { dataId: isNew ? 'home.new-note.mic' : 'home.note-editor.mic', pend, box: edWrap, onChange: () => sync() });
+  wrap.append(edWrap, voice, target, hints, foot);
   sync();
   setTimeout(() => grow(ta), 0);
   return wrap;
@@ -354,19 +359,21 @@ function linkFor(anchor, key, sync, query = '') {
 
 // ---------- saving ----------
 async function save(key) {
-  const d = draft(key), text = d.text.trim();
-  if (!text) { toast('Write something first'); root?.querySelector(`textarea[data-key="${CSS.escape(key)}"]`)?.focus(); return; }
+  const d = draft(key), pend = voicePend[key] || {}, hasAudio = !!pend.audio?.length;
+  const text = d.text.trim() || (hasAudio ? 'Voice note' : '');
+  if (!text) { toast('Write something or record a voice note first'); root?.querySelector(`textarea[data-key="${CSS.escape(key)}"]`)?.focus(); return; }
   let note = key === 'new' ? (d.targetNoteId ? D.notes.find(n => n.id === d.targetNoteId) : null) : noteOf(key);
   let res;
-  if (note) res = await N.appendEntry(note, text, { contactIds: d.contactIds, personIds: d.personIds });
-  else res = await N.createNote({ title: d.title, text, color: d.color, pinned: d.pinned, contactIds: d.contactIds, personIds: d.personIds });
+  const audioIds = await savePending(pend, { contactId: (note?.contactIds || d.contactIds)[0] || null });
+  if (note) res = await N.appendEntry(note, text, { contactIds: d.contactIds, personIds: d.personIds, audioIds });
+  else res = await N.createNote({ title: d.title, text, audioIds, color: d.color, pinned: d.pinned, contactIds: d.contactIds, personIds: d.personIds });
   note = res.note;
   const contactId = note.contactIds?.[0] || null, personId = note.personIds?.[0] || null;
   if (d.followUp) await store.followUps.save({ noteId: note.id, contactId, personId, kind: 'task', text: d.followUp.text, dueAt: d.followUp.due || null, done: false });
   if (d.waiting) await store.followUps.save({ noteId: note.id, contactId, personId, kind: 'waiting', text: 'Waiting: ' + firstSentence(text), dueAt: null, done: false });
   if (d.answer) await applyAnswer(d.answer);
   const msg = (key === 'new' && !d.targetNoteId ? 'Note saved' : 'Dated update added') + (d.followUp ? ' · Follow Up added' : '') + (d.answer ? ' · answer updated' : '');
-  delete drafts[key]; persist();
+  delete drafts[key]; delete voicePend[key]; persist();
   if (key === 'new') drawComposer(); else U.expanded = note.id;
   toast(msg + (!U.allNotes && aboutPerson(note) && U.expanded !== note.id ? ' · find it on the person’s Notes tab or under All' : ''), 4000);
 }
@@ -482,7 +489,8 @@ function noteCard(n) {
     h('div', { class: 'note-meta' }, h('span', {}, `Started ${store.formatDate(n.createdAt)} · ${es.length} dated ${es.length === 1 ? 'entry' : 'entries'}`), linkRow),
     h('div', { class: 'note-entries', 'data-id': 'home.note-entries' }, es.map(e => h('div', { class: 'note-entry' },
       h('div', { class: 'date-divider' }, dateTimeLabel(e.at)),
-      h('div', { class: 'prewrap', dir: 'auto' }, e.text)))),
+      e.audioIds?.length && e.text === 'Voice note' ? null : h('div', { class: 'prewrap', dir: 'auto' }, e.text),
+      voiceChips(e.audioIds, 'home.note-entry.voice')))),
     composer('note:' + n.id));
 }
 function expand(id) {

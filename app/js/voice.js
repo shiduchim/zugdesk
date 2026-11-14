@@ -10,23 +10,24 @@ const pickType = () => ['audio/mp4', 'audio/webm;codecs=opus', 'audio/webm'].fin
 const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 const toDataURL = (blob) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = no; r.readAsDataURL(blob); });
 
-// pend: an object the page keeps (its draft). Recordings go in pend.audio = [{ blob, type, duration }].
-export function addMic(textarea, { dataId, pend }) {
+// pend: an object the page keeps in memory (not the saved draft: recordings can't be stored as text).
+// Recordings go in pend.audio = [{ blob, type, duration }]. Default: wraps the textarea and returns the wrapper.
+// With { box }: the mic goes inside that (already positioned) box and only the bar/chips area is returned.
+export function addMic(textarea, { dataId, pend, box = null, onChange = null }) {
   pend.audio = pend.audio || [];
-  const wrap = h('div', { class: 'voice-box' });
+  const wrap = box || h('div', { class: 'voice-box' });
   const chips = h('div', { class: 'voice-chips', 'data-id': dataId + '-chips' });
-  const out = h('div', { class: 'voice-field' }, wrap, chips);
-  textarea.replaceWith?.(out); // when already in the page
-  wrap.append(textarea);
+  const out = box ? h('div', { class: 'voice-field' }, chips) : h('div', { class: 'voice-field' }, wrap, chips);
+  if (!box) { textarea.replaceWith?.(out); wrap.append(textarea); }
   if (!canRecord()) return out;
-  textarea.classList.add('has-mic');
+  textarea.classList.add('has-mic'); wrap.classList.add('has-mic');
   const mic = h('button', { type: 'button', class: 'voice-mic', 'aria-label': 'Record a voice note', title: 'Record a voice note', 'data-id': dataId, html: icon('mic') });
   wrap.append(mic);
   let rec = null, stream = null, parts = [], t0 = 0, timer = null, cancelled = false;
   const bar = h('div', { class: 'voice-bar', 'data-id': dataId + '-bar' });
   const drawChips = () => {
     chips.innerHTML = '';
-    pend.audio.forEach((a, i) => chips.append(voiceChip(URL.createObjectURL(a.blob), a.duration, () => { pend.audio.splice(i, 1); drawChips(); }, dataId + '-chip')));
+    pend.audio.forEach((a, i) => chips.append(voiceChip(URL.createObjectURL(a.blob), a.duration, () => { pend.audio.splice(i, 1); drawChips(); onChange?.(); }, dataId + '-chip')));
   };
   const finish = () => { clearInterval(timer); stream?.getTracks().forEach(t => t.stop()); bar.remove(); mic.hidden = false; };
   mic.addEventListener('click', async () => {
@@ -40,7 +41,7 @@ export function addMic(textarea, { dataId, pend }) {
       const duration = (Date.now() - t0) / 1000; finish();
       if (cancelled || !parts.length) return;
       const blob = new Blob(parts, { type: rec.mimeType || type || 'audio/webm' });
-      pend.audio.push({ blob, type: blob.type, duration }); drawChips();
+      pend.audio.push({ blob, type: blob.type, duration }); drawChips(); onChange?.();
     };
     const time = h('span', { class: 'voice-time mono' }, '0:00');
     bar.innerHTML = '';

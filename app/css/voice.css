@@ -16,3 +16,4 @@
 .voice-play{width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:var(--radius);background:var(--accent);color:var(--accent-text);cursor:pointer}
 .voice-play svg{width:14px;height:14px}
 .voice-mic[hidden]{display:none}
+.has-mic > .ed-box{padding-right:44px}
