@@ -154,3 +154,5 @@
 .qf-tap:active,.qf-tap.on{background:var(--surface-2)}
 .qf-edit{padding:8px 0 12px;display:flex;flex-direction:column;gap:8px}
 .qf-edit-btns{display:flex;gap:8px;justify-content:flex-end}
+/* Home's .composer box gives it a border; .psec removed its side padding, so the title touched the edge */
+.psec.composer{padding:14px var(--note-pad)}
