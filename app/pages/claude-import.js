@@ -1,4 +1,4 @@
-// Claude paste import (spec/build-handoff.md → Session handoff, step 1).
+// Claude paste import (spec/build-handoff.md → Session handoff, steps 1–3).
 // The owner writes call notes to a Claude Project "ZugDesk"; Claude answers with ONE block:
 //   ZUGDESK 1 · [Single] · [Shadchan] · [To do] · [Update] · [Date] · Unclear: … · END
 // This module finds that block in any pasted text, shows a preview (edit, include, duplicates),
@@ -9,8 +9,10 @@ import { isShadchan } from '../js/mode.js';
 import { seekingKind, findPersonDup, fillEmpty } from './people-data.js';
 import { findContactDuplicate } from './contacts-data.js';
 import { createNote } from './notes-data.js';
+import * as sh from './shidduch-data.js';
+import * as sd from './sh-shidduch-data.js';
 
-export const FORMAT_VERSION = 1;
+export const FORMAT_VERSION = 2;
 
 // The text the owner pastes into the Claude Project's instructions (Settings → Claude instructions).
 // Change FORMAT_VERSION whenever this text changes, so old pastes say "your Claude text is old".
@@ -36,6 +38,8 @@ Text:
 When: YYYY-MM-DD HH:MM (then my original words in brackets)
 [Update]
 Pair: (first name and last name of both, joined with "and")
+Who: (whose answer this is: the name, or Me)
+Answer: Yes, Thinking, No or Asked
 Text:
 [Date]
 Pair:
@@ -48,7 +52,7 @@ Rules:
 1. Repeat a section for every single, shadchan, to do, update or date in my note. Leave out sections and lines you have nothing for.
 2. One field per line: the label, a colon, then the value. Never put two fields on one line and never use the | sign.
 3. Keep every name exactly as I typed it. Never invent a name, age, phone, city or date. If you are not sure, leave the line out and write the doubt under Unclear.
-4. Kind is Guy or Girl only. If my note does not say, leave Kind out and say so under Unclear.
+4. Answer only when my note says someone answered. Kind is Guy or Girl only. If my note does not say, leave Kind out and say so under Unclear.
 5. Phone: digits only, no spaces. For a country code write 00 at the start, never the plus sign.
 6. About and Note: short, in my own words, in the language I wrote in.
 7. Write the dates from today's date. If I wrote "next Tuesday", give the date and keep my words in brackets.
@@ -77,6 +81,8 @@ const LABELS = {
   when: /^(when|date|time|מתי|תאריך|שעה)$/i,
   where: /^(where|place|location of date|איפה|מקום)$/i,
   pair: /^(pair|couple|between|זוג|בין)$/i,
+  who: /^(who|whose|side|מי|צד)$/i,
+  answer: /^(answer|reply|said|תשובה)$/i,
   unclear: /^(unclear|doubts?|not sure|לא ברור|ספק)$/i,
 };
 // Where an unknown label lands, per section (kept as "Label: value", never dropped).
@@ -166,6 +172,82 @@ export function phoneOf(v) {
 const ageOf = (v) => ((v || '').match(/\d{1,3}/) || [''])[0];
 const splitPair = (v) => (v || '').split(/\s+and\s+|\s+ו(?=\S)|\s*[&/,]\s*|\s+-\s+|\s+with\s+|\s+עם\s+/i).map(s => s.trim()).filter(Boolean);
 
+// "2026-11-17 14:00 (next Tuesday)" → { date: '2026-11-17', time: '14:00', words: 'next Tuesday' }.
+// No ISO date → date stays empty; the owner picks one (nothing is guessed).
+export function whenOf(v) {
+  const s = (v || '').trim();
+  const m = s.match(/(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T,]+(\d{1,2})[:.](\d{2}))?/);
+  const words = ((s.match(/\(([^)]*)\)/) || [])[1] || '').trim();
+  if (!m) return { date: '', time: '', words };
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  if (isNaN(d) || d.getMonth() !== Number(m[2]) - 1) return { date: '', time: '', words };
+  const two = (n) => String(n).padStart(2, '0');
+  const time = m[4] != null && Number(m[4]) < 24 ? `${two(m[4])}:${m[5]}` : '';
+  return { date: `${m[1]}-${two(m[2])}-${two(m[3])}`, time, words };
+}
+
+// ---------- step 3: Update / Date → an existing shidduch ----------
+const ME = /^(me|i|myself|אני|עצמי)$/i;
+let myName = '';
+// Every shidduch of the open mode, in one shape: who is in it, its sides and what can be recorded now.
+async function loadPairs() {
+  if (isShadchan) {
+    const { list } = await sd.loadAll();
+    return list.map(m => ({ id: m.o.id, label: sd.coupleName(m), lane: sd.laneLabel(m.lane), open: sd.isOpen(m.cur.t),
+      upcoming: m.round.upcoming ? m.round.n : 0, marksYes: sd.dateMarksYes(m), personIds: [m.o.guyId, m.o.girlId].filter(Boolean),
+      sides: [['guy', `${sd.T.side.guy} (${sd.firstName(m, 'guy')})`, sd.fullName(m, 'guy')], ['girl', `${sd.T.side.girl} (${sd.firstName(m, 'girl')})`, sd.fullName(m, 'girl')]] }));
+  }
+  const { list, me } = await sh.loadAll();
+  myName = norm(me?.name || '');
+  return list.map(m => ({ id: m.o.id, label: sh.personName(m), lane: sh.laneLabel(m.lane), open: m.cur.t.phase !== 'ended',
+    upcoming: 0, marksYes: false, personIds: [m.o.personId].filter(Boolean),
+    sides: [['me', 'Me', ''], ['them', sh.personFirst(m), sh.personName(m)]] }));
+}
+// 2 = same name, 1 = every word typed is in the name ("Moshe" in "Moshe Klein"), 0 = not this one.
+function nameMatch(given, full) {
+  const a = norm(given), b = norm(full);
+  if (!a || !b) return 0;
+  if (a === b) return 2;
+  const words = b.split(' ');
+  return a.split(' ').every(w => words.includes(w)) ? 1 : 0;
+}
+const isMe = (name) => { const n = norm(name); return ME.test(n) || (!!myName && n === myName); };
+// Shidduchim whose names fit the Pair line: those with every name first, best first. Nothing is guessed.
+export function findPairs(pairs, names) {
+  const given = (names || []).filter(n => !isMe(n));
+  if (!given.length) return [];
+  const out = [];
+  for (const p of pairs) {
+    const best = given.map(g => Math.max(0, ...p.sides.filter(s => s[2]).map(s => nameMatch(g, s[2]))));
+    if (!best.some(Boolean)) continue;
+    out.push({ ...p, full: best.every(Boolean), score: best.reduce((a, b) => a + b, 0) });
+  }
+  return out.sort((a, b) => (b.full - a.full) || (b.score - a.score) || (b.open - a.open)).slice(0, 4);
+}
+// "Who: Rivka" → the side of that shidduch ('me' | 'them' | 'guy' | 'girl'), or '' when unsure.
+export function whoSide(who, cand) {
+  const w = norm(who);
+  if (!w) return '';
+  if (cand.sides[0][0] === 'me' && isMe(w)) return 'me';
+  if (cand.sides[0][0] === 'guy') {
+    if (/^(his|he|him|guy|boy|bochur|bachur|הבחור|בחור|הוא)( side)?$/.test(w)) return 'guy';
+    if (/^(her|she|girl|הבחורה|בחורה|היא)( side)?$/.test(w)) return 'girl';
+  }
+  const hits = cand.sides.filter(s => s[2] && nameMatch(w, s[2]));
+  return hits.length === 1 ? hits[0][0] : '';
+}
+// Answer words → 'yes' | 'thinking' | 'no' | 'asked' | '' (Asked only exists in Shadchan Mode).
+export function answerOf(v) {
+  const s = norm(v);
+  let a = '';
+  if (/^(yes|כן|agreed|wants to go out|wants to meet)/.test(s)) a = 'yes';
+  else if (/^(no|לא|not interested|declined)/.test(s)) a = 'no';
+  else if (/^(thinking|maybe|considering|חושב|חושבת|אולי)/.test(s)) a = 'thinking';
+  else if (/^(asked|נשאל|נשאלה)/.test(s)) a = 'asked';
+  return a === 'asked' && !isShadchan ? '' : a;
+}
+const ANSWER_BTNS = () => (isShadchan ? [['asked', 'Asked'], ['thinking', 'Thinking'], ['yes', 'Yes'], ['no', 'No']] : [['yes', 'Yes'], ['thinking', 'Thinking'], ['no', 'No']]);
+
 async function buildModel(parsed) {
   const [people, contacts] = await Promise.all([store.people.list(), store.contacts.list()]);
   const prefs = store.getPrefs();
@@ -189,14 +271,39 @@ async function buildModel(parsed) {
       c.dup = findContactDuplicate(contacts, { name: c.name, phone: c.phone });
       c.action = c.dup ? 'update' : 'new';
       model.cards.push(c);
+    } else if (it.type === 'todo') {
+      const w = whenOf(f.when);
+      const extra = Object.entries(f).filter(([k]) => !['text', 'when', 'pair'].includes(k)).map(([k, v]) => `${k[0].toUpperCase() + k.slice(1)}: ${v}`);
+      model.cards.push({ ...base, text: [f.text, ...extra].filter(Boolean).join('\n').trim(), due: w.date, time: w.time, whenWords: w.words,
+        whenRaw: w.date ? '' : (f.when || '').trim(), pair: splitPair(f.pair), action: 'new' });
     } else {
       const lines = [];
       if (f.pair) lines.push(f.pair);
+      if (f.who) lines.push('Who: ' + f.who);
+      if (f.answer) lines.push('Answer: ' + f.answer);
       if (f.text) lines.push(f.text);
       if (f.when) lines.push('When: ' + f.when);
       if (f.where) lines.push('Where: ' + f.where);
-      for (const [k, v] of Object.entries(f)) if (!['pair', 'text', 'when', 'where'].includes(k)) lines.push(`${k[0].toUpperCase() + k.slice(1)}: ${v}`);
-      model.cards.push({ ...base, pair: splitPair(f.pair), text: lines.join('\n'), action: 'new' });
+      const rest = Object.entries(f).filter(([k]) => !['pair', 'text', 'when', 'where', 'who', 'answer'].includes(k)).map(([k, v]) => `${k[0].toUpperCase() + k.slice(1)}: ${v}`);
+      lines.push(...rest);
+      const c = { ...base, pair: splitPair(f.pair), text: lines.join('\n'), action: 'new' };
+      if (it.type === 'update' || it.type === 'date') {
+        // Step 3: find the shidduch for the Pair; the owner confirms (or taps Only a note).
+        model.pairs = model.pairs || await loadPairs();
+        c.body = [f.text, ...rest].filter(Boolean).join('\n').trim();
+        c.matches = findPairs(model.pairs, c.pair);
+        const top = c.matches.filter(x => x.full);
+        c.target = top.length === 1 || (top.length > 1 && top[0].score > top[1].score) ? top[0].id : '';
+        if (it.type === 'update') {
+          c.who = (f.who || '').trim(); c.answerRaw = (f.answer || '').trim(); c.answer = answerOf(c.answerRaw);
+          const cand = c.matches.find(x => x.id === c.target);
+          c.side = cand ? whoSide(c.who, cand) : '';
+        } else {
+          const w = whenOf(f.when);
+          Object.assign(c, { due: w.date, time: w.time, whenWords: w.words, whenRaw: w.date ? '' : (f.when || '').trim(), where: (f.where || '').trim() });
+        }
+      }
+      model.cards.push(c);
     }
   }
   // A shadchan named on a single but not given a section of their own: one card per name.
@@ -252,6 +359,19 @@ export async function openImport(text, { onSaved, onUndone } = {}) {
         body.querySelector(`[data-card="${m.cards.indexOf(noName)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
         return false;
       }
+      const at = (c) => c.matches?.find(x => x.id === c.target);
+      const noSide = counted(m).find(c => c.type === 'update' && at(c)?.open && !at(c).upcoming && c.answer && !c.side);
+      if (noSide) {
+        toast('Choose whose answer it is, or tap No answer', 4000);
+        body.querySelector(`[data-card="${m.cards.indexOf(noSide)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return false;
+      }
+      const noWhen = counted(m).find(c => c.type === 'date' && at(c)?.open && !(/^\d{4}-\d{2}-\d{2}$/.test(c.due || '') && c.time));
+      if (noWhen) {
+        toast('Choose the date and time, or tap Only a note', 4000);
+        body.querySelector(`[data-card="${m.cards.indexOf(noWhen)}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return false;
+      }
       return 'save';
     } }] });
   saveBtn = document.querySelector('dialog[data-id="bulk"] [data-id="bulk.save"]');
@@ -305,11 +425,69 @@ function cardEl(c, i, m, draw, relabel) {
     if (c.note) wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, c.note));
     if (c.fromSingle) wrap.append(h('p', { class: 'note' }, 'Named as a shadchan above.'));
     if (c.dup) wrap.append(dupChoice(c, `Already have ${store.displayName(c.dup)}${c.dup.phone ? ' · ' + c.dup.phone : ''}`, draw, true));
+  } else if (c.type === 'todo') {
+    wrap.append(field('What to do', c, 'text', 'bulk.todo-text', relabel),
+      h('div', { class: 'bulk-row' },
+        field('Date', c, 'due', 'bulk.todo-date', null, { type: 'date', dir: 'ltr' }),
+        field('Time', c, 'time', 'bulk.todo-time', null, { type: 'time', dir: 'ltr', class: 'input bulk-time' })));
+    if (c.whenWords) wrap.append(h('p', { class: 'note', dir: 'auto' }, `You wrote: “${c.whenWords}”`));
+    if (c.whenRaw) wrap.append(h('p', { class: 'note bulk-need', dir: 'auto' }, `Claude wrote “${c.whenRaw}”. Choose the date, or leave it empty.`));
+    wrap.append(h('p', { class: 'note' }, 'Saved as a Follow Up on Home' + (c.pair.length ? ', for ' + c.pair.join(' and ') : '') + '.'));
+  } else if (c.matches) {
+    const cand = c.matches.find(x => x.id === c.target);
+    const said = cand ? c.body : c.text;
+    if (said) wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, said));
+    wrap.append(shidduchPick(c, draw));
+    if (cand && c.type === 'update') wrap.append(...answerPick(c, cand, draw));
+    if (cand && c.type === 'date') wrap.append(...datePick(c, cand));
+    wrap.append(h('p', { class: 'note' }, cand ? 'Added to this shidduch’s History.'
+      : 'Saved as a note' + (c.pair.length ? ', linked to ' + c.pair.join(' and ') : '') + '.'));
   } else {
     wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, c.text || '(empty)'),
-      h('p', { class: 'note' }, 'Saved as a note for now' + (c.pair.length ? ', linked to ' + c.pair.join(' and ') : '') + '.'));
+      h('p', { class: 'note' }, 'Saved as a note' + (c.pair.length ? ', linked to ' + c.pair.join(' and ') : '') + '.'));
   }
   return wrap;
+}
+
+const pickBtn = (label, on, dataId, run) => h('button', { type: 'button', class: 'btn small' + (on ? ' primary' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-id': dataId, dir: 'auto', onClick: run }, label);
+
+// "Is this the shidduch?" Every match is a button; Only a note keeps it out of the shidduch.
+function shidduchPick(c, draw) {
+  if (!c.matches.length) return h('p', { class: 'note bulk-need', dir: 'auto', 'data-id': 'bulk.shidduch-none-found' },
+    c.pair.some(n => !isMe(n)) ? `No shidduch found for ${c.pair.filter(n => !isMe(n)).join(' and ')}.` : 'No names in the Pair line, so no shidduch was looked for.');
+  return h('div', { class: 'bulk-dup', 'data-id': 'bulk.shidduch' },
+    h('p', {}, c.matches.length === 1 ? 'Is this the shidduch?' : 'Which shidduch is this?'),
+    h('div', { class: 'bulk-dup-btns' },
+      ...c.matches.map(x => pickBtn(`${x.label} · ${x.lane}`, c.target === x.id, 'bulk.shidduch-pick', () => { c.target = x.id; if (c.type === 'update') c.side = whoSide(c.who, x); draw(); })),
+      pickBtn('Only a note', !c.target, 'bulk.shidduch-note', () => { c.target = ''; draw(); })));
+}
+
+function answerPick(c, cand, draw) {
+  if (!cand.open) return [h('p', { class: 'note' }, 'This shidduch has ended, so no answer is changed.')];
+  if (cand.upcoming) return [h('p', { class: 'note' }, `Date ${cand.upcoming} is still ahead, so no answer can be recorded yet.`)];
+  const out = [h('div', { class: 'bulk-dup', 'data-id': 'bulk.answer' },
+    h('p', {}, 'Record an answer?'),
+    h('div', { class: 'bulk-dup-btns', role: 'group', 'aria-label': 'Whose answer' },
+      ...cand.sides.map(([k, l]) => pickBtn(l, c.side === k, 'bulk.answer-side-' + k, () => { c.side = k; draw(); }))),
+    h('div', { class: 'bulk-dup-btns', role: 'group', 'aria-label': 'Answer' },
+      ...ANSWER_BTNS().map(([k, l]) => pickBtn(l, c.answer === k, 'bulk.answer-' + k, () => { c.answer = k; draw(); })),
+      pickBtn('No answer', !c.answer, 'bulk.answer-none', () => { c.answer = ''; draw(); })))];
+  if (c.answerRaw && !answerOf(c.answerRaw)) out.push(h('p', { class: 'note bulk-need', dir: 'auto' }, `Claude wrote “${c.answerRaw}”. Choose one, or No answer.`));
+  if (c.answer && !c.side) out.push(h('p', { class: 'note bulk-need' }, 'Choose whose answer it is.'));
+  if (c.answer === 'no') out.push(h('p', { class: 'note bulk-need' }, 'No ends this shidduch.'));
+  return out;
+}
+
+function datePick(c, cand) {
+  if (!cand.open) return [h('p', { class: 'note' }, 'This shidduch has ended, so no date is added.')];
+  const out = [h('div', { class: 'bulk-row' },
+      field('Date', c, 'due', 'bulk.date-date', null, { type: 'date', dir: 'ltr' }),
+      field('Time', c, 'time', 'bulk.date-time', null, { type: 'time', dir: 'ltr', class: 'input bulk-time' })),
+    field('Where', c, 'where', 'bulk.date-where')];
+  if (c.whenWords) out.push(h('p', { class: 'note', dir: 'auto' }, `You wrote: “${c.whenWords}”`));
+  if (c.whenRaw) out.push(h('p', { class: 'note bulk-need', dir: 'auto' }, `Claude wrote “${c.whenRaw}”. Choose the date and time.`));
+  out.push(h('p', { class: 'note' }, 'Saved as a new date: Arranged, or Happened if the time has passed.' + (cand.marksYes ? ' This marks both sides Yes.' : '')));
+  return out;
 }
 
 function field(label, c, k, dataId, onInput, extra = {}) {
@@ -333,7 +511,7 @@ const noPlus = (t) => (t || '').replace(/\+\s?(?=\d)/g, '00'); // owner rule: no
 async function saveAll(m, text) {
   text = noPlus(text);
   const batch = store.newId('imp');
-  const made = { contacts: [], people: [], sources: [], notes: [], events: [] };
+  const made = { contacts: [], people: [], sources: [], notes: [], events: [], followUps: [] };
   const before = { contacts: [], people: [] }; // records changed, as they were
   const t = store.now();
   const take = (c) => c.include && c.action !== 'skip';
@@ -401,12 +579,45 @@ async function saveAll(m, text) {
     const ct = byName.get(n) || m.contacts.find(x => norm(store.displayName(x)) === n || norm(x.name) === n);
     return ct ? { contactId: ct.id } : null;
   };
-  // 3. To do / Update / Date / other: notes linked to the names (later steps make them real)
-  const allC = new Set([...byName.values()].map(x => x.id)), allP = new Set([...personByName.values()].map(x => x.id));
-  for (const c of m.cards.filter(c => !['single', 'shadchan'].includes(c.type) && take(c))) {
+  // Names a card is about: its Pair line, else full names found in its text (this paste first, then saved people / contacts).
+  const known = [...personByName.keys(), ...byName.keys(),
+    ...[...allPeople.map(x => norm(x.name)), ...m.contacts.map(x => norm(store.displayName(x)))].filter(n => n.includes(' '))].filter(Boolean);
+  const linksOf = (c) => {
     const pIds = [], cIds = [];
-    const names = c.pair.length ? c.pair : [...personByName.keys(), ...byName.keys()].filter(n => n && norm(c.text).includes(n));
+    const t = ' ' + norm(c.text) + ' ';
+    const names = c.pair.length ? c.pair : [...new Set(known)].filter(n => t.includes(' ' + n + ' '));
     for (const n of names) { const l = findLink(n); if (l?.personId) pIds.push(l.personId); if (l?.contactId) cIds.push(l.contactId); }
+    return { pIds: [...new Set(pIds)], cIds: [...new Set(cIds)] };
+  };
+  const allC = new Set([...byName.values()].map(x => x.id)), allP = new Set([...personByName.values()].map(x => x.id));
+  // 3a. To do: real Follow Ups (made after the whole-paste note, so they can point to it)
+  const todos = m.cards.filter(c => c.type === 'todo' && take(c)).map(c => ({ c, ...linksOf(c) }));
+  for (const x of todos) { x.pIds.forEach(id => allP.add(id)); x.cIds.forEach(id => allC.add(id)); }
+  // 3b. Update / Date matched to a shidduch: its History, the answer, the new date (step 3)
+  const shUndo = [], snapped = new Set();
+  const D = isShadchan ? sd : sh;
+  const loadSh = async (id) => (isShadchan ? sd.loadOne(id) : (await sh.loadOne(id)).m);
+  for (const c of m.cards.filter(c => c.matches && c.target && take(c))) {
+    const cand = c.matches.find(x => x.id === c.target);
+    let mm = await loadSh(c.target);
+    if (!mm) { c.target = ''; continue; } // gone meanwhile: becomes a note below
+    if (!snapped.has(c.target)) { snapped.add(c.target); shUndo.push(await D.snapshot(mm)); }
+    cand.personIds.forEach(id => allP.add(id));
+    if (c.body) { await D.addNote(mm, 'From Claude: ' + noPlus(c.body)); mm = await loadSh(c.target); }
+    const open = isShadchan ? sd.isOpen(mm.cur.t) : mm.cur.t.phase !== 'ended';
+    if (c.type === 'update' && open && c.answer && c.side) {
+      if (c.answer === 'no') await D.endTry(mm, { endedBy: c.side, saidNo: true });
+      else await D.setAnswer(mm, c.side, isShadchan ? c.answer : c.answer[0].toUpperCase() + c.answer.slice(1));
+    }
+    if (c.type === 'date' && open && c.due && c.time) {
+      const when = `${c.due}T${c.time}`;
+      const status = new Date(when).getTime() <= Date.now() ? 'Happened' : 'Arranged';
+      await D.saveDate(mm, null, { when, where: (c.where || '').trim(), status, feedback: '' });
+    }
+  }
+  // 3c. Update / Date with no shidduch, and anything else: notes linked to the names
+  for (const c of m.cards.filter(c => !['single', 'shadchan', 'todo'].includes(c.type) && !(c.matches && c.target) && take(c))) {
+    const { pIds, cIds } = linksOf(c);
     pIds.forEach(id => allP.add(id)); cIds.forEach(id => allC.add(id));
     const title = `${TYPE_LABEL[c.type]}${c.pair.length ? ': ' + c.pair.join(' and ') : ': ' + (c.text.split('\n')[0] || '').slice(0, 40)}`;
     const { note, entry } = await createNote({ title, text: c.text, contactIds: [...new Set(cIds)], personIds: [...new Set(pIds)] });
@@ -415,10 +626,18 @@ async function saveAll(m, text) {
   // 4. the whole paste as one note, linked to everyone in it
   const { note, entry } = await createNote({ title: 'From Claude · ' + store.formatDate(t), text, contactIds: [...allC], personIds: [...allP] });
   made.notes.push(note.id); made.events.push(entry.id);
-  return { batch, made, before, count: counted(m).length };
+  for (const { c, pIds, cIds } of todos) {
+    let text = c.text.trim() || 'Follow up';
+    if (c.time && !text.includes(c.time)) text += ' · at ' + c.time;
+    const fu = await store.followUps.save({ noteId: note.id, contactId: cIds[0] || null, personId: pIds[0] || null, kind: 'task',
+      text, dueAt: /^\d{4}-\d{2}-\d{2}$/.test(c.due || '') ? c.due : null, done: false, importBatch: batch });
+    made.followUps.push(fu.id);
+  }
+  return { batch, made, before, shUndo, count: counted(m).length };
 }
 
-export async function undo({ made, before }) {
+export async function undo({ made, before, shUndo = [] }) {
+  for (const u of [...shUndo].reverse()) await u();
   for (const [col, ids] of Object.entries(made)) await store.discard(store[col], ids);
   for (const rec of before.people) await store.people.save(rec);
   for (const rec of before.contacts) await store.contacts.save(rec);
