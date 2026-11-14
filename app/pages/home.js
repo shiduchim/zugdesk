@@ -136,7 +136,7 @@ function composer(key) {
       'aria-label': `Smart suggestions ${on ? 'on' : 'off'}. Tap to turn ${on ? 'off' : 'on'}.`, title: `Suggestions ${on ? 'on' : 'off'} · tap to switch`,
       onClick: () => { store.setPref('homeSuggestions', !suggestionsOn()); drawComposer(); toast(suggestionsOn() ? 'Suggestions on' : 'Suggestions off — saving still works the same'); } },
       h('span', { class: 'suggest-dot-core' }));
-    const title = h('input', { class: 'ed-title', dir: 'auto', placeholder: 'Title (optional)', 'aria-label': 'Note title (optional)', value: d.title, 'data-id': 'home.new-note.title',
+    const title = h('input', { class: 'ed-title', dir: 'auto', placeholder: 'Title', 'aria-label': 'Note title (optional)', value: d.title, 'data-id': 'home.new-note.title',
       onInput: (e) => { d.title = e.target.value; persist(); } });
     const fromClaude = h('button', { type: 'button', class: 'pin-text', 'data-id': 'home.paste-claude', onClick: pasteClaude }, 'Paste');
     // Owner: no "New Note" heading; the optional title sits on the top line with Paste and Pin.
