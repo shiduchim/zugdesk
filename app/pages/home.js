@@ -102,7 +102,7 @@ function composer(key) {
   const wrap = h('section', { class: `composer tone-${isNew ? d.color : note?.color || 'plain'}`, 'data-id': isNew ? 'home.new-note' : 'home.note-editor', 'data-key': key });
   const mirror = h('div', { class: 'ed-box ed-mirror', 'aria-hidden': 'true', dir: 'auto' });
   const ta = h('textarea', { class: 'ed-box ed-text', rows: isNew ? 4 : 3, dir: 'auto', spellcheck: 'true', 'data-key': key,
-    'aria-label': isNew ? 'Write a new note' : 'Add dated text to this note', placeholder: isNew ? 'A call, a thought, a new idea… just write.' : 'Write an update…',
+    'aria-label': isNew ? 'Write a new note' : 'Add dated text to this note', placeholder: isNew ? 'Note' : 'Write an update…',
     'data-id': isNew ? 'home.new-note.text' : 'home.note-editor.text' });
   ta.value = d.text;
   const hints = h('div', { class: 'suggest-zone', 'data-id': isNew ? 'home.suggestions' : 'home.note-editor.suggestions' });
