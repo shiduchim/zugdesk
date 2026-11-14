@@ -14,6 +14,8 @@ The owner is not a programmer and tests on a phone. They send short change reque
 | `ROADMAP.md` | Stages and checkboxes | Update the checkboxes when a stage step is done |
 | `spec/shadchan/` | Shadchan Mode (second mode, being built in stages S1–S7): `design.md` (approved design), `build-notes.md` (how it is built: **read before any S stage**), `research.md` (survey), `screens.html` (sketches) | No survey raw data in the repo |
 
+**Reminder for later:** when the owner sends "Read CLAUDE.md. Build S8 from build-notes section 12", that starts the Shadchan Mode S8 build (read `spec/shadchan/build-notes.md` section 12). Do not build S8 until that exact message arrives.
+
 Spec files: `00-overview` · `build-handoff` (architecture + acceptance rules — read for every build stage) ·
 `home` · `contacts` · `add-person` (also Add Shadchan) · `offers-cards` · `shidduchim` · `my-profile` ·
 `appearance` (future only) · `final-checklist`.
