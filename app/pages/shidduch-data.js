@@ -236,7 +236,7 @@ export async function saveDate(m, d, { when, where, status, feedback, audioIds =
   const changed = isNew || d.status !== status || d.when !== when || d.where !== where.trim();
   if (changed) {
     const verb = status.toLowerCase();
-    const text = isNew ? `Date ${n} ${verb}${status === 'Arranged' ? ' for ' + whenNice(when) : ''}.`
+    const text = isNew ? `Date ${n} ${verb}${status === 'Arranged' && when ? ' for ' + whenNice(when) : ''}.`
       : `Date ${n} ${verb}${d.when !== when ? ', schedule updated' : ''}.`;
     await log(t, text, { kind: 'date', eventAt: status === 'Happened' ? when : null });
   }

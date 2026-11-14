@@ -180,7 +180,7 @@ function card(m) {
   const id = m.o.id, t = m.cur.t, open = S.open === id, names = sd.coupleName(m);
   const hint = m.step.kind === 'move' ? m.step.text : t.phase === 'ended' ? [sd.endedLine(t), t.endedReason].filter(Boolean).join(' · ') : m.step.kind === 'wait' ? m.step.text : '';
   return h('article', { class: 'sh-match shs-card' + (open ? ' shs-open' : ' compact') + (S.menu && S.menu.id === id ? ' menu-open' : ''), 'aria-label': names, 'data-id': 'shidduchim.card' },
-    h('a', { class: 'sh-card-open', href: openHref(m), 'aria-label': T.openFor(names), 'data-id': 'shidduchim.card-open' }),
+    h('a', { class: 'sh-card-open', href: openHref(m, m.lane === 'progress' ? '/dates' : ''), 'aria-label': T.openFor(names), 'data-id': 'shidduchim.card-open' }),
     h('button', { type: 'button', class: 'icon-btn sh-expand-btn' + (open ? ' open' : ''), 'aria-expanded': open ? 'true' : 'false', 'aria-label': open ? T.hideActions : T.showActions, 'data-id': 'shidduchim.card-expand', html: icon('chevron'),
       onClick: (e) => { e.preventDefault(); e.stopPropagation(); S.open = open ? null : id; S.menu = null; S.updateId = null; drawList(); } }),
     h('div', { class: 'sh-card-main' },
@@ -206,7 +206,7 @@ function actions(m) {
     (st.tell || []).map(s => btn(T.told(sd.talkName(m, s)), 'shidduchim.told-' + s, async () => { const r = await sd.markTold(m, s); if (r) undoToast(T.toldToast, r); }, 'primary')),
     live && !t.refsChecked && m.lane !== 'ideas' ? btn(T.refsChecked, 'shidduchim.refs-checked', async () => { const r = await sd.markRefs(m); if (r) undoToast(T.refsToast, r); }) : null,
     btn(T.addUpdate, 'shidduchim.add-update', () => { S.updateId = S.updateId === m.o.id ? null : m.o.id; drawList(); root?.querySelector('[data-id="shidduchim.update-text"]')?.focus(); }),
-    live ? btn(T.end, 'shidduchim.end', () => endDialog(m)) : null,
+    live ? btn(T.end, 'shidduchim.end', () => endDialog(m), 'danger') : null,
     h('a', { class: 'linkish', href: openHref(m), 'data-id': 'shidduchim.open-details' }, T.openDetails));
 }
 

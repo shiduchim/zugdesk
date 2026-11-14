@@ -475,7 +475,7 @@ export async function saveDate(m, d, { when, where, status }) {
   const rec = await store.dateEvents.save({ ...base, when, where: place, status });
   if (isNew || d.status !== status || d.when !== when) {
     const verb = status.toLowerCase();
-    await log(t, isNew || d.when === when ? T.logDate(n, verb, isNew && status === 'Arranged' ? whenNice(when) : '') : T.logDateMoved(n, verb), { kind: 'date', eventAt: status === 'Happened' ? when : null });
+    await log(t, isNew || d.when === when ? T.logDate(n, verb, isNew && status === 'Arranged' && when ? whenNice(when) : '') : T.logDateMoved(n, verb), { kind: 'date', eventAt: status === 'Happened' ? when : null });
   }
   if (t2.phase === 'open' && status !== 'Cancelled') {
     t2 = { ...t2, phase: 'dating' };

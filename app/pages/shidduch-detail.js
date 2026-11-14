@@ -197,22 +197,22 @@ function dateForm(m) {
   const d = isNew ? null : m.cur.dates.find(x => x.id === U.dateEdit);
   if (!isNew && !d) { U.dateEdit = null; return null; }
   const n = isNew ? Math.max(0, ...m.cur.dates.map(sh.dateNum)) + 1 : sh.dateNum(d);
-  const when = h('input', { class: 'input', type: 'datetime-local', required: true, id: 'sh-date-when', value: sh.toLocalInput(d?.when), 'data-id': 'shidduch.date-when' });
+  const when = h('input', { class: 'input when-big', type: 'datetime-local', id: 'sh-date-when', value: sh.toLocalInput(d?.when), 'data-id': 'shidduch.date-when' });
   const where = h('input', { class: 'input', id: 'sh-date-where', placeholder: 'Meeting place', dir: 'auto', value: d?.where || '', 'data-id': 'shidduch.date-where' });
-  const status = h('select', { class: 'input', id: 'sh-date-status', 'data-id': 'shidduch.date-status' }, ['Arranged', 'Happened', 'Cancelled'].map(x => h('option', { value: x, selected: x === (d?.status || 'Arranged') || null }, x)));
+  let stat = d?.status || 'Arranged';
+  const status = bubbles({ options: ['Arranged', 'Happened', 'Cancelled'].map(x => [x, x]), selected: [stat], multi: false, dataId: 'shidduch.date-status', onChange: (x) => { stat = x || stat; } });
   const feedback = h('textarea', { class: 'input', id: 'sh-date-feedback', rows: 3, dir: 'auto', placeholder: 'Optional notes about the date', 'data-id': 'shidduch.date-feedback' }, d?.feedback || '');
   const fld = (label, el) => h('div', { class: 'field' }, h('label', { for: el.id }, label), el);
   const fbPend = VP['date:' + (d?.id || 'new')] || (VP['date:' + (d?.id || 'new')] = {});
   return h('form', { class: 'sh-formbox', 'data-id': 'shidduch.date-form', onSubmit: async (e) => {
     e.preventDefault();
-    if (!when.value) { toast('Choose a date and time'); when.focus(); return; }
-    await sh.saveDate(m, d, { when: when.value, where: where.value, status: status.value, feedback: feedback.value, audioIds: await savePending(fbPend) });
+    await sh.saveDate(m, d, { when: when.value, where: where.value, status: stat, feedback: feedback.value, audioIds: await savePending(fbPend) });
     U.dateEdit = null; toast('Date saved');
   } },
     h('h3', {}, isNew ? 'Arrange a date' : `Edit Date ${n}`),
     h('div', { class: 'sh-form-grid' },
-      h('div', { class: 'sh-form-row' }, fld('When', when), fld('Where', where)),
-      fld('Status', status), h('div', { class: 'field' }, h('label', { for: feedback.id }, 'Feedback (private)'), addMic(feedback, { dataId: 'shidduch.date-feedback-mic', pend: fbPend }), voiceChips(d?.audioIds, 'shidduch.date-voice'))),
+      h('div', { class: 'sh-form-row' }, fld('When (if known)', when), fld('Where (if known)', where)),
+      h('div', { class: 'field' }, h('label', {}, 'Status'), status), h('div', { class: 'field' }, h('label', { for: feedback.id }, 'Feedback (private)'), addMic(feedback, { dataId: 'shidduch.date-feedback-mic', pend: fbPend }), voiceChips(d?.audioIds, 'shidduch.date-voice'))),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduch.date-cancel', onClick: () => { U.dateEdit = null; draw(m.o.id, true); } }, 'Cancel'),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduch.date-save' }, 'Save date')));
