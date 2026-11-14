@@ -45,7 +45,7 @@ const T = {
   answerTitle: 'Got an answer',
   answerWho: 'From which side',
   answerSource: 'Who told you? (optional)',
-  answerNote: 'No asks who already knows, and ends the shidduch.',
+  answerNote: 'No ends the shidduch.',
   answers: { thinking: 'Thinking', yes: 'Yes', no: 'No' },
   answerSaved: (side, a) => `${side}: ${a}`,
   noChange: 'That answer was already recorded',

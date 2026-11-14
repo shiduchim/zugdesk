@@ -14,7 +14,6 @@ const VP = {}; // voice recordings waiting for Save, per shidduch (memory only)
 
 const T = {
   title: 'Shidduchim',
-  lead: 'Every shidduch: a guy and a girl, each side’s answer, and what is next.',
   newIdea: 'New idea',
   search: 'Search a single or a contact…',
   lanesLabel: 'Shidduchim lanes',
@@ -41,10 +40,9 @@ const T = {
   told: (name) => `${name} was told`,
   arrange: (n) => `Arrange Date ${n}`,
   updateLabel: 'What happened?',
-  updateNote: 'Saved with today’s date and time',
   updatePh: 'Spoke to the mother, checked a reference, got an answer…',
   updateEmpty: 'Write a few words first',
-  updateSaved: 'Dated update saved in History',
+  updateSaved: 'Update saved',
   cancel: 'Cancel', saveUpdate: 'Save update',
   undo: 'Undo', undone: 'Last change undone',
   answerToast: (side, label) => `${side} → ${label}`,
@@ -76,7 +74,7 @@ export async function render(container) {
   document.addEventListener('keydown', docKey);
   root.append(
     h('div', { class: 'page-head sh-head', 'data-id': 'shidduchim.head' },
-      h('div', { class: 'sh-head-text' }, h('h1', {}, T.title), h('p', { class: 'note' }, T.lead)),
+      h('div', { class: 'sh-head-text' }, h('h1', {}, T.title)),
       h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduchim.new-idea', onClick: () => newIdeaSheet({ onSaved: () => { S.lane = 'ideas'; S.picked = true; } }) }, T.newIdea)),
     h('div', { class: 'ct-search shs-search' }, ico('search'),
       h('input', { class: 'input', type: 'search', value: S.q, placeholder: T.search, 'aria-label': 'Search', dir: 'auto', 'data-id': 'shidduchim.search',
@@ -125,7 +123,7 @@ function drawList() {
     h('div', { class: 'sh-tabbar shs-tabbar', role: 'tablist', 'aria-label': T.lanesLabel, 'data-id': 'shidduchim.lanes' },
       sd.LANES.map(k => h('button', { type: 'button', role: 'tab', class: 'sh-tab', 'aria-selected': S.lane === k ? 'true' : 'false', 'data-id': 'shidduchim.lane-' + k, onClick: () => setLane(k) },
         sd.laneLabel(k), h('span', { class: 'sh-num' }, counts[k])))),
-    h('p', { class: 'note shs-intro', 'data-id': 'shidduchim.intro' }, sd.T.laneIntro[S.lane]),
+    sd.T.laneIntro[S.lane] ? h('p', { class: 'note shs-intro', 'data-id': 'shidduchim.intro' }, sd.T.laneIntro[S.lane]) : '',
     h('div', { class: 'sh-matches', 'data-id': 'shidduchim.list' },
       list.length ? list.map(card)
         : h('div', { class: 'sh-blank', 'data-id': 'shidduchim.empty' }, h('h3', {}, T.emptyTitle),
@@ -220,7 +218,7 @@ function updateForm(m) {
     S.updateId = null; S.updateText = '';
     undoToast(T.updateSaved, r);
   } },
-    h('label', { for: 'shs-update' }, T.updateLabel + ' ', h('span', { class: 'note' }, T.updateNote)), addMic(text, { dataId: 'shidduchim.update-mic', pend: VP[m.o.id] || (VP[m.o.id] = {}) }),
+    h('label', { for: 'shs-update' }, T.updateLabel), addMic(text, { dataId: 'shidduchim.update-mic', pend: VP[m.o.id] || (VP[m.o.id] = {}) }),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduchim.update-cancel', onClick: () => { S.updateId = null; drawList(); } }, T.cancel),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduchim.update-save' }, T.saveUpdate)));

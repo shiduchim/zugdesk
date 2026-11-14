@@ -12,9 +12,8 @@ const T = {
   barLabel: 'Progress: offer, references, dates 1 through 8, engaged',
   segDone: 'done', segNext: 'set up', segNot: 'not yet',
   // ending
-  endTitle: 'Move this shidduch to Ended?',
-  endTitleNo: 'End this shidduch?',
-  endLead: 'Answers, dates and history stay saved.',
+  endTitle: 'End this shidduch?',
+  endLead: 'History stays saved.',
   endSaidNo: (who) => `${who} said No. `,
   endWho: 'Who ended it? (optional)',
   endWhoOpts: (g, r) => [['unknown', 'Not specified'], ['guy', `His side (${g})`], ['girl', `Her side (${r})`], ['both', 'Both'], ['me', 'Me']],
@@ -23,9 +22,8 @@ const T = {
   endSource: 'Who told you? (optional)',
   endTold: 'Who already knows it ended?',
   endToldTick: (name) => `${name} was told`,
-  endToldNote: 'Leave it unticked and the shidduch keeps a “Your move: tell …” reminder.',
-  endBtn: 'Move to Ended',
-  endDone: 'Moved to Ended · history kept',
+  endBtn: 'End shidduch',
+  endDone: 'Ended',
   undo: 'Undo', undone: 'Last change undone',
   // new idea
   ideaTitle: 'New idea',
@@ -90,13 +88,12 @@ export async function endDialog(m, { side = null, onDone = null } = {}) {
     if (!need.length) return;
     ticks.append(h('label', {}, T.endTold),
       ...need.map(s => h('label', { class: 'shs-tick', 'data-id': 'sh-end.told-' + s },
-        h('input', { type: 'checkbox', checked: told[s] || null, onChange: (e) => { told[s] = e.target.checked; } }), h('span', { dir: 'auto' }, T.endToldTick(sd.talkName(m, s))))),
-      h('p', { class: 'note' }, T.endToldNote));
+        h('input', { type: 'checkbox', checked: told[s] || null, onChange: (e) => { told[s] = e.target.checked; } }), h('span', { dir: 'auto' }, T.endToldTick(sd.talkName(m, s))))));
   };
   drawTicks();
   const who = side ? null : bubbles({ options: T.endWhoOpts(sd.firstName(m, 'guy'), sd.firstName(m, 'girl')), selected: ['unknown'], multi: false, dataId: 'sh-end.who',
     onChange: (v) => { endedBy = v || 'unknown'; drawTicks(); } });
-  const res = await sheet({ title: side ? T.endTitleNo : T.endTitle, dataId: 'sh-end',
+  const res = await sheet({ title: T.endTitle, dataId: 'sh-end',
     body: [
       h('p', { dir: 'auto' }, side ? T.endSaidNo(`${sd.T.side[side]} (${sd.fullName(m, side)})`) : '', T.endLead),
       who ? h('div', { class: 'field' }, h('label', {}, T.endWho), who) : null,

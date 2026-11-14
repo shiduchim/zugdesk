@@ -71,7 +71,7 @@ function overview(m) {
   const idx = m.tries.length;
   const recent = m.cur.events.slice(0, 3);
   return [
-    h('div', { class: 'sh-overview-title', 'data-id': 'shidduch.summary' }, h('h2', {}, summ.title), summ.next ? h('p', { dir: 'auto' }, summ.next) : null),
+    summ.next ? h('div', { class: 'sh-overview-title', 'data-id': 'shidduch.summary' }, h('p', { dir: 'auto' }, summ.next)) : null,
     st === 'ended' ? h('div', { class: 'sh-endpanel', 'data-id': 'shidduch.ended' }, h('strong', { dir: 'auto' }, `Ended by ${sh.endedByName(m, t)}`), t.endedReason ? h('p', { dir: 'auto' }, t.endedReason) : null) : null,
     h('div', { class: 'sh-people', 'data-id': 'shidduch.people' }, personCard(m, 'me'), personCard(m, 'them')),
     U.reporter ? reporterBox() : null,
@@ -82,21 +82,21 @@ function overview(m) {
       h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.shadchan-set', onClick: () => shadchanSheet(m) }, m.shadchan ? 'Change' : 'Set')),
     st !== 'ended' ? h('div', { class: 'sh-panel soft', 'data-id': 'shidduch.references' },
       h('div', { class: 'sh-minihead' }, h('h3', {}, 'References'), h('span', { class: 'chip' }, t.refsChecked ? 'Checked' : 'Not checked')),
-      h('div', { class: 'note' }, t.refsChecked ? 'References have been checked.' : 'Leave this unfinished if references were skipped, even when dates begin.'),
       !t.refsChecked ? h('button', { type: 'button', class: 'btn small', 'data-id': 'shidduch.refs-btn', onClick: async () => { await sh.markRefs(m); toast('References marked checked'); } }, 'Mark references checked') : null) : null,
     st === 'ended' ? h('div', { class: 'sh-panel', 'data-id': 'shidduch.try-again' },
-      h('div', { class: 'sh-minihead' }, h('div', {}, h('h3', {}, 'Another try?'), h('div', { class: 'note' }, 'Previous dates and history will be kept.')),
+      h('div', { class: 'sh-minihead' }, h('h3', {}, 'Another try?'),
         h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduch.try-btn', 'aria-expanded': U.confirmTry ? 'true' : 'false', onClick: () => { U.confirmTry = !U.confirmTry; draw(m.o.id, true); } }, 'Try Again')),
-      idx >= sh.PROVISIONAL_TRIES ? h('p', { class: 'note' }, `This couple already had ${idx} tries. Three tries total is the provisional limit in the design; it is not enforced here.`) : null,
+      idx >= sh.PROVISIONAL_TRIES ? h('p', { class: 'note' }, `This couple already had ${idx} tries.`) : null,
       U.confirmTry ? h('div', { class: 'sh-note-form', 'data-id': 'shidduch.try-confirm' },
-        h('strong', {}, 'Start a new try with this same couple?'), h('p', { class: 'note' }, 'The past try stays saved. New dates start from Date 1.'),
+        h('strong', {}, 'Start a new try? The past try stays saved.'),
         h('div', { class: 'btn-row' },
-          h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduch.try-confirm-btn', onClick: async () => { U.confirmTry = false; await sh.tryAgain(m); toast('New try started; past history saved'); } }, `Start ${sh.tryName(idx + 1)}`),
+          h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduch.try-confirm-btn', onClick: async () => { U.confirmTry = false; await sh.tryAgain(m); toast('New try started'); } }, `Start ${sh.tryName(idx + 1)}`),
           h('button', { type: 'button', class: 'btn', 'data-id': 'shidduch.try-cancel', onClick: () => { U.confirmTry = false; draw(m.o.id, true); } }, 'Cancel'))) : null) : null,
     h('div', { class: 'sh-history-head' }, h('h3', {}, 'Recent history'),
-      h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.add-note', onClick: () => { U.noteOpen = true; go('history'); } }, 'Add note')),
+      st !== 'ended' ? null : h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.add-note', onClick: () => { U.noteOpen = true; go('history'); } }, 'Add note')),
     recent.length ? h('div', { class: 'sh-timeline', 'data-id': 'shidduch.recent' }, recent.map(logView)) : h('div', { class: 'note sh-emptyhistory' }, 'Nothing recorded yet.'),
     h('a', { class: 'linkish sh-notelink', href: `#/shidduchim/${encodeURIComponent(m.o.id)}/history`, 'data-id': 'shidduch.all-history' }, 'See all history'),
+    st !== 'ended' ? h('div', { class: 'sh-foot' }, h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'shidduch.end', onClick: () => endDialog(m) }, 'End shidduch')) : null,
   ];
 }
 
@@ -115,25 +115,26 @@ function personCard(m, side) {
     meta2 = m.person.occupation || '';
     href = `#/people/${encodeURIComponent(m.person.id)}`; initials = store.initials(m.person);
   } else { first = sh.personName(m); href = null; initials = '?'; meta1 = 'Person record removed'; }
-  const sel = h('select', { class: 'input sh-answerselect ' + sh.answerClass(v), id: 'sh-answer-' + side, 'data-id': 'shidduch.answer-' + side, disabled: ended || null, 'aria-label': `${sh.sideName(m, side)}'s answer`,
-    onChange: (e) => selectedAnswer(m, side, e.target.value) },
-    h('option', { value: '', selected: !v || null }, 'Not answered yet'),
-    sh.ANSWERS.map(o => h('option', { value: o, selected: v === o || null }, o)));
+  // One tap per answer, as in Shadchan Mode (owner: no dropdown). Ended: just the answer.
+  const sel = ended ? h('span', { class: 'chip', 'data-id': 'shidduch.answer-' + side }, v || 'Not answered')
+    : h('div', { class: 'sh-ans-row', role: 'radiogroup', 'data-id': 'shidduch.answer-' + side, 'aria-label': `${sh.sideName(m, side)}'s answer` },
+      ['', ...sh.ANSWERS].map(a => h('button', { type: 'button', class: 'sh-ans ' + ((v || '') === a ? 'on ' + sh.answerClass(a) : ''), 'aria-pressed': (v || '') === a ? 'true' : 'false',
+        'data-id': 'shidduch.answer-' + side + '.' + (a.toLowerCase() || 'none'), onClick: () => { if ((v || '') !== a) selectedAnswer(m, side, a); } }, a || 'Not yet')));
   return h('div', { class: 'sh-person ' + side, 'data-id': 'shidduch.person-' + side },
     h('div', { class: 'sh-personhead' },
       h('span', { class: 'avatar' + (side === 'them' ? ' them' : '') }, initials),
       href ? h('a', { class: 'sh-who', href, title: side === 'me' ? 'Open My Profile' : 'Open person profile', 'data-id': 'shidduch.person-link', dir: 'auto' }, h('span', {}, first), last ? h('span', {}, last) : null)
         : h('span', { class: 'sh-who', dir: 'auto' }, h('span', {}, first))),
     h('div', { class: 'sh-persmeta', dir: 'auto' }, meta1, meta2 ? h('br') : null, meta2 || null),
-    h('div', { class: 'sh-answerfield' }, h('label', { class: 'sh-answerlabel', for: 'sh-answer-' + side }, 'Answer'), sel));
+    h('div', { class: 'sh-answerfield' }, h('div', { class: 'sh-answerlabel' }, 'Answer'), sel));
 }
 
 async function selectedAnswer(m, side, value) {
   if (m.lane === 'ended') return;
   if (value === 'No') { const ok = await endDialog(m, { side }); if (!ok) draw(m.o.id, true); return; }
   const r = await sh.setAnswer(m, side, value);
-  if (!r) return;
-  U.reporter = r.event.id;
+  if (!r) { draw(m.o.id, true); return; }
+  U.reporter = side === 'them' && (value === 'Yes' || value === 'Thinking') ? r.event.id : null;
   toast(`${sh.sideName(m, side)}'s answer updated`);
   // Both said Yes: the next step is Date 1, so show the Dates tab (owner request).
   if (value === 'Yes' && m.cur.t[side === 'me' ? 'theirAnswer' : 'myAnswer'] === 'Yes' && tab !== 'dates') go('dates');
@@ -178,12 +179,7 @@ function logView(e) {
 // ---------- Dates ----------
 function datesView(m) {
   const list = m.cur.dates;
-  const ended = m.lane === 'ended';
   return [
-    h('div', { class: 'sh-section-title' },
-      h('h2', {}, 'Dates'),
-      !ended ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.arrange', onClick: () => { U.dateEdit = 'new'; draw(m.o.id, true).then(() => root?.querySelector('[data-id="shidduch.date-form"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })); } }, 'Arrange a date') : null),
-    ended ? h('p', { class: 'note' }, 'This try has ended. Its dates stay as a record. Use Try Again on Overview for a new attempt.') : null,
     U.reporter ? reporterBox() : null,
     U.dateEdit !== null ? dateForm(m) : null,
     list.length ? h('div', { class: 'sh-dates', 'data-id': 'shidduch.dates-list' }, list.map(d => h('button', { type: 'button', class: 'sh-dateitem', 'data-id': 'shidduch.date', onClick: () => { U.dateEdit = d.id; draw(m.o.id, true).then(() => root?.querySelector('[data-id="shidduch.date-form"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })); } },
@@ -213,8 +209,8 @@ function dateForm(m) {
   } },
     h('h3', {}, isNew ? 'Arrange a date' : `Edit Date ${n}`),
     h('div', { class: 'sh-form-grid' },
-      h('div', { class: 'sh-form-row' }, fld('When (if known)', when), fld('Where (if known)', where)),
-      h('div', { class: 'field' }, h('label', {}, 'Status'), status), h('div', { class: 'field' }, h('label', { for: feedback.id }, 'Feedback (private)'), addMic(feedback, { dataId: 'shidduch.date-feedback-mic', pend: fbPend }), voiceChips(d?.audioIds, 'shidduch.date-voice'))),
+      h('div', { class: 'sh-form-row' }, fld('When', when), fld('Where', where)),
+      isNew ? null : h('div', { class: 'field' }, h('label', {}, 'Status'), status), h('div', { class: 'field' }, h('label', { for: feedback.id }, 'Feedback (private)'), addMic(feedback, { dataId: 'shidduch.date-feedback-mic', pend: fbPend }), voiceChips(d?.audioIds, 'shidduch.date-voice'))),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduch.date-cancel', onClick: () => { U.dateEdit = null; draw(m.o.id, true); } }, 'Cancel'),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduch.date-save' }, 'Save date')));
@@ -224,7 +220,7 @@ function dateForm(m) {
 function historyView(m) {
   const t = m.cur;
   return [
-    h('div', { class: 'sh-section-title' }, h('h2', {}, 'History'),
+    m.lane !== 'ended' ? null : h('div', { class: 'sh-section-title' }, h('h2', {}, 'History'),
       h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.history-add-note', 'aria-expanded': U.noteOpen ? 'true' : 'false', onClick: () => { U.noteOpen = !U.noteOpen; draw(m.o.id, true).then(() => root?.querySelector('[data-id="shidduch.note-text"]')?.focus()); } }, 'Add note')),
     U.noteOpen ? noteForm(m) : null,
     h('div', { class: 'sh-timeline', 'data-id': 'shidduch.history-list' }, t.events.length ? t.events.map(logView) : h('div', { class: 'note sh-emptyhistory' }, 'No activity yet.')),
@@ -234,7 +230,6 @@ function historyView(m) {
         h('div', { class: 'sh-oldinner' }, bar(old.t, old.dates, { dim: true }),
           old.dates.length ? h('div', { class: 'note' }, old.dates.map(d => `Date ${sh.dateNum(d)} · ${d.status} · ${sh.whenNice(d.when)}`).join(' / ')) : null,
           h('div', { class: 'sh-timeline' }, old.events.length ? old.events.map(logView) : h('div', { class: 'note sh-emptyhistory' }, 'No activity recorded.')))))) : null,
-    h('p', { class: 'note' }, 'History and notes are private. They are never part of a shared profile.'),
   ];
 }
 
