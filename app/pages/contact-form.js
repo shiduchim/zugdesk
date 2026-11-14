@@ -4,7 +4,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, promptText, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
-import { S } from './contacts-data.js';
+import { S, findContactDuplicate } from './contacts-data.js';
 import { isShadchan } from '../js/mode.js';
 
 const TITLES = ['Mrs.', 'Rabbi', 'Rebbetzin', 'Mr.', 'Dr.'];
@@ -182,7 +182,7 @@ export async function render(container, params = {}) {
     const PLUS = String.fromCharCode(43); // owner rule: no plus signs; country codes use 00
     if (rec.phone.includes(PLUS)) rec.phone = rec.phone.split(PLUS).join('00');
     if (!editing) {
-      const dup = findDuplicate(all, rec);
+      const dup = findContactDuplicate(all, rec);
       if (dup) {
         const res = await sheet({ title: 'Already in your contacts?', dataId: 'shadchan.duplicate',
           body: [h('p', { dir: 'auto' }, `${store.displayName(dup)}${dup.city ? ' · ' + dup.city : ''}${dup.phone ? ' · ' + dup.phone : ''} looks like the same person.`),
@@ -204,13 +204,6 @@ export async function render(container, params = {}) {
 function keepTime(prevIso, date) {
   if (prevIso && prevIso.slice(0, 10) === date) return prevIso;
   return new Date(date + 'T12:00:00').toISOString();
-}
-
-function findDuplicate(all, rec) {
-  const norm = (s) => (s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
-  const digits = (p) => (p || '').replace(/\D/g, '').slice(-9);
-  const n = norm(rec.name), d = digits(rec.phone);
-  return all.find(x => (n && norm([x.firstName, x.lastName].filter(Boolean).join(' ') || x.name) === n) || (d.length >= 7 && digits(x.phone) === d));
 }
 
 function grow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 480) + 'px'; }

@@ -26,8 +26,20 @@
 - Every page of both modes at 320 / 360 / 390 / 430 / 768 / 1280 px with the demo: no sideways scroll, no “null”, no console errors.
 - Export holds both modes; Reset empties both; Import brings both back; a backup made before Shadchan Mode still loads and leaves Shadchan Mode alone.
 
+## Claude paste import (automatic; fixtures in `app/pages/claude-import.js` → `parseBlock`)
+- Block found inside a code box, without one, and with chatter before/after; stops at END or the closing ```.
+- Bullets (`- * • >`), `**bold**`, full-width colon, Hebrew labels (שם / מין / גיל / עיר) and RTL marks are read; בחורה = Girl, בחור = Guy.
+- Missing fields stay empty; a new single with no Kind cannot be saved until Guy or Girl is tapped.
+- Unknown labels land in About (single) or Note (shadchan), never dropped; Unclear lines show at the top of the preview.
+- `ZUGDESK 0` still imports and shows “Your Claude text is old” with Copy.
+- Same paste twice: every card says “Already have …”; Update fills empty fields only and adds a second original; no second person or contact.
+- A shadchan named only on a single becomes one contact, linked to every single that names them.
+- Undo after Add: nothing from the paste is left (not in Recently deleted either) and the New Note text comes back.
+- Phone `+1 …` is saved as `001…`; no plus sign shows anywhere.
+
 ## Manual (I check on my phone)
 - [ ] Close and reopen the app: it loads, Home shows
+- [ ] In Claude (phone app): tap Copy on the ZugDesk code box, then Home → Paste from AI: the preview opens (if the phone blocks the clipboard: long-press in New Note → Paste → Add … from this note)
 - [ ] Settings → Show labels shows names on buttons
 - [ ] Ideas: Active / Open / Closed tabs show the right people
 - [ ] Shidduchim: Offers / In Progress / Ended lanes work
@@ -47,3 +59,5 @@
 - Phone and computer in step (S7): two devices start from the same backup; A changes one single, B later changes another; A's backup imported on B with Merge keeps both changes and says "kept 1 that were newer on this device"; a single deleted on A (Shadchan Mode) is deleted on B too. Replace still wipes first.
 - Home: tiny Single / Shadchan switch on the search row (Shadchan Mode: search · switch · gear in one row); tapping it switches mode like Settings → Mode, no sideways scroll at 320 px.
 - Home, both modes: top row search · switch · gear; tabs Notes / To Do List / History underneath (phone). Shadchan phone tabs: Notes = New Note + Edit Home blocks, To Do List = To do block (Your move + follow-ups, count includes Your move), History = History block, even if hidden in Edit Home; swipe moves between them. Wide screen: tabs hidden, Edit Home blocks show.
+- Home → New Note: “Paste from AI” sits in the header between New Note and Pin, on one line at 320 / 360 / 390 px.
+- Add from Claude preview: cards have a gap between them, a coloured left strip (Single blue, Shadchan green, To do yellow) and a top band “1 of 3 · Single · Name”; no “null” under Guy / Girl.

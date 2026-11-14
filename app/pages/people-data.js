@@ -106,6 +106,30 @@ export function extract(raw) {
   return out;
 }
 
+// ---------- duplicates (Add Person save and the Claude paste import) ----------
+const dupNorm = (s) => (s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+// Same name, or the same own phone number (last 9 digits, at least 7).
+export function findPersonDup(people, { name = '', ownNumber = '' } = {}) {
+  const n = dupNorm(name), dg = store.phoneDigits(ownNumber);
+  return people.find(x => (n && dupNorm(x.name) === n) ||
+    (dg.length >= 7 && (x.contactCards || []).some(c => c.role === 'person' && store.phoneDigits(c.number) === dg))) || null;
+}
+// "Add as updated version": only empty fields are filled in; cards, answers and links are joined.
+export function fillEmpty(target, rec, cards = []) {
+  const merged = { ...target };
+  for (const [k, v] of Object.entries(rec)) {
+    if (k === 'id' || k === 'contactCards' || k === 'answers' || k === 'contactIds') continue;
+    const empty = merged[k] == null || merged[k] === '' || (Array.isArray(merged[k]) && !merged[k].length);
+    if (empty && v != null && v !== '' && !(Array.isArray(v) && !v.length)) merged[k] = v;
+  }
+  const haveNums = new Set((merged.contactCards || []).map(c => store.phoneDigits(c.number)).filter(Boolean));
+  const haveIds = new Set((merged.contactCards || []).map(c => c.contactId).filter(Boolean));
+  merged.contactCards = [...(merged.contactCards || []), ...cards.filter(c => c.number ? !haveNums.has(store.phoneDigits(c.number)) : !(c.contactId && haveIds.has(c.contactId)))];
+  merged.answers = { ...(rec.answers || {}), ...(merged.answers || {}) };
+  merged.contactIds = [...new Set([...(merged.contactIds || []), ...(rec.contactIds || [])])];
+  return merged;
+}
+
 // ---------- Manage categories & choices (Add Person) ----------
 // Hide = off the form, easy to restore. Delete = removed from your list (asks first).
 // Neither one changes anything already saved on people.

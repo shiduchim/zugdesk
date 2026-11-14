@@ -7,7 +7,7 @@ import { h, icon, toast, sheet, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { isShadchan, peopleListName } from '../js/mode.js';
 import * as PD from './profile-data.js';
-import { seekingKind, KINDS, LISTS, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE, listType, listsOf, extract, managePersonForm, addChoice, dateOnly } from './people-data.js';
+import { seekingKind, KINDS, LISTS, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE, listType, listsOf, extract, managePersonForm, addChoice, dateOnly, findPersonDup, fillEmpty } from './people-data.js';
 
 const MAX_FILE = 5 * 1024 * 1024;
 const TABS = [['paste', 'Paste'], ['basic', 'Basic Info'], ['details', 'Detailed Info']];
@@ -609,7 +609,6 @@ async function saveForLater() {
   navigate('/people');
 }
 
-const norm = (s) => (s || '').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
 async function save({ then }) {
   const p = d.p;
@@ -632,8 +631,7 @@ async function save({ then }) {
   };
   let target = null;
   if (!d.personId) {
-    const dup = ctx.people.find(x => (rec.name && norm(x.name) === norm(rec.name)) ||
-      (own && (x.contactCards || []).some(c => c.role === 'person' && store.phoneDigits(c.number) === store.phoneDigits(own.number) && store.phoneDigits(own.number).length >= 7)));
+    const dup = findPersonDup(ctx.people, { name: rec.name, ownNumber: own ? own.number : '' });
     if (dup) {
       const res = await sheet({ title: isShadchan ? 'Already saved?' : 'Already in Ideas?', dataId: 'person.duplicate',
         body: [h('p', { dir: 'auto' }, `${dup.name || 'Someone'}${dup.age ? ', ' + dup.age : ''}${dup.city ? ' · ' + dup.city : ''} may be the same person.`),
@@ -646,16 +644,7 @@ async function save({ then }) {
   }
   let saved;
   if (target) {
-    const merged = { ...target };
-    for (const [k, v] of Object.entries(rec)) {
-      if (k === 'id' || k === 'contactCards' || k === 'answers' || k === 'contactIds') continue;
-      const empty = merged[k] == null || merged[k] === '' || (Array.isArray(merged[k]) && !merged[k].length);
-      if (empty && v != null && v !== '' && !(Array.isArray(v) && !v.length)) merged[k] = v;
-    }
-    const haveNums = new Set((merged.contactCards || []).map(c => store.phoneDigits(c.number)).filter(Boolean));
-    merged.contactCards = [...(merged.contactCards || []), ...cards.filter(c => !c.number || !haveNums.has(store.phoneDigits(c.number)))];
-    merged.answers = { ...rec.answers, ...(merged.answers || {}) };
-    merged.contactIds = [...new Set([...(merged.contactIds || []), ...rec.contactIds])];
+    const merged = fillEmpty(target, rec, cards);
     saved = await store.people.save(merged);
   } else {
     if (!rec.id) delete rec.id;
