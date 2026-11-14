@@ -68,10 +68,9 @@ const T = {
   delOk: 'Delete', delDone: 'Deleted. It waits 30 days in Settings → Recently deleted',
   end: 'End shidduch',
   // dates
-  dates: 'Dates', datesNote: 'Arrange, update, and keep a record of each date.',
+  dates: 'Dates',
   datesEnded: 'This try has ended. Its dates stay as a record. Use Try Again on Overview for a new attempt.',
-  noDates: 'No dates yet', noDatesHint: 'Use “Arrange a date” when both sides agree.',
-  barNote: 'A date colours the bar once it is marked Happened; marking an answer after it does that by itself. Dates past the eighth keep their real number.',
+  noDates: 'No dates yet',
   dateTitle: (n, status) => `Date ${n} · ${status}`,
   editDate: 'Edit', feedback: 'Feedback',
   feedbackTitle: (n) => `Feedback after Date ${n}`,
@@ -219,6 +218,8 @@ async function selected(m, side, value) {
   if (!r) { draw(true); return; }
   U.reporter = value === 'thinking' || value === 'yes' ? { eventId: r.event.id, side } : null;
   undoToast(T.answerSaved(sd.T.side[side]), { undo: async () => { U.reporter = null; await r.undo(); } });
+  // Both said Yes: the next step is a date, so show the Dates tab (owner request).
+  if (value === 'yes' && sd.ans(m.round.rec, side === 'guy' ? 'girl' : 'guy') === 'yes' && tab !== 'dates') go('dates');
 }
 
 function sideCard(m, side) {
@@ -311,15 +312,14 @@ function datesView(m) {
   const list = m.cur.dates, live = sd.isOpen(m.cur.t);
   return [
     h('div', { class: 'sh-section-title' },
-      h('div', {}, h('h2', {}, T.dates), h('div', { class: 'note' }, T.datesNote)),
+      h('h2', {}, T.dates),
       live ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.arrange', onClick: openDateForm }, T.arrange) : null),
     m.cur.t.phase === 'ended' ? h('p', { class: 'note' }, T.datesEnded) : null,
     roundPanel(m),
     U.reporter ? reporterBox(m) : null,
     U.dateEdit !== null ? dateForm(m) : null,
     list.length ? h('div', { class: 'shs-dates', 'data-id': 'shidduch.dates-list' }, list.map(d => dateCard(m, d)))
-      : h('div', { class: 'sh-blank plain' }, h('h3', {}, T.noDates), h('p', {}, T.noDatesHint)),
-    h('div', { class: 'note' }, T.barNote),
+      : h('div', { class: 'sh-blank plain' }, h('h3', {}, T.noDates)),
   ];
 }
 

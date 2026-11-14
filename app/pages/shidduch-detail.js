@@ -135,6 +135,8 @@ async function selectedAnswer(m, side, value) {
   if (!r) return;
   U.reporter = r.event.id;
   toast(`${sh.sideName(m, side)}'s answer updated`);
+  // Both said Yes: the next step is Date 1, so show the Dates tab (owner request).
+  if (value === 'Yes' && m.cur.t[side === 'me' ? 'theirAnswer' : 'myAnswer'] === 'Yes' && tab !== 'dates') go('dates');
 }
 
 function reporterBox() {
@@ -179,16 +181,16 @@ function datesView(m) {
   const ended = m.lane === 'ended';
   return [
     h('div', { class: 'sh-section-title' },
-      h('div', {}, h('h2', {}, 'Dates'), h('div', { class: 'note' }, 'Arrange, update, and keep a record of each date.')),
+      h('h2', {}, 'Dates'),
       !ended ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.arrange', onClick: () => { U.dateEdit = 'new'; draw(m.o.id, true).then(() => root?.querySelector('[data-id="shidduch.date-form"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })); } }, 'Arrange a date') : null),
     ended ? h('p', { class: 'note' }, 'This try has ended. Its dates stay as a record. Use Try Again on Overview for a new attempt.') : null,
+    U.reporter ? reporterBox() : null,
     U.dateEdit !== null ? dateForm(m) : null,
     list.length ? h('div', { class: 'sh-dates', 'data-id': 'shidduch.dates-list' }, list.map(d => h('button', { type: 'button', class: 'sh-dateitem', 'data-id': 'shidduch.date', onClick: () => { U.dateEdit = d.id; draw(m.o.id, true).then(() => root?.querySelector('[data-id="shidduch.date-form"]')?.scrollIntoView({ behavior: 'smooth', block: 'center' })); } },
       h('span', { class: 'sh-calendar' }, sh.dateNum(d)),
       h('span', { class: 'sh-dateinfo' }, h('strong', {}, `Date ${sh.dateNum(d)} · ${d.status}`), h('small', { dir: 'auto' }, sh.whenNice(d.when), d.where ? ' · ' + d.where : '', d.audioIds?.length ? ' · voice note' : '')),
       ico('chevron'))))
-      : h('div', { class: 'sh-blank plain' }, h('h3', {}, 'No dates yet'), h('p', {}, 'Use “Arrange a date” when both people are ready.')),
-    h('div', { class: 'note' }, 'Dates only colour the progress bar after they are marked Happened. Cancelled dates stay in the list. Dates past the eighth keep their real number even though the bar stops at Date 8.'),
+      : h('div', { class: 'sh-blank plain' }, h('h3', {}, 'No dates yet')),
   ];
 }
 
