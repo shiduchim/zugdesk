@@ -111,7 +111,7 @@ _Live notes for /handoff. Everything above this section is the fixed spec: do no
 _Last updated: 2026-11-14 (Claude paste import step 1 built)_
 
 ### Done this session (branch `claude/happy-newton-wgb0pz`)
-- Claude paste import step 1: `app/pages/claude-import.js` (+ css). Home "Paste from Claude" (`home.paste-claude`) and notepad chip (`home.claude-chip`); preview `bulk.*`; Settings → Claude instructions (`settings.claude-text`, FORMAT_VERSION 1). Duplicate helpers now shared: `findPersonDup` / `fillEmpty` (people-data.js), `findContactDuplicate` (contacts-data.js).
+- Claude paste import step 1: `app/pages/claude-import.js` (+ css). Home "Paste from AI" (`home.paste-claude`) and notepad chip (`home.claude-chip`); preview `bulk.*`; Settings → Claude instructions (`settings.claude-text`, FORMAT_VERSION 1). Duplicate helpers now shared: `findPersonDup` / `fillEmpty` (people-data.js), `findContactDuplicate` (contacts-data.js).
 - Owner still to do: in Claude make a Project "ZugDesk", paste Settings → Claude instructions → Copy into its instructions; Claude Settings → Privacy → turn off "Help improve Claude".
 
 ### Next

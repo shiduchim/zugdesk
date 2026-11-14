@@ -430,7 +430,7 @@ export async function copyInstructions() {
   }
 }
 
-// Home → "Paste from Claude". Falls back to the notepad when the clipboard is blocked.
+// Home → "Paste from AI". Falls back to the notepad when the clipboard is blocked.
 export async function pasteFromClaude({ fallback, onSaved, onUndone } = {}) {
   let text = '';
   try { text = await navigator.clipboard.readText(); }

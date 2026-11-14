@@ -39,7 +39,7 @@
 
 ## Manual (I check on my phone)
 - [ ] Close and reopen the app: it loads, Home shows
-- [ ] In Claude (phone app): tap Copy on the ZugDesk code box, then Home → Paste from Claude: the preview opens (if the phone blocks the clipboard: long-press in New Note → Paste → Add … from this note)
+- [ ] In Claude (phone app): tap Copy on the ZugDesk code box, then Home → Paste from AI: the preview opens (if the phone blocks the clipboard: long-press in New Note → Paste → Add … from this note)
 - [ ] Settings → Show labels shows names on buttons
 - [ ] Ideas: Active / Open / Closed tabs show the right people
 - [ ] Shidduchim: Offers / In Progress / Ended lanes work
@@ -59,3 +59,4 @@
 - Phone and computer in step (S7): two devices start from the same backup; A changes one single, B later changes another; A's backup imported on B with Merge keeps both changes and says "kept 1 that were newer on this device"; a single deleted on A (Shadchan Mode) is deleted on B too. Replace still wipes first.
 - Home: tiny Single / Shadchan switch on the search row (Shadchan Mode: search · switch · gear in one row); tapping it switches mode like Settings → Mode, no sideways scroll at 320 px.
 - Home, both modes: top row search · switch · gear; tabs Notes / To Do List / History underneath (phone). Shadchan phone tabs: Notes = New Note + Edit Home blocks, To Do List = To do block (Your move + follow-ups, count includes Your move), History = History block, even if hidden in Edit Home; swipe moves between them. Wide screen: tabs hidden, Edit Home blocks show.
+- Home → New Note: “Paste from AI” sits in the header between New Note and Pin, on one line at 320 / 360 / 390 px.

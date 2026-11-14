@@ -23,4 +23,6 @@
 .claude-text summary{cursor:pointer;color:var(--link);font-size:var(--font-sm);min-height:var(--touch-min);display:flex;align-items:center}
 .claude-pre{white-space:pre-wrap;overflow-wrap:anywhere;font-family:var(--original-font);font-size:var(--font-sm);background:var(--original-bg);border-radius:var(--radius);padding:10px 12px;margin:0;max-height:50vh;overflow:auto}
 .clip-helper{position:fixed;opacity:0;pointer-events:none}
-.claude-row{display:flex;margin:2px 0 var(--gap-sm)}
+.ed-head h2{white-space:nowrap}
+[data-id="home.paste-claude"]{white-space:nowrap;padding:0 8px;flex:0 0 auto;font-size:var(--font-sm)}
+@media (max-width:359px){.ed-head h2{font-size:var(--font-base)}.ed-head{gap:2px}}
