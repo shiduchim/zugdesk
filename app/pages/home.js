@@ -139,7 +139,8 @@ function composer(key) {
     const title = h('input', { class: 'ed-title', dir: 'auto', placeholder: 'Title (optional)', 'aria-label': 'Note title (optional)', value: d.title, 'data-id': 'home.new-note.title',
       onInput: (e) => { d.title = e.target.value; persist(); } });
     const fromClaude = h('button', { type: 'button', class: 'pin-text', 'data-id': 'home.paste-claude', onClick: pasteClaude }, 'Paste');
-    wrap.append(h('div', { class: 'ed-head' }, h('h2', {}, ico('edit'), 'New Note'), h('span', { class: 'spacer' }), fromClaude, pin, dot), title);
+    // Owner: no "New Note" heading; the optional title sits on the top line with Paste and Pin.
+    wrap.append(h('div', { class: 'ed-head' }, title, fromClaude, pin, dot));
   }
   const edWrap = h('div', { class: 'ed-wrap' }, mirror, ta);
   const pend = voicePend[key] || (voicePend[key] = {});
