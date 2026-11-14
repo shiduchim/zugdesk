@@ -12,7 +12,7 @@ import { createNote } from './notes-data.js';
 import * as sh from './shidduch-data.js';
 import * as sd from './sh-shidduch-data.js';
 
-export const FORMAT_VERSION = 2;
+export const FORMAT_VERSION = 3;
 
 // The text the owner pastes into the Claude Project's instructions (Settings → Claude instructions).
 // Change FORMAT_VERSION whenever this text changes, so old pastes say "your Claude text is old".
@@ -51,13 +51,16 @@ END
 Rules:
 1. Repeat a section for every single, shadchan, to do, update or date in my note. Leave out sections and lines you have nothing for.
 2. One field per line: the label, a colon, then the value. Never put two fields on one line and never use the | sign.
-3. Keep every name exactly as I typed it. Never invent a name, age, phone, city or date. If you are not sure, leave the line out and write the doubt under Unclear.
-4. Answer only when my note says someone answered. Kind is Guy or Girl only. If my note does not say, leave Kind out and say so under Unclear.
+3. Keep every name exactly as I typed it. Never invent a name, age, phone, city or date. If you are not sure, leave the line out and write the doubt under Unclear. Linking people from my note to each other is not inventing: see rule 10.
+4. Kind is Guy or Girl only. If my note does not say, leave Kind out and say so under Unclear.
 5. Phone: digits only, no spaces. For a country code write 00 at the start, never the plus sign.
 6. About and Note: short, in my own words, in the language I wrote in.
 7. Write the dates from today's date. If I wrote "next Tuesday", give the date and keep my words in brackets.
 8. Start the code box with the line ZUGDESK ${FORMAT_VERSION} and end it with the line END.
-9. Outside the code box you may write one short line, nothing more.`;
+9. Outside the code box you may write one short line, nothing more.
+10. Connect what belongs together. If my note names one shadchan and one or more singles, that shadchan is the Shadchan of each of those singles, even when I only wrote "the shadchan" or "the shadchanit" without a name. When you link like this, add under Unclear: "assumed <shadchan> is <single>'s shadchan".
+11. A promise to do something later ("she will send me the profile tomorrow") is a [To do] with its date.
+12. In [Update], write Answer only when my note says someone answered.`;
 
 // ---------- reading the block ----------
 const SECTIONS = {
@@ -318,7 +321,10 @@ async function buildModel(parsed) {
 
 // ---------- preview ----------
 const TYPE_LABEL = { single: 'Single', shadchan: 'Shadchan', todo: 'To do', update: 'Update', date: 'Date', other: 'Other' };
-const counted = (m) => m.cards.filter(c => c.include && c.action !== 'skip');
+// A shadchan card made only because a single named them is dropped once no single names them any more.
+const orphan = (c, m) => c.fromSingle && !m.cards.some(s => s.type === 'single' && s.include && s.action !== 'skip' && norm(s.shadchan) === norm(c.name));
+const shown = (m) => m.cards.filter(c => !orphan(c, m));
+const counted = (m) => shown(m).filter(c => c.include && c.action !== 'skip');
 
 // Opens the preview for pasted text. Resolves true when something was saved.
 export async function openImport(text, { onSaved, onUndone } = {}) {
@@ -339,7 +345,8 @@ export async function openImport(text, { onSaved, onUndone } = {}) {
     if (m.version > FORMAT_VERSION) body.append(h('div', { class: 'callout', 'data-id': 'bulk.newer' }, 'This block was made for a newer ZugDesk. Close and reopen the app to update it; what can be read is shown below.'));
     if (m.unclear.length) body.append(h('div', { class: 'callout bulk-unclear', 'data-id': 'bulk.unclear' },
       h('b', {}, 'Claude was not sure about:'), h('ul', {}, m.unclear.map(u => h('li', { dir: 'auto' }, u)))));
-    m.cards.forEach((c, i) => body.append(cardEl(c, i, m, draw, relabel)));
+    const vis = shown(m);
+    vis.forEach((c, i) => body.append(cardEl(c, i, m, draw, relabel, vis.length)));
     body.append(h('p', { class: 'note' }, 'The whole paste is also kept as one note, linked to everyone in it.'));
     relabel();
     if (y != null && body.parentElement) body.parentElement.scrollTop = y;
@@ -390,7 +397,7 @@ function oldCallout() {
     h('button', { type: 'button', class: 'linkish', 'data-id': 'bulk.copy-new', onClick: copyInstructions }, 'Copy the new text'));
 }
 
-function cardEl(c, i, m, draw, relabel) {
+function cardEl(c, i, m, draw, relabel, total) {
   const off = !c.include || c.action === 'skip';
   const sw = h('label', { class: 'toggle bulk-include', 'data-id': 'bulk.include' },
     h('span', { class: 'toggle-text' }, 'Include'),
@@ -399,13 +406,13 @@ function cardEl(c, i, m, draw, relabel) {
   const who = h('span', { class: 'bulk-who', dir: 'auto' }, c.name || '');
   const head = h('div', { class: 'bulk-head', 'data-id': 'bulk.card-head' },
     h('span', { class: 'bulk-title' },
-      h('span', { class: 'bulk-num' }, `${i + 1} of ${m.cards.length}`), ' · ',
+      h('span', { class: 'bulk-num' }, `${i + 1} of ${total}`), ' · ',
       TYPE_LABEL[c.type] + (c.type === 'other' && c.title ? ' · ' + c.title : ''),
       c.name ? ' · ' : '', who),
     sw);
   c.whoEl = who;
   const tone = ['single', 'shadchan', 'todo'].includes(c.type) ? c.type : 'other';
-  const wrap = h('article', { class: `bulk-card tone-${tone}` + (off ? ' off' : ''), 'data-card': String(i), 'data-id': 'bulk.card-' + c.type }, head);
+  const wrap = h('article', { class: `bulk-card tone-${tone}` + (off ? ' off' : ''), 'data-card': String(m.cards.indexOf(c)), 'data-id': 'bulk.card-' + c.type }, head);
   if (!c.include) return wrap;
   if (c.type === 'single') {
     wrap.append(
@@ -416,7 +423,7 @@ function cardEl(c, i, m, draw, relabel) {
       ...[['guy', 'Guy'], ['girl', 'Girl']].map(([k, l]) => h('button', { type: 'button', 'aria-pressed': c.kind === k ? 'true' : 'false', 'data-id': 'bulk.kind-' + k,
         onClick: () => { c.kind = k; draw(); } }, l))),
       ...(c.kind ? [] : [h('span', { class: 'note bulk-need' }, c.kindNote ? `Claude wrote “${c.kindNote}”. Choose one.` : 'Choose Guy or Girl')]));
-    if (c.shadchan) wrap.append(h('p', { class: 'note', dir: 'auto' }, 'Shadchan: ' + c.shadchan));
+    wrap.append(shadchanPick(c, m, draw));
     if (c.about) wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, c.about));
     if (c.dup) wrap.append(dupChoice(c, `Already have ${c.dup.name}${c.dup.age ? ', ' + c.dup.age : ''}${c.dup.city ? ' · ' + c.dup.city : ''}`, draw));
   } else if (c.type === 'shadchan') {
@@ -447,6 +454,48 @@ function cardEl(c, i, m, draw, relabel) {
       h('p', { class: 'note' }, 'Saved as a note' + (c.pair.length ? ', linked to ' + c.pair.join(' and ') : '') + '.'));
   }
   return wrap;
+}
+
+// The single's shadchan: what Claude wrote, or one tap on a suggestion (this paste first,
+// then shadchanim added or changed lately). Works across days: ZugDesk remembers, Claude does not.
+const RECENT_DAYS = 14;
+function ago(iso) {
+  const d = new Date(iso); if (isNaN(d)) return '';
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(d).setHours(0, 0, 0, 0)) / 86400000);
+  return days <= 0 ? 'added today' : days === 1 ? 'added yesterday' : `added ${days} days ago`;
+}
+export function shadchanSuggestions(m, cur = '') {
+  const out = [], seen = new Set([norm(cur)]);
+  for (const c of m.cards) {
+    if (c.type !== 'shadchan' || c.fromSingle || !c.include || !c.name.trim() || seen.has(norm(c.name))) continue;
+    seen.add(norm(c.name)); out.push({ name: c.name.trim(), hint: 'in this paste' });
+  }
+  const since = Date.now() - RECENT_DAYS * 86400000;
+  const recent = m.contacts.filter(x => (x.roles || []).includes('shadchan') && new Date(x.updatedAt || x.createdAt || 0).getTime() >= since)
+    .sort((a, b) => (b.updatedAt || b.createdAt || '').localeCompare(a.updatedAt || a.createdAt || ''));
+  for (const x of recent) {
+    const name = store.displayName(x);
+    if (!name || seen.has(norm(name)) || out.length >= 4) continue;
+    seen.add(norm(name)); out.push({ name, hint: ago(x.createdAt || x.updatedAt) });
+  }
+  return out;
+}
+function shadchanPick(c, m, draw) {
+  const set = (name) => { c.shadchan = name; c.openSh = false; draw(); };
+  const box = h('div', { class: 'bulk-dup bulk-sh', 'data-id': 'bulk.single-shadchan' });
+  if (c.shadchan && !c.openSh) {
+    box.append(h('div', { class: 'bulk-sh-row' },
+      h('span', { dir: 'auto' }, 'Shadchan: ', h('b', {}, c.shadchan)),
+      h('button', { type: 'button', class: 'linkish', 'data-id': 'bulk.shadchan-change', onClick: () => { c.openSh = true; draw(); } }, 'Change')));
+    return box;
+  }
+  const sugg = shadchanSuggestions(m, c.shadchan);
+  box.append(h('p', {}, c.shadchan ? 'Shadchan: ' + c.shadchan : 'Who is the shadchan?'));
+  if (sugg.length) box.append(h('div', { class: 'bulk-dup-btns' }, ...sugg.map(x =>
+    pickBtn(`${x.name} · ${x.hint}`, false, 'bulk.shadchan-pick', () => set(x.name)))));
+  else box.append(h('p', { class: 'note' }, 'No shadchan in this paste or added lately. You can link one later on the single’s card.'));
+  box.append(h('div', { class: 'bulk-dup-btns' }, pickBtn('No shadchan', !c.shadchan, 'bulk.shadchan-none', () => set(''))));
+  return box;
 }
 
 const pickBtn = (label, on, dataId, run) => h('button', { type: 'button', class: 'btn small' + (on ? ' primary' : ''), 'aria-pressed': on ? 'true' : 'false', 'data-id': dataId, dir: 'auto', onClick: run }, label);
@@ -517,7 +566,7 @@ async function saveAll(m, text) {
   const take = (c) => c.include && c.action !== 'skip';
   // 1. shadchanim first, so singles can link to them by name
   const byName = new Map(); // norm(name) → contact
-  for (const c of m.cards.filter(c => c.type === 'shadchan' && take(c))) {
+  for (const c of m.cards.filter(c => c.type === 'shadchan' && take(c) && !orphan(c, m))) {
     let rec;
     if (c.dup && (c.action === 'update' || c.action === 'link')) {
       rec = c.dup;
@@ -543,7 +592,7 @@ async function saveAll(m, text) {
     if (c.dup) byName.set(norm(store.displayName(c.dup)), rec);
   }
   for (const c of m.cards) if (c.raw) c.raw = noPlus(c.raw);
-  const contactFor = (name) => (name ? byName.get(norm(name)) || null : null);
+  const contactFor = (name) => (name ? byName.get(norm(name)) || m.contacts.find(x => (x.roles || []).includes('shadchan') && norm(store.displayName(x)) === norm(name)) || null : null);
   // 2. singles, each with its own block kept as an original
   const personByName = new Map();
   for (const c of m.cards.filter(c => c.type === 'single' && take(c))) {
