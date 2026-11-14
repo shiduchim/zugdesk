@@ -289,8 +289,8 @@ function stamp() {
   lastAt = at;
   return at;
 }
-function log(t, text, { source = '', eventAt = null, kind = 'note' } = {}) {
-  return store.stageEvents.save({ tryId: t.id, offerId: t.offerId, text, source, eventAt, kind, at: stamp() });
+function log(t, text, { source = '', eventAt = null, kind = 'note', audioIds = [] } = {}) {
+  return store.stageEvents.save({ tryId: t.id, offerId: t.offerId, text, source, eventAt, kind, ...(audioIds.length ? { audioIds } : {}), at: stamp() });
 }
 function touch(m, t) {
   return store.offers.save({ ...m.o, status: statusOfTry(t), guyName: fullName(m, 'guy'), girlName: fullName(m, 'girl') });
@@ -440,9 +440,9 @@ export async function markRefs(m) {
   return { undo };
 }
 
-export async function addNote(m, text) {
+export async function addNote(m, text, audioIds = []) {
   const undo = await snapshot(m);
-  await log(m.cur.t, text.trim(), { kind: 'note' });
+  await log(m.cur.t, text.trim(), { kind: 'note', audioIds });
   await touch(m, m.cur.t);
   return { undo };
 }

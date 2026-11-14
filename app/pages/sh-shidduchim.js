@@ -9,6 +9,8 @@ import { norm } from './singles-data.js';
 import * as sd from './sh-shidduch-data.js';
 import { bar, barDim, endDialog, newIdeaSheet } from './sh-shidduch-parts.js';
 import { sendSheet } from './sh-send.js';
+import { addMic, savePending, voiceChips } from '../js/voice.js';
+const VP = {}; // voice recordings waiting for Save, per shidduch (memory only)
 
 const T = {
   title: 'Shidduchim',
@@ -209,15 +211,16 @@ function actions(m) {
 }
 
 function updateForm(m) {
-  const text = h('textarea', { class: 'input', rows: 3, dir: 'auto', required: true, id: 'shs-update', placeholder: T.updatePh, 'data-id': 'shidduchim.update-text', onInput: (e) => { S.updateText = e.target.value; } }, S.updateText);
+  const text = h('textarea', { class: 'input', rows: 3, dir: 'auto', id: 'shs-update', placeholder: T.updatePh, 'data-id': 'shidduchim.update-text', onInput: (e) => { S.updateText = e.target.value; } }, S.updateText);
   return h('form', { class: 'sh-quick-update shs-over', 'data-id': 'shidduchim.update-form', onSubmit: async (e) => {
     e.preventDefault();
-    if (!text.value.trim()) { toast(T.updateEmpty); text.focus(); return; }
-    const r = await sd.addNote(m, text.value);
+    const pend = VP[m.o.id] || {};
+    if (!text.value.trim() && !pend.audio?.length) { toast(T.updateEmpty); text.focus(); return; }
+    const r = await sd.addNote(m, text.value.trim() || 'Voice note', await savePending(pend));
     S.updateId = null; S.updateText = '';
     undoToast(T.updateSaved, r);
   } },
-    h('label', { for: 'shs-update' }, T.updateLabel + ' ', h('span', { class: 'note' }, T.updateNote)), text,
+    h('label', { for: 'shs-update' }, T.updateLabel + ' ', h('span', { class: 'note' }, T.updateNote)), addMic(text, { dataId: 'shidduchim.update-mic', pend: VP[m.o.id] || (VP[m.o.id] = {}) }),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduchim.update-cancel', onClick: () => { S.updateId = null; drawList(); } }, T.cancel),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduchim.update-save' }, T.saveUpdate)));

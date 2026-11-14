@@ -9,6 +9,8 @@ import { h, icon, toast, sheet, bubbles, dock, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import * as sh from './shidduch-data.js';
 import { bar, endDialog } from './shidduchim.js';
+import { addMic, savePending, voiceChips } from '../js/voice.js';
+const VP = {}; // voice recordings waiting for Save, per shidduch (memory only)
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const TABS = [['overview', 'Overview'], ['dates', 'Dates'], ['history', 'History']];
@@ -165,7 +167,8 @@ async function shadchanSheet(m) {
 function logView(e) {
   return h('div', { class: 'sh-log', 'data-id': 'shidduch.history-item' }, h('span', { class: 'sh-dot' }),
     h('div', { class: 'sh-logbody' },
-      h('div', { class: 'sh-logtitle', dir: 'auto' }, e.text),
+      e.audioIds?.length && e.text === 'Voice note' ? null : h('div', { class: 'sh-logtitle', dir: 'auto' }, e.text),
+      voiceChips(e.audioIds, 'shidduch.history-voice'),
       h('div', { class: 'sh-logmeta' }, sh.dateTime(e.at), e.eventAt && e.eventAt.slice(0, 16) !== (e.at || '').slice(0, 16) ? ` · happened ${sh.whenNice(e.eventAt)}` : ''),
       e.source ? h('div', { class: 'sh-logextra', dir: 'auto' }, 'Source: ' + e.source) : null));
 }
@@ -233,14 +236,15 @@ function historyView(m) {
 }
 
 function noteForm(m) {
-  const text = h('textarea', { class: 'input', id: 'sh-note', rows: 3, dir: 'auto', required: true, placeholder: 'What happened?', 'data-id': 'shidduch.note-text', onInput: (e) => { U.noteText = e.target.value; } }, U.noteText);
+  const text = h('textarea', { class: 'input', id: 'sh-note', rows: 3, dir: 'auto', placeholder: 'What happened?', 'data-id': 'shidduch.note-text', onInput: (e) => { U.noteText = e.target.value; } }, U.noteText);
   return h('form', { class: 'sh-note-form', 'data-id': 'shidduch.note-form', onSubmit: async (e) => {
     e.preventDefault();
-    if (!text.value.trim()) { toast('Write a few words first'); text.focus(); return; }
-    await sh.addNote(m, text.value);
+    const pend = VP[m.o.id] || {};
+    if (!text.value.trim() && !pend.audio?.length) { toast('Write a few words or record a voice note first'); text.focus(); return; }
+    await sh.addNote(m, text.value.trim() || 'Voice note', await savePending(pend));
     U.noteOpen = false; U.noteText = ''; toast('Note saved');
   } },
-    h('label', { class: 'sh-formlabel', for: 'sh-note' }, 'New note'), text,
+    h('label', { class: 'sh-formlabel', for: 'sh-note' }, 'New note'), addMic(text, { dataId: 'shidduch.note-mic', pend: VP[m.o.id] || (VP[m.o.id] = {}) }),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduch.note-cancel', onClick: () => { U.noteOpen = false; draw(m.o.id, true); } }, 'Cancel'),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduch.note-save' }, 'Save note')));

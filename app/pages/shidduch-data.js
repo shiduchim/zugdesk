@@ -125,8 +125,8 @@ async function touch(o, t, lane) {
   const o2 = await store.offers.save({ ...o, status: lane || laneOf(t), updatedAt: at });
   return o2;
 }
-async function log(t, text, { source = '', eventAt = null, kind = 'note' } = {}) {
-  return store.stageEvents.save({ tryId: t.id, offerId: t.offerId, text, source, eventAt, kind, at: store.now() });
+async function log(t, text, { source = '', eventAt = null, kind = 'note', audioIds = [] } = {}) {
+  return store.stageEvents.save({ tryId: t.id, offerId: t.offerId, text, source, eventAt, kind, ...(audioIds.length ? { audioIds } : {}), at: store.now() });
 }
 
 // Snapshot for Undo on quick list changes: restores the try + offer and removes history
@@ -218,10 +218,10 @@ export async function setShadchan(m, contactId) {
 }
 
 // Add update / Add note: one dated and timed line on the current try's history.
-export async function addNote(m, text) {
+export async function addNote(m, text, audioIds = []) {
   const t = m.cur.t;
   const undo = await snapshot(m);
-  await log(t, text.trim(), { kind: 'note' });
+  await log(t, text.trim(), { kind: 'note', audioIds });
   await touch(m.o, t);
   return { undo };
 }
