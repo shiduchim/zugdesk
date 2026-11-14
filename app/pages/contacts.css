@@ -149,3 +149,8 @@
 .ct-first{display:flex;flex-direction:column;align-items:flex-start;gap:var(--gap);padding:var(--gap-lg) 0}
 .composer .composer-type{flex:1 1 100%;min-width:0}
 @media (min-width:1024px){.composer .composer-type{flex:1 1 0}}
+/* Tap-to-edit facts on the contact card */
+.qf-tap{cursor:pointer;border-radius:var(--radius)}
+.qf-tap:active,.qf-tap.on{background:var(--surface-2)}
+.qf-edit{padding:8px 0 12px;display:flex;flex-direction:column;gap:8px}
+.qf-edit-btns{display:flex;gap:8px;justify-content:flex-end}

@@ -186,20 +186,21 @@ function dirRow(c, variant, onPick) {
   const sel = S.selectedId === c.id;
   const when = x.last ? shortDate(x.last) : '';
   const st = STATUS_LABEL[c.status];
+  const langs = (c.languages || []).join(', '); // owner: language shows on the small card
   const attrs = { class: 'dir-row', role: 'listitem', 'data-cid': c.id, 'data-id': 'contacts.row', 'aria-current': sel ? 'true' : 'false', type: 'button' };
   let inner;
   if (variant === 'rail') {
-    inner = [h('b', { dir: 'auto' }, c.firstName || c.name || store.displayName(c)), h('small', { dir: 'auto' }, c.lastName || ''), when ? h('small', { class: 'mono' }, when) : null];
+    inner = [h('b', { dir: 'auto' }, c.firstName || c.name || store.displayName(c)), h('small', { dir: 'auto' }, c.lastName || ''), langs ? h('small', { class: 'langs', dir: 'auto', 'data-id': 'contacts.row-langs' }, langs) : null, when ? h('small', { class: 'mono' }, when) : null];
   } else if (variant === 'rows') {
     inner = [h('div', { class: 'avatar' }, store.initials(c)),
       h('div', { class: 'row-main' },
         h('div', { class: 'row-title', dir: 'auto' }, store.displayName(c)),
-        h('div', { class: 'row-sub', dir: 'auto' }, [c.city, (c.roles || []).map(roleLabel).join(', ')].filter(Boolean).join(' · ') || 'Not recorded')),
+        h('div', { class: 'row-sub', dir: 'auto' }, [c.city, (c.roles || []).map(roleLabel).join(', '), langs].filter(Boolean).join(' · ') || 'Not recorded')),
       h('div', { class: 'row-end' }, when ? h('span', { class: 'when' }, when) : null, st ? h('span', { class: 'status-pill ' + c.status }, st) : null)];
   } else {
     const desk = variant === 'desk';
     inner = [h('span', { class: 'dr-top' }, h('b', { dir: 'auto' }, store.displayName(c)), desk && when ? h('span', { class: 'when' }, when) : null),
-      h('small', { dir: 'auto' }, [c.city || 'City not recorded', desk ? (c.roles || []).map(roleLabel).join(', ') : when].filter(Boolean).join(' · ')),
+      h('small', { dir: 'auto' }, [c.city || 'City not recorded', langs, desk ? (c.roles || []).map(roleLabel).join(', ') : when].filter(Boolean).join(' · ')),
       variant === 'desk' && x.latest ? h('small', { class: 'snippet', dir: 'auto' }, h('span', { class: 'via' }, store.eventTypeLabel(x.latest.type)), ' ', x.latest.text) : null,
       variant === 'desk' && (st || x.open.length) ? h('small', { class: 'next' }, statusText(c)) : null];
   }
