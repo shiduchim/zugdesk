@@ -5,6 +5,7 @@
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet, promptText, bubbles, confirmDialog } from '../js/ui.js';
 import { navigate } from '../js/router.js';
+import { addMic, savePending, voiceChips, removeAudio } from '../js/voice.js';
 import { isShadchan } from '../js/mode.js';
 import { S, D, LAYOUTS, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel, optionsFor, clearFilters, fresh } from './contacts-data.js';
 
@@ -27,16 +28,62 @@ export function statusText(c) {
 }
 
 // ---------- quick facts ----------
+// Tap a fact to change it right here (like My Profile). Choices save on each tap; text has Save / Cancel.
+const METHODS = ['WhatsApp', 'Phone call', 'Email', 'Text message'];
+let OPEN = null; // `${contactId}.${field}` of the fact being edited (kept across re-draws)
+let CHOICES = null;
+store.getChoices().then(x => { CHOICES = x; });
+const EDIT = {
+  phone: { type: 'text', inputmode: 'tel' }, email: { type: 'text', inputmode: 'email' },
+  languages: { type: 'multi' }, communities: { type: 'multi' }, ages: { type: 'multi' },
+  preferredContact: { type: 'one', opts: () => METHODS },
+};
+async function saveField(c, field, value) {
+  const cur = await fresh(c.id);
+  await store.contacts.save({ ...cur, [field]: value });
+}
+function factEditor(c, field, close) {
+  const ed = EDIT[field];
+  const box = h('div', { class: 'qf-edit', 'data-id': `contact.fact-edit.${field}` });
+  if (ed.type === 'text') {
+    const inp = h('input', { class: 'input', dir: 'auto', value: c[field] || '', inputmode: ed.inputmode, 'data-id': 'contact.fact-input' });
+    const save = async () => { close(); await saveField(c, field, inp.value.trim()); toast('Saved'); };
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
+    box.append(inp, h('div', { class: 'qf-edit-btns' },
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'contact.fact-cancel', onClick: close }, 'Cancel'),
+      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'contact.fact-save', onClick: save }, 'Save')));
+    setTimeout(() => inp.focus(), 0);
+    return box;
+  }
+  const multi = ed.type === 'multi';
+  const cur = multi ? [...(c[field] || [])] : (c[field] ? [c[field]] : []);
+  const base = ed.opts ? ed.opts() : (CHOICES?.[field] || []).filter(o => !o.hidden).map(o => o.v);
+  const opts = [...new Set([...base, ...cur])].map(x => [x, x]);
+  box.append(bubbles({ options: opts, selected: cur, multi, dataId: 'contact.fact-choice',
+    onChange: (val) => { if (!multi) close(); saveField(c, field, val); } }),
+    h('div', { class: 'qf-edit-btns' }, h('button', { type: 'button', class: 'btn small', 'data-id': 'contact.fact-done', onClick: close }, 'Done')));
+  return box;
+}
 export function quickFacts(c, dataId) {
-  const f = (k, v, id) => h('div', { class: 'qf', 'data-id': `${dataId}.${id}` }, h('dt', {}, k), h('dd', { dir: 'auto' }, v || NR()));
+  const f = (k, v, id, field) => {
+    const key = `${c.id}.${field}`;
+    const row = h('div', { class: 'qf' + (field ? ' qf-tap' : ''), 'data-id': `${dataId}.${id}` }, h('dt', {}, k), h('dd', { dir: 'auto' }, v || NR()));
+    if (!field) return row;
+    const wrap = h('div', { class: 'qf-wrap' }, row);
+    const open = () => { OPEN = key; wrap.append(factEditor(c, field, close)); row.classList.add('on'); };
+    const close = () => { if (OPEN === key) OPEN = null; wrap.querySelector('.qf-edit')?.remove(); row.classList.remove('on'); };
+    row.addEventListener('click', (e) => { if (e.target.closest('a')) return; wrap.querySelector('.qf-edit') ? close() : open(); });
+    if (OPEN === key) setTimeout(open, 0);
+    return wrap;
+  };
   const folder = c.folderId && D.folderById.get(c.folderId);
   return h('dl', { class: 'quick-facts', 'data-id': dataId },
-    f('Phone', c.phone ? h('a', { href: 'tel:' + c.phone.replace(/[^\d]/g, '') }, c.phone) : '', 'phone'),
-    f('Email', c.email ? h('a', { href: 'mailto:' + c.email }, c.email) : '', 'email'),
-    f('Speaks', list(c.languages), 'languages'),
-    f('Works with', list(c.communities), 'communities'),
-    f('Ages', list(c.ages), 'ages'),
-    f('Preferred way', c.preferredContact, 'preferred'),
+    f('Phone', c.phone ? h('a', { href: 'tel:' + c.phone.replace(/[^\d]/g, '') }, c.phone) : '', 'phone', 'phone'),
+    f('Email', c.email ? h('a', { href: 'mailto:' + c.email }, c.email) : '', 'email', 'email'),
+    f('Speaks', list(c.languages), 'languages', 'languages'),
+    f('Works with', list(c.communities), 'communities', 'communities'),
+    f('Ages', list(c.ages), 'ages', 'ages'),
+    f('Preferred way', c.preferredContact, 'preferred', 'preferredContact'),
     f('Last recorded', lastText(c), 'last'),
     f('Status', statusText(c), 'status'),
     folder ? f('Folder', folder.name, 'folder') : null);
@@ -80,6 +127,7 @@ function actions(c) {
     h('div', { class: 'pa-links' },
       link('contact.edit-btn', 'Edit', () => navigate(`/contacts/${encodeURIComponent(c.id)}/edit`)),
       link('contact.folder-btn', 'Move to folder', () => folderSheet(c)),
+      h('button', { class: 'linkish danger-text', type: 'button', 'data-id': 'contact.delete-btn', onClick: async () => { const m = await import('./contact-form.js'); m.deleteContact(c); } }, 'Delete'),
       // Single Mode only (My Profile). Shadchan Mode sends a single's profile from the shidduch (stage S5).
       isShadchan ? null : link('contact.share-btn', 'Send my profile', async () => { const m = await import('./profile-share.js'); m.openShare({ contactId: c.id }); })));
 }
@@ -140,11 +188,12 @@ function composer(c) {
   const date = h('input', { class: 'input date', type: 'date', value: d.date, 'data-id': 'contact.composer.date', 'aria-label': 'Date', onChange: (e) => { d.date = e.target.value; } });
   return h('section', { class: 'psec composer', 'data-id': 'contact.composer' },
     h('h3', { class: 'eyebrow' }, 'Record a conversation or note'),
-    text,
+    addMic(text, { dataId: 'contact.composer.mic', pend: d }),
     h('div', { class: 'composer-foot' }, type, date,
       h('button', { class: 'btn primary', type: 'button', 'data-id': 'contact.composer.save', onClick: async () => {
-        if (!d.text.trim()) { toast('Write a few words first'); text.focus(); return; }
-        await store.recordEvent({ contactIds: [c.id], type: d.type === '_unknown' ? '' : d.type, text: d.text, at: atFromDate(d.date) });
+        if (!d.text.trim() && !d.audio?.length) { toast('Write a few words or record a voice note first'); text.focus(); return; }
+        const audioIds = await savePending(d, { contactId: c.id });
+        await store.recordEvent({ contactIds: [c.id], type: d.type === '_unknown' ? '' : d.type, text: d.text.trim() || 'Voice note', at: atFromDate(d.date), audioIds });
         S.drafts[c.id] = { text: '', type: '_unknown', date: today() };
         toast('Saved to conversation history');
       } }, 'Save')),
@@ -180,14 +229,15 @@ export function eventItem(e, c, latest) {
       h('span', { class: 'via' }, store.eventTypeLabel(e.type)),
       latest ? h('span', { class: 'chip' }, 'Latest') : null,
       h('time', { datetime: e.at }, dateOnly(e.at))),
-    h('p', { dir: 'auto' }, e.text),
+    e.audioIds?.length && e.text === 'Voice note' ? null : h('p', { dir: 'auto' }, e.text),
+    voiceChips(e.audioIds, 'contact.event.voice'),
     others.length ? h('div', { class: 'note' }, 'Also linked: ' + others.join(', ')) : null,
     h('div', { class: 'tl-actions' },
       e.noteId ? h('a', { class: 'linkish', href: `#/home/note/${encodeURIComponent(e.noteId)}`, 'data-id': 'contact.event.home-note' }, 'Open Home note') : null,
       h('button', { class: 'linkish', type: 'button', 'data-id': 'contact.event.edit', onClick: () => eventSheet(e) }, 'Edit'),
       h('button', { class: 'linkish danger-text', type: 'button', 'data-id': 'contact.event.delete', onClick: async () => {
         if (await confirmDialog({ title: 'Delete this entry?', text: 'It disappears from every place it is linked to.', ok: 'Delete', danger: true, dataId: 'contact.event.delete-dialog' })) {
-          await store.events.remove(e.id); toast('Entry deleted');
+          await store.asOne(async () => { await removeAudio(e.audioIds); await store.events.remove(e.id); }); toast('Entry deleted');
         }
       } }, 'Delete')));
 }

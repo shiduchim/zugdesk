@@ -57,7 +57,7 @@ export async function render(root) {
         prefs.showLabels, (v) => { store.setPref('showLabels', v); toast(v ? 'Labels on — tap one to copy its name' : 'Labels off'); })),
 
     section('Claude instructions', 'settings.claude-text',
-      h('p', { class: 'note' }, 'Write your call notes to Claude; it answers with one block you copy and add on Home with “Paste from AI”. One time only: in Claude make a Project called ZugDesk, then paste this text into the project’s instructions.'),
+      h('p', { class: 'note' }, 'Write your call notes to Claude; it answers with one block you copy and add on Home with “Paste” (or just paste it into New Note). One time only: in Claude make a Project called ZugDesk, then paste this text into the project’s instructions.'),
       h('p', { class: 'note' }, `Format ${FORMAT_VERSION}. When the app gets a new format, copy the text again and replace the old one in Claude.`),
       h('div', { class: 'btn-row' },
         h('button', { class: 'btn', type: 'button', 'data-id': 'settings.claude-copy', onClick: copyInstructions }, 'Copy the instructions')),

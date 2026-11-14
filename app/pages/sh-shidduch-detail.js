@@ -4,12 +4,14 @@
 // dates with both sides' answers and private feedback after each one, and one shared history.
 // Look: Single Mode's details page (shidduchim.css) plus the shs-… rules in singles.css.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, dock, swipeTabs, telLink } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, dock, swipeTabs, telLink, bubbles } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { statusOf, statusLabel, summaryLine } from './singles-data.js';
 import * as sd from './sh-shidduch-data.js';
 import { bar, barDim, endDialog, answerTag } from './sh-shidduch-parts.js';
 import { sendSheet } from './sh-send.js';
+import { addMic, savePending, voiceChips } from '../js/voice.js';
+const VP = {}; // voice recordings waiting for Save, per shidduch (memory only)
 
 const T = {
   gone: 'This shidduch is no longer saved.',
@@ -154,7 +156,7 @@ function overview(m) {
   const t = m.cur.t, idx = m.tries.length, live = sd.isOpen(t);
   const recent = m.cur.events.slice(0, 3);
   return [
-    stepLine(m),
+    roundPanel(m) || stepLine(m),
     t.phase === 'ended' ? h('div', { class: 'sh-endpanel', 'data-id': 'shidduch.ended' }, h('strong', { dir: 'auto' }, [T.endedBy(sd.whoEnded(t)), sd.monthYear(t.endedAt)].filter(Boolean).join(' · ')),
       t.endedReason ? h('p', { dir: 'auto' }, t.endedReason) : null) : null,
     t.phase === 'engaged' ? h('div', { class: 'sh-panel shs-engaged-panel', 'data-id': 'shidduch.engaged' },
@@ -184,7 +186,7 @@ function overview(m) {
     recent.length ? h('div', { class: 'sh-timeline', 'data-id': 'shidduch.recent' }, recent.map(logView)) : h('div', { class: 'note sh-emptyhistory' }, T.nothingYet),
     h('a', { class: 'linkish sh-notelink', href: '#' + path('history'), 'data-id': 'shidduch.all-history' }, T.allHistory),
     h('div', { class: 'shs-foot' },
-      live ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.end', onClick: () => endDialog(m) }, T.end) : null,
+      live ? h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'shidduch.end', onClick: () => endDialog(m) }, T.end) : null,
       h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'shidduch.delete', onClick: () => remove(m) }, T.del)),
   ];
 }
@@ -198,24 +200,18 @@ function stepLine(m) {
     h('div', { class: 'shs-step-text', dir: 'auto' }, st.kind === 'move' ? h('strong', {}, T.yourMove) : null, st.text),
     st.ask || st.date || st.tell ? h('div', { class: 'shs-step-acts' },
       st.ask && m.round.kind === 'offer' ? st.ask.map(s => btn(T.send(sd.talkName(m, s)), 'shidduch.send', () => sendSheet(m, s))) : null,
-      st.ask && m.round.kind !== 'offer' ? btn(T.markAsked(st.ask), 'shidduch.mark-asked', () => markAsked(m, st.ask)) : null,
       st.date ? btn(T.arrangeN(st.date), 'shidduch.step-arrange', openDateForm) : null,
       (st.tell || []).map(s => btn(T.told(sd.talkName(m, s)), 'shidduch.told-' + s, async () => { const r = await sd.markTold(m, s); if (r) undoToast(T.toldToast, r); }))) : null,
     null);
 }
 
-async function markAsked(m, sides) {
-  let cur = m, first = null;
-  for (const s of sides) { const r = await sd.setAnswer(cur, s, 'asked'); if (r) { first = first || r; cur = (await sd.loadOne(m.o.id)) || cur; } }
-  if (first) undoToast(T.answerSaved(sides.length === 2 ? T.bothSides : sd.T.side[sides[0]]), first);
-}
-
 // The answer of one side in the round that is open now. Used on Overview and on the Dates tab.
+// One tap per answer (owner: no dropdown). The chosen one is filled in its colour.
 function answerSelect(m, side, dataId) {
-  const v = sd.ans(m.round.rec, side);
-  return h('select', { class: 'input sh-answerselect ' + sd.answerClass(v), id: dataId, 'data-id': dataId, disabled: !sd.isOpen(m.cur.t) || null, 'aria-label': `${sd.T.side[side]}: ${sd.fullName(m, side)}`,
-    onChange: (e) => selected(m, side, e.target.value) },
-    sd.ANSWERS.map(a => h('option', { value: a, selected: v === a || null }, sd.answerLabel(a))));
+  const v = sd.ans(m.round.rec, side), off = !sd.isOpen(m.cur.t);
+  return h('div', { class: 'sh-ans-row', role: 'radiogroup', id: dataId, 'data-id': dataId, 'aria-label': `${sd.T.side[side]}: ${sd.fullName(m, side)}` },
+    sd.ANSWERS.map(a => h('button', { type: 'button', class: 'sh-ans ' + (v === a ? 'on ' + sd.answerClass(a) : ''), 'aria-pressed': v === a ? 'true' : 'false', disabled: off || null,
+      'data-id': dataId + '.' + (a || 'none'), onClick: () => { if (v !== a) selected(m, side, a); } }, sd.answerLabel(a))));
 }
 async function selected(m, side, value) {
   if (value === 'no') { const ok = await endDialog(m, { side }); if (!ok) draw(true); return; }
@@ -244,13 +240,34 @@ function sideCard(m, side) {
     p ? h('div', { class: 'sh-persmeta shs-talk', dir: 'auto', 'data-id': 'shidduch.talk-to' }, T.talkTo,
       talk ? [h('strong', {}, talk.self ? (side === 'guy' ? sd.T.himself : sd.T.herself) : talk.name), talk.number ? [' ', telLink(talk.number, 'shidduch.talk-tel')] : null] : h('span', { class: 'muted' }, T.talkNone)) : null,
     t.phase === 'engaged' || (r.upcoming && !sd.isOpen(t)) ? null // finished with nothing asked in this round: no answer to show
-      : r.kind === 'date' && r.upcoming ? h('div', { class: 'note shs-later' }, T.answersLater(r.n))
+      : r.kind === 'date' ? null // while dating, answers live in the "After Date" box (roundPanel)
       : h('div', { class: 'sh-answerfield' },
         h('label', { class: 'sh-answerlabel', for: 'shidduch.answer-' + side }, r.kind === 'date' && !r.upcoming ? T.answerAfter(r.n) : T.answer),
         answerSelect(m, side, 'shidduch.answer-' + side),
         r.kind === 'offer' && sd.isOpen(t) && !x.answer && p && !(m.step.ask || []).includes(side) ? h('button', { type: 'button', class: 'btn small shs-suggest', 'data-id': 'shidduch.suggest-' + side, onClick: () => sendSheet(m, side) }, T.suggestTo(sd.T.sideLow[side])) : null,
         meta ? h('div', { class: 'shs-meta', dir: 'auto', 'data-id': 'shidduch.answer-meta' }, meta) : null),
     told ? h('div', { class: 'shs-meta' + ((t.told || {})[side] ? '' : ' shs-untold'), dir: 'auto', 'data-id': 'shidduch.told-state' }, `${sd.talkName(m, side)} ${told}`) : null);
+}
+
+// While dating: ONE box at the top of Overview and Dates for the latest date (Fable review, owner approved).
+// The step line ("Your move…") is its first line; each side gets one-tap answers. Nothing else shows answers.
+function roundPanel(m) {
+  const r = m.round, t = m.cur.t;
+  if (r.kind !== 'date' || t.phase === 'engaged' || t.phase === 'ended') return null;
+  if (r.upcoming) return h('div', { class: 'sh-panel shs-afterbox', 'data-id': 'shidduch.round' },
+    h('div', { class: 'shs-afterbox-head' }, `Date ${r.n} · ${sd.whenNice(r.rec.when)}`), stepLine(m) || h('div', { class: 'note' }, T.answersLater(r.n)));
+  const side = (s) => {
+    const x = sd.sideOf(r.rec, s);
+    const meta = [x.askedAt && (x.answer === 'asked' || x.answer === 'thinking') ? T.asked(sd.agoShort(x.askedAt)) : null,
+      x.answeredAt && x.answer !== 'asked' && x.answer ? T.answered(sd.agoShort(x.answeredAt)) : null,
+      x.toldBy ? T.toldBy(x.toldBy) : null].filter(Boolean).join(' · ');
+    return h('div', { class: 'shs-afterbox-side', 'data-id': 'shidduch.round-' + s },
+      h('div', { class: 'shs-afterbox-who', dir: 'auto' }, h('strong', {}, sd.T.side[s]), ' · ' + (sd.fullName(m, s).split(' ')[0] || ''), meta ? h('span', { class: 'shs-meta' }, meta) : null),
+      answerSelect(m, s, 'shidduch.answer-' + s));
+  };
+  return h('div', { class: 'sh-panel shs-afterbox', 'data-id': 'shidduch.round' },
+    h('div', { class: 'shs-afterbox-head' }, T.answerAfter(r.n), r.rec.when ? ' · ' + sd.whenNice(r.rec.when).split(' · ')[0] : ''),
+    stepLine(m), side('guy'), side('girl'));
 }
 
 // Shown right after Thinking or Yes was chosen: who told me (the Talk to person is one tap).
@@ -283,7 +300,8 @@ async function remove(m) {
 function logView(e) {
   return h('div', { class: 'sh-log', 'data-id': 'shidduch.history-item' }, h('span', { class: 'sh-dot' }),
     h('div', { class: 'sh-logbody' },
-      h('div', { class: 'sh-logtitle', dir: 'auto' }, e.text),
+      e.audioIds?.length && e.text === 'Voice note' ? null : h('div', { class: 'sh-logtitle', dir: 'auto' }, e.text),
+      voiceChips(e.audioIds, 'shidduch.history-voice'),
       h('div', { class: 'sh-logmeta' }, sd.dateTime(e.at), e.eventAt && e.eventAt.slice(0, 16) !== (e.at || '').slice(0, 16) ? T.happened(sd.whenNice(e.eventAt)) : ''),
       e.source ? h('div', { class: 'sh-logextra', dir: 'auto' }, T.source(e.source)) : null));
 }
@@ -296,8 +314,9 @@ function datesView(m) {
       h('div', {}, h('h2', {}, T.dates), h('div', { class: 'note' }, T.datesNote)),
       live ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.arrange', onClick: openDateForm }, T.arrange) : null),
     m.cur.t.phase === 'ended' ? h('p', { class: 'note' }, T.datesEnded) : null,
-    U.dateEdit !== null ? dateForm(m) : null,
+    roundPanel(m),
     U.reporter ? reporterBox(m) : null,
+    U.dateEdit !== null ? dateForm(m) : null,
     list.length ? h('div', { class: 'shs-dates', 'data-id': 'shidduch.dates-list' }, list.map(d => dateCard(m, d)))
       : h('div', { class: 'sh-blank plain' }, h('h3', {}, T.noDates), h('p', {}, T.noDatesHint)),
     h('div', { class: 'note' }, T.barNote),
@@ -309,27 +328,27 @@ function dateCard(m, d) {
   const n = sd.dateNum(d), r = m.round, live = sd.isOpen(m.cur.t);
   const current = r.kind === 'date' && r.rec.id === d.id && !r.upcoming;
   const behind = d.status === 'Happened' || (d.status === 'Arranged' && current);
-  const fb = sd.SIDES.map(s => [s, sd.sideOf(d, s).feedback]).filter(x => x[1]);
+  const fb = sd.SIDES.map(s => [s, sd.sideOf(d, s).feedback, sd.sideOf(d, s).audioIds]).filter(x => x[1] || x[2]?.length);
   return h('div', { class: 'shs-date' + (d.status === 'Cancelled' ? ' shs-dim' : ''), 'data-id': 'shidduch.date' },
     h('div', { class: 'shs-date-head' },
       h('span', { class: 'sh-calendar' }, n),
       h('span', { class: 'sh-dateinfo' }, h('strong', {}, T.dateTitle(n, d.status)), h('small', { dir: 'auto' }, sd.whenNice(d.when), d.where ? ' · ' + d.where : '')),
       live ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.date-edit', onClick: () => { U.dateEdit = d.id; draw(true).then(showForm); } }, T.editDate) : null),
     behind ? h('div', { class: 'shs-after', 'data-id': 'shidduch.after-date' },
-      current && live ? sd.SIDES.map(s => h('label', { class: 'shs-after-side' }, h('span', { class: 'sh-answerlabel' }, sd.T.side[s]), answerSelect(m, s, 'shidduch.after-' + s)))
-        : h('div', { class: 'shs-tags' }, answerTag(d, 'guy'), answerTag(d, 'girl'))) : null,
-    fb.length ? h('div', { class: 'shs-feedback', 'data-id': 'shidduch.date-feedback' }, fb.map(([s, text]) => h('p', { dir: 'auto' }, h('span', { class: 'sh-answerlabel' }, sd.T.side[s] + ' '), text))) : null,
+      h('div', { class: 'shs-tags' }, answerTag(d, 'guy'), answerTag(d, 'girl'))) : null,
+    fb.length ? h('div', { class: 'shs-feedback', 'data-id': 'shidduch.date-feedback' }, fb.map(([s, text, aIds]) => h('div', {}, h('p', { dir: 'auto' }, h('span', { class: 'sh-answerlabel' }, sd.T.side[s] + ' '), text || ''), voiceChips(aIds, 'shidduch.date-voice')))) : null,
     behind ? h('button', { type: 'button', class: 'linkish', 'data-id': 'shidduch.feedback-btn', onClick: () => feedbackSheet(m, d) }, T.feedback) : null);
 }
 
 async function feedbackSheet(m, d) {
+  const pg = {}, pw = {}; // voice notes per side, saved with Save
   const box = (s) => { const a = h('textarea', { class: 'input', rows: 3, dir: 'auto', 'data-id': 'sh-feedback.' + s }); a.value = sd.sideOf(d, s).feedback || ''; return a; };
   const guy = box('guy'), girl = box('girl');
   await sheet({ title: T.feedbackTitle(sd.dateNum(d)), dataId: 'sh-feedback',
     body: [h('p', { class: 'note' }, T.feedbackNote),
-      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.guy, sd.fullName(m, 'guy'))), guy),
-      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.girl, sd.fullName(m, 'girl'))), girl)],
-    actions: [{ id: 'save', label: T.saveSource, primary: true, run: async () => { await sd.saveFeedback(d, { guy: guy.value, girl: girl.value }); toast(T.feedbackSaved); } }] });
+      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.guy, sd.fullName(m, 'guy'))), addMic(guy, { dataId: 'sh-feedback.guy-mic', pend: pg })),
+      h('div', { class: 'field' }, h('label', { dir: 'auto' }, T.feedbackOf(sd.T.side.girl, sd.fullName(m, 'girl'))), addMic(girl, { dataId: 'sh-feedback.girl-mic', pend: pw }))],
+    actions: [{ id: 'save', label: T.saveSource, primary: true, run: async () => { await sd.saveFeedback(d, { guy: guy.value, girl: girl.value, audio: { guy: await savePending(pg), girl: await savePending(pw) } }); toast(T.feedbackSaved); } }] });
 }
 
 function dateForm(m) {
@@ -337,19 +356,19 @@ function dateForm(m) {
   const d = isNew ? null : m.cur.dates.find(x => x.id === U.dateEdit);
   if (!isNew && !d) { U.dateEdit = null; return null; }
   const n = isNew ? Math.max(0, ...m.cur.dates.map(sd.dateNum)) + 1 : sd.dateNum(d);
-  const when = h('input', { class: 'input', type: 'datetime-local', required: true, id: 'shs-date-when', value: sd.toLocalInput(d?.when), 'data-id': 'shidduch.date-when' });
+  const when = h('input', { class: 'input when-big', type: 'datetime-local', id: 'shs-date-when', value: sd.toLocalInput(d?.when), 'data-id': 'shidduch.date-when' });
   const where = h('input', { class: 'input', id: 'shs-date-where', placeholder: T.wherePh, dir: 'auto', value: d?.where || '', 'data-id': 'shidduch.date-where' });
-  const status = h('select', { class: 'input', id: 'shs-date-status', 'data-id': 'shidduch.date-status' }, sd.DATE_STATUSES.map(x => h('option', { value: x, selected: x === (d?.status || 'Arranged') || null }, x)));
+  let stat = d?.status || 'Arranged';
+  const status = bubbles({ options: sd.DATE_STATUSES.map(x => [x, x]), selected: [stat], multi: false, dataId: 'shidduch.date-status', onChange: (x) => { stat = x || stat; } });
   const fld = (label, el) => h('div', { class: 'field' }, h('label', { for: el.id }, label), el);
   return h('form', { class: 'sh-formbox', 'data-id': 'shidduch.date-form', onSubmit: async (e) => {
     e.preventDefault();
-    if (!when.value) { toast(T.whenMissing); when.focus(); return; }
-    const r = await sd.saveDate(m, d, { when: when.value, where: where.value, status: status.value });
+    const r = await sd.saveDate(m, d, { when: when.value, where: where.value, status: stat });
     U.dateEdit = null;
     if (r) undoToast(T.dateSaved, r); else draw(true);
   } },
     h('h3', {}, isNew ? T.formNew + ` · ${sd.T.stage.date(n)}` : T.formEdit(n)),
-    h('div', { class: 'sh-form-grid' }, h('div', { class: 'sh-form-row' }, fld(T.when, when), fld(T.where, where)), fld(T.status, status)),
+    h('div', { class: 'sh-form-grid' }, h('div', { class: 'sh-form-row' }, fld(T.when + ' (if known)', when), fld(T.where + ' (if known)', where)), h('div', { class: 'field' }, h('label', {}, T.status), status)),
     isNew && sd.dateMarksYes(m) ? h('p', { class: 'note', 'data-id': 'shidduch.date-marks-yes' }, T.marksYes) : null,
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduch.date-cancel', onClick: () => { U.dateEdit = null; draw(true); } }, T.cancel),
@@ -375,15 +394,16 @@ function historyView(m) {
 }
 
 function noteForm(m) {
-  const text = h('textarea', { class: 'input', id: 'shs-note', rows: 3, dir: 'auto', required: true, placeholder: T.notePh, 'data-id': 'shidduch.note-text', onInput: (e) => { U.noteText = e.target.value; } }, U.noteText);
+  const text = h('textarea', { class: 'input', id: 'shs-note', rows: 3, dir: 'auto', placeholder: T.notePh, 'data-id': 'shidduch.note-text', onInput: (e) => { U.noteText = e.target.value; } }, U.noteText);
   return h('form', { class: 'sh-note-form', 'data-id': 'shidduch.note-form', onSubmit: async (e) => {
     e.preventDefault();
-    if (!text.value.trim()) { toast(T.noteEmpty); text.focus(); return; }
-    const r = await sd.addNote(m, text.value);
+    const pend = VP[m.o.id] || {};
+    if (!text.value.trim() && !pend.audio?.length) { toast(T.noteEmpty); text.focus(); return; }
+    const r = await sd.addNote(m, text.value.trim() || 'Voice note', await savePending(pend));
     U.noteOpen = false; U.noteText = '';
     undoToast(T.noteSaved, r);
   } },
-    h('label', { class: 'sh-formlabel', for: 'shs-note' }, T.newNote), text,
+    h('label', { class: 'sh-formlabel', for: 'shs-note' }, T.newNote), addMic(text, { dataId: 'shidduch.note-mic', pend: VP[m.o.id] || (VP[m.o.id] = {}) }),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduch.note-cancel', onClick: () => { U.noteOpen = false; draw(true); } }, T.cancel),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduch.note-save' }, T.saveNote)));

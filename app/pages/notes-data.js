@@ -3,6 +3,7 @@
 // Home, in every linked contact's and person's history, and in My Profile → Notes (me: true).
 // Nothing is copied: editing an entry anywhere edits the one record.
 import * as store from '../js/store.js';
+import { removeAudio } from '../js/voice.js';
 import { h, toast, sheet, promptText } from '../js/ui.js';
 
 export const COLORS = [['plain', 'Default'], ['blue', 'Blue'], ['yellow', 'Yellow'], ['peach', 'Peach'], ['green', 'Green'], ['lilac', 'Lilac']];
@@ -33,20 +34,20 @@ export function linksOf(n, D) {
 // ---------- writing ----------
 const titleFrom = (text) => (text.trim().split('\n')[0] || '').slice(0, 60).trim() || 'Untitled note';
 
-export async function createNote({ title = '', text, color = 'plain', pinned = false, contactIds = [], personIds = [], me = false, demo = false }) {
+export async function createNote({ title = '', text, audioIds = [], color = 'plain', pinned = false, contactIds = [], personIds = [], me = false, demo = false }) {
   const at = store.now();
   const note = await store.notes.save({ title: title.trim() || titleFrom(text), color, pinned, contactIds, personIds, me, ...(demo ? { demo } : {}) });
-  const entry = await store.events.save({ noteId: note.id, type: 'note', contactIds, personIds, text: text.trim(), at });
+  const entry = await store.events.save({ noteId: note.id, type: 'note', contactIds, personIds, text: text.trim(), at, ...(audioIds.length ? { audioIds } : {}) });
   return { note, entry };
 }
 
 // A dated update never overwrites earlier entries.
-export async function appendEntry(note, text, { contactIds, personIds } = {}) {
+export async function appendEntry(note, text, { contactIds, personIds, audioIds = [] } = {}) {
   let n = note;
   const cIds = [...new Set([...(note.contactIds || []), ...(contactIds || [])])];
   const pIds = [...new Set([...(note.personIds || []), ...(personIds || [])])];
   if (cIds.length !== (note.contactIds || []).length || pIds.length !== (note.personIds || []).length) n = await setLinks(note, cIds, pIds, { quiet: false });
-  const entry = await store.events.save({ noteId: n.id, type: 'note', contactIds: n.contactIds, personIds: n.personIds, text: text.trim(), at: store.now() });
+  const entry = await store.events.save({ noteId: n.id, type: 'note', contactIds: n.contactIds, personIds: n.personIds, text: text.trim(), at: store.now(), ...(audioIds.length ? { audioIds } : {}) });
   n = await store.notes.save({ ...n });
   return { note: n, entry };
 }
@@ -74,7 +75,7 @@ export async function togglePin(note) { return store.notes.save({ ...note, pinne
 
 export function deleteNote(note) {
   return store.asOne(async () => {
-    for (const e of await store.events.list()) if (e.noteId === note.id) await store.events.remove(e.id);
+    for (const e of await store.events.list()) if (e.noteId === note.id) { await removeAudio(e.audioIds); await store.events.remove(e.id); }
     for (const f of await store.followUps.list()) if (f.noteId === note.id) await store.unlink(store.followUps, f, 'noteId', note.id);
     await store.notes.remove(note.id);
   });
@@ -85,7 +86,7 @@ export async function deleteNotes(notes) {
   // Shadchan Mode: one by one, so each note is its own line in Recently deleted.
   if (store.SOFT_DELETE) { for (const n of notes) await deleteNote(n); return; }
   const ids = new Set(notes.map(n => n.id));
-  for (const e of await store.events.list()) if (ids.has(e.noteId)) await store.events.remove(e.id);
+  for (const e of await store.events.list()) if (ids.has(e.noteId)) { await removeAudio(e.audioIds); await store.events.remove(e.id); }
   for (const f of await store.followUps.list()) if (ids.has(f.noteId)) await store.followUps.save({ ...f, noteId: null });
   for (const id of ids) await store.notes.remove(id);
 }

@@ -7,6 +7,8 @@ import * as store from '../js/store.js';
 import { h, icon, toast, sheet, bubbles, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import * as sh from './shidduch-data.js';
+import { addMic, savePending, voiceChips } from '../js/voice.js';
+const VP = {}; // voice recordings waiting for Save, per shidduch (memory only)
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const S = { lane: 'offers', menu: null, updateId: null, updateText: '', open: null }; // open: the one card showing quick actions // survives leaving the page
@@ -161,16 +163,17 @@ function expandedCard(m) {
 }
 
 function updateForm(m) {
-  const text = h('textarea', { class: 'input', rows: 3, dir: 'auto', required: true, placeholder: 'Spoke to the shadchan, checked references, got an answer…', 'data-id': 'shidduchim.update-text', onInput: (e) => { S.updateText = e.target.value; } }, S.updateText);
+  const text = h('textarea', { class: 'input', rows: 3, dir: 'auto', placeholder: 'Spoke to the shadchan, checked references, got an answer…', 'data-id': 'shidduchim.update-text', onInput: (e) => { S.updateText = e.target.value; } }, S.updateText);
   return h('form', { class: 'sh-quick-update', 'data-id': 'shidduchim.update-form', onSubmit: async (e) => {
     e.preventDefault();
-    if (!text.value.trim()) { toast('Write a few words first'); text.focus(); return; }
-    const r = await sh.addNote(m, text.value);
+    const pend = VP[m.o.id] || {};
+    if (!text.value.trim() && !pend.audio?.length) { toast('Write a few words or record a voice note first'); text.focus(); return; }
+    const r = await sh.addNote(m, text.value.trim() || 'Voice note', await savePending(pend));
     S.updateId = null; S.updateText = '';
     toast('Dated update saved in History', 2600, { label: 'Undo', run: () => r.undo().then(() => toast('Last change undone')) });
   } },
     h('label', { for: 'sh-update-' + m.o.id }, 'What happened? ', h('span', { class: 'note' }, 'Saved with today’s date and time')),
-    Object.assign(text, { id: 'sh-update-' + m.o.id }),
+    addMic(Object.assign(text, { id: 'sh-update-' + m.o.id }), { dataId: 'shidduchim.update-mic', pend: VP[m.o.id] || (VP[m.o.id] = {}) }),
     h('div', { class: 'sh-formfoot' },
       h('button', { type: 'button', class: 'btn', 'data-id': 'shidduchim.update-cancel', onClick: () => { S.updateId = null; draw(true); } }, 'Cancel'),
       h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shidduchim.update-save' }, 'Save update')));

@@ -523,9 +523,9 @@ export async function eventsForContact(contactId) {
   const list = await events.byIndex('contactIds', contactId);
   return list.sort((a, b) => (b.at || '').localeCompare(a.at || ''));
 }
-export async function recordEvent({ id, contactIds = [], personIds = [], type = '', text = '', at }) {
+export async function recordEvent({ id, contactIds = [], personIds = [], type = '', text = '', at, audioIds }) {
   const existing = id ? await events.get(id) : null;
-  return events.save({ ...(existing || {}), id, contactIds, personIds, type, text: text.trim(), at: at || now() });
+  return events.save({ ...(existing || {}), id, contactIds, personIds, type, text: text.trim(), at: at || now(), ...(audioIds ? { audioIds } : {}) });
 }
 export async function followUpsForContact(contactId) {
   const list = await followUps.byIndex('contactId', contactId);

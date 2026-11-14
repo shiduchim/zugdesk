@@ -5,6 +5,7 @@
 // ShidduchTry = one attempt; StageEvent = one history line; DateEvent = one date.
 // Data always goes through store.js; pages never keep their own copies.
 import * as store from '../js/store.js';
+import { removeAudio } from '../js/voice.js';
 
 export const LANES = [['offers', 'Offers'], ['progress', 'In Progress'], ['ended', 'Ended']];
 export const ANSWERS = ['Yes', 'Thinking', 'No'];
@@ -125,8 +126,8 @@ async function touch(o, t, lane) {
   const o2 = await store.offers.save({ ...o, status: lane || laneOf(t), updatedAt: at });
   return o2;
 }
-async function log(t, text, { source = '', eventAt = null, kind = 'note' } = {}) {
-  return store.stageEvents.save({ tryId: t.id, offerId: t.offerId, text, source, eventAt, kind, at: store.now() });
+async function log(t, text, { source = '', eventAt = null, kind = 'note', audioIds = [] } = {}) {
+  return store.stageEvents.save({ tryId: t.id, offerId: t.offerId, text, source, eventAt, kind, ...(audioIds.length ? { audioIds } : {}), at: store.now() });
 }
 
 // Snapshot for Undo on quick list changes: restores the try + offer and removes history
@@ -138,7 +139,7 @@ export async function snapshot(m) {
   return async () => {
     await store.offers.save(before.o);
     await store.tries.save(before.t);
-    for (const e of await store.stageEvents.byIndex('tryId', before.t.id)) if (!evIds.has(e.id)) await store.stageEvents.remove(e.id);
+    for (const e of await store.stageEvents.byIndex('tryId', before.t.id)) if (!evIds.has(e.id)) { await removeAudio(e.audioIds); await store.stageEvents.remove(e.id); }
     for (const d of await store.dateEvents.byIndex('tryId', before.t.id)) if (!dtIds.has(d.id)) await store.dateEvents.remove(d.id);
   };
 }
@@ -218,24 +219,24 @@ export async function setShadchan(m, contactId) {
 }
 
 // Add update / Add note: one dated and timed line on the current try's history.
-export async function addNote(m, text) {
+export async function addNote(m, text, audioIds = []) {
   const t = m.cur.t;
   const undo = await snapshot(m);
-  await log(t, text.trim(), { kind: 'note' });
+  await log(t, text.trim(), { kind: 'note', audioIds });
   await touch(m.o, t);
   return { undo };
 }
 
 // Arrange or edit a date. A changed status/time/place writes exactly one history line.
-export async function saveDate(m, d, { when, where, status, feedback }) {
+export async function saveDate(m, d, { when, where, status, feedback, audioIds = [] }) {
   const t = m.cur.t;
   const isNew = !d;
   const n = isNew ? Math.max(0, ...m.cur.dates.map(dateNum)) + 1 : dateNum(d);
-  const rec = await store.dateEvents.save({ ...(d || { tryId: t.id, offerId: t.offerId, n }), when, where: where.trim(), status, feedback: feedback.trim(), at: d?.at || store.now() });
+  const rec = await store.dateEvents.save({ ...(d || { tryId: t.id, offerId: t.offerId, n }), when, where: where.trim(), status, feedback: feedback.trim(), audioIds: [...(d?.audioIds || []), ...audioIds], at: d?.at || store.now() });
   const changed = isNew || d.status !== status || d.when !== when || d.where !== where.trim();
   if (changed) {
     const verb = status.toLowerCase();
-    const text = isNew ? `Date ${n} ${verb}${status === 'Arranged' ? ' for ' + whenNice(when) : ''}.`
+    const text = isNew ? `Date ${n} ${verb}${status === 'Arranged' && when ? ' for ' + whenNice(when) : ''}.`
       : `Date ${n} ${verb}${d.when !== when ? ', schedule updated' : ''}.`;
     await log(t, text, { kind: 'date', eventAt: status === 'Happened' ? when : null });
   }

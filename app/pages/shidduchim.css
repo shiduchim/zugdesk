@@ -198,3 +198,23 @@ a.sh-who:hover{text-decoration:underline}
 .sh-expand-btn.open svg{transform:rotate(-90deg)}
 .sh-match .sh-card-names{padding-right:30px}
 .sh-seg.next{opacity:.4}
+/* Date "When": bigger, centred in its box */
+.cal-btn.when-big{justify-content:center;font-size:var(--font-lg);font-weight:500}
+/* One-tap answers (Shadchan Mode). Not .sh-answers: that list-card class blocks taps. */
+.sh-ans-row{display:flex;flex-wrap:wrap;gap:6px}
+.sh-ans{min-height:var(--bubble-height);padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-pill);background:var(--surface);color:var(--text);font-size:var(--font-sm)}
+.sh-ans.on{font-weight:600;border-color:currentColor}
+.sh-ans:disabled{opacity:.6}
+.sh-ans.on.yes{background:var(--sh-yes-bg);color:var(--sh-yes-text);border-color:var(--sh-yes-edge)}
+.sh-ans.on.no{background:var(--sh-no-bg);color:var(--sh-no-text);border-color:var(--sh-no-edge)}
+.sh-ans.on.thinking{background:var(--sh-think-bg);color:var(--sh-think-text);border-color:var(--sh-think-edge)}
+.sh-ans.on.waiting{background:var(--sh-wait-bg);color:var(--sh-wait-text);border-color:var(--sh-wait-edge)}
+/* "After Date N" box (Shadchan Mode, while dating) */
+.shs-afterbox{display:flex;flex-direction:column;gap:10px}
+.shs-afterbox-head{font-family:var(--font-mono);font-size:var(--font-xs);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.shs-afterbox .shs-step{margin:0}
+.shs-afterbox-side{display:flex;flex-direction:column;gap:6px}
+.shs-afterbox-who{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
+.shs-afterbox-who .shs-meta{margin:0}
+.shs-afterbox .sh-ans-row{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.shs-afterbox .sh-ans{padding:0 2px;font-size:var(--font-xs);min-height:40px}

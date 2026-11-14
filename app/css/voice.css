@@ -1,0 +1,19 @@
+/* Voice notes (app/js/voice.js). Tokens only. */
+.voice-field{display:flex;flex-direction:column;gap:6px}
+.voice-box{position:relative}
+.voice-box textarea.has-mic{padding-right:44px;width:100%}
+.voice-mic{position:absolute;right:6px;bottom:6px;width:32px;height:32px;display:grid;place-items:center;border:0;background:transparent;color:var(--muted);border-radius:var(--radius);cursor:pointer}
+.voice-mic:active{background:var(--surface-2)}
+.voice-mic svg{width:20px;height:20px}
+.voice-bar{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface-2)}
+.voice-dot{width:10px;height:10px;border-radius:var(--radius-round);background:var(--danger);animation:voice-blink 1s infinite}
+@keyframes voice-blink{50%{opacity:.3}}
+.voice-grow{flex:1}
+.voice-bar .btn svg{width:14px;height:14px}
+.voice-chips{display:flex;flex-wrap:wrap;gap:6px}
+.voice-chips:empty{display:none}
+.voice-chip{display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 4px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--surface-2);font-size:var(--font-sm)}
+.voice-play{width:28px;height:28px;display:grid;place-items:center;border:0;border-radius:var(--radius);background:var(--accent);color:var(--accent-text);cursor:pointer}
+.voice-play svg{width:14px;height:14px}
+.voice-mic[hidden]{display:none}
+.has-mic > .ed-box{padding-right:44px}

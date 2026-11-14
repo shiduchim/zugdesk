@@ -257,3 +257,4 @@
 .home-mode-toggle{display:inline-flex;flex:none;gap:var(--mode-toggle-gap);padding:var(--mode-toggle-pad);background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-pill)}
 .home-mode-opt{min-height:var(--mode-toggle-height);padding:0 var(--mode-toggle-x);border:0;border-radius:var(--radius-pill);background:transparent;color:var(--muted);font:inherit;font-size:var(--mode-toggle-font);font-weight:600;line-height:1;cursor:pointer}
 .home-mode-opt.on{background:var(--accent);color:var(--accent-text)}
+.ed-head .ed-title{flex:1;min-width:0}
