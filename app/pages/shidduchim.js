@@ -101,8 +101,32 @@ function statusRow(m, mode) {
   const compactAnswers = mode === 'compact' && (st === 'ended' || !sh.bothYes(t));
   if (compactAnswers) return h('div', { class: 'sh-answers', 'aria-label': 'Current answers' }, answerBubble(m, 'me'), answerBubble(m, 'them'), st === 'ended' ? h('span', { class: 'sh-ended-word' }, 'Ended') : null);
   if (st === 'ended') return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage ended' }, 'Ended'));
+  if (st === 'progress') { // owner request: every In Progress card shows where it stands, both answers, and what is next
+    const where = progressWhere(m);
+    return [h('div', { class: 'sh-card-sub', 'data-id': 'shidduchim.where' }, h('span', { class: 'sh-stage dating' }, where[0]), where[1] ? h('span', {}, '·') : null, where[1] ? h('span', { dir: 'auto' }, where[1]) : null),
+      mode === 'compact' ? h('div', { class: 'sh-answers', 'aria-label': 'Current answers' }, answerBubble(m, 'me'), answerBubble(m, 'them')) : null];
+  }
   const next = sh.summary(t, m.cur.dates).next;
   return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage' + (stg.startsWith('Date') ? ' dating' : '') }, stg), next ? h('span', {}, '·') : null, next ? h('span', { dir: 'auto' }, next) : null);
+}
+
+// In Progress: [stage, detail] for the first line, and the one "what is next" line under the bar.
+const upcomingDate = (m) => m.cur.dates.filter(d => d.status === 'Arranged').sort((a, b) => (a.when || '').localeCompare(b.when || ''))[0];
+const lastHappened = (m) => Math.max(0, ...m.cur.dates.filter(d => d.status === 'Happened').map(sh.dateNum));
+function progressWhere(m) {
+  const up = upcomingDate(m);
+  if (up) return [`Date ${sh.dateNum(up)}`, sh.whenNice(up.when)];
+  const n = lastHappened(m);
+  return n ? [`After Date ${n}`, ''] : [sh.stageWord(m.cur.t, m.cur.dates), ''];
+}
+function progressNext(m) {
+  const t = m.cur.t;
+  if (upcomingDate(m)) return 'Nothing to do until the date';
+  const mine = t.myAnswer === 'Yes', theirs = t.theirAnswer === 'Yes';
+  if (!mine && !theirs) return 'Waiting for both answers';
+  if (!mine) return 'Your answer is needed';
+  if (!theirs) return `Waiting for ${sh.personFirst(m)}'s answer`;
+  return `Arrange Date ${lastHappened(m) + 1}`;
 }
 
 function cardSummary(m, mode) {
@@ -115,6 +139,7 @@ function cardSummary(m, mode) {
         m.tries.length > 1 ? h('span', { class: 'sh-try' }, sh.tryName(m.tries.length)) : null),
       statusRow(m, mode),
       bar(t, m.cur.dates, { dim: st === 'ended' }),
+      st === 'progress' ? h('div', { class: 'sh-barhint', dir: 'auto', 'data-id': 'shidduchim.next' }, progressNext(m)) : null,
       st === 'ended' && t.endedReason ? h('div', { class: 'sh-barhint', dir: 'auto' }, t.endedReason) : null));
 }
 

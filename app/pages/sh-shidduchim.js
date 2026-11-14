@@ -24,6 +24,7 @@ const T = {
   elsewhere: (list) => `Also found in: ${list.join(', ')}`,
   demoHint: 'Want to look around first? Load the fictional demo in Guys or Girls.',
   yourMove: 'Your move',
+  nothingYet: 'Nothing to do until the date',
   afterDate: (n) => `After Date ${n}`,
   changeAnswer: (side, name) => `${side} · ${name}`,
   endedPanel: 'This try has ended',
@@ -166,8 +167,15 @@ function answerBubble(m, side) {
 function statusRow(m) {
   const t = m.cur.t, r = m.round;
   if (t.phase === 'engaged') return h('div', { class: 'sh-card-sub' }, h('span', { class: 'shs-engaged', 'data-id': 'shidduchim.engaged' }, m.step.text));
-  if (r.kind === 'date' && r.upcoming) return h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage dating' }, sd.T.stage.date(r.n)), h('span', {}, '·'), h('span', { dir: 'auto' }, sd.whenNice(r.rec.when)),
-    t.phase === 'ended' ? h('span', { class: 'sh-ended-word' }, sd.T.stage.ended) : null);
+  if (r.kind === 'date' && r.upcoming) {
+    // Owner request: a coming date still shows the answers that led to it (read-only; the new date asks nothing yet).
+    const live = m.cur.dates.filter(d => d.status !== 'Cancelled' && d !== r.rec), before = live.length ? live[live.length - 1] : t;
+    const pill = (side) => h('span', { class: 'sh-tag ' + sd.answerClass(sd.ans(before, side)), 'data-id': 'shidduchim.answer-before-' + side },
+      h('small', {}, sd.T.side[side] + ':'), h('strong', {}, sd.answerLabel(sd.ans(before, side))));
+    return [h('div', { class: 'sh-card-sub' }, h('span', { class: 'sh-stage dating' }, sd.T.stage.date(r.n)), h('span', {}, '·'), h('span', { dir: 'auto' }, sd.whenNice(r.rec.when)),
+      t.phase === 'ended' ? h('span', { class: 'sh-ended-word' }, sd.T.stage.ended) : null),
+      t.phase === 'ended' ? null : h('div', { class: 'sh-answers', 'aria-label': 'Answers before this date' }, pill('guy'), pill('girl'))];
+  }
   return h('div', { class: 'sh-answers', 'aria-label': 'Answers' },
     r.kind === 'date' ? h('span', { class: 'shs-round', 'data-id': 'shidduchim.round' }, T.afterDate(r.n)) : null,
     answerBubble(m, 'guy'), answerBubble(m, 'girl'),
@@ -176,7 +184,7 @@ function statusRow(m) {
 
 function card(m) {
   const id = m.o.id, t = m.cur.t, open = S.open === id, names = sd.coupleName(m);
-  const hint = m.step.kind === 'move' ? m.step.text : t.phase === 'ended' ? [sd.endedLine(t), t.endedReason].filter(Boolean).join(' · ') : m.step.kind === 'wait' ? m.step.text : '';
+  const hint = m.step.kind === 'move' ? m.step.text : t.phase === 'ended' ? [sd.endedLine(t), t.endedReason].filter(Boolean).join(' · ') : m.step.kind === 'wait' ? m.step.text : m.round.kind === 'date' && m.round.upcoming ? T.nothingYet : '';
   return h('article', { class: 'sh-match shs-card' + (open ? ' shs-open' : ' compact') + (S.menu && S.menu.id === id ? ' menu-open' : ''), 'aria-label': names, 'data-id': 'shidduchim.card' },
     h('a', { class: 'sh-card-open', href: openHref(m, m.lane === 'progress' ? '/dates' : ''), 'aria-label': T.openFor(names), 'data-id': 'shidduchim.card-open' }),
     h('button', { type: 'button', class: 'icon-btn sh-expand-btn' + (open ? ' open' : ''), 'aria-expanded': open ? 'true' : 'false', 'aria-label': open ? T.hideActions : T.showActions, 'data-id': 'shidduchim.card-expand', html: icon('chevron'),
