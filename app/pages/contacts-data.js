@@ -47,7 +47,7 @@ export async function load() {
   for (const e of events) for (const cid of e.contactIds || []) (evBy.get(cid) || evBy.set(cid, []).get(cid)).push(e);
   for (const list of evBy.values()) list.sort((a, b) => (b.at || '').localeCompare(a.at || ''));
   for (const f of fus) if (f.contactId) (fuBy.get(f.contactId) || fuBy.set(f.contactId, []).get(f.contactId)).push(f);
-  for (const a of atts) if (a.contactId) (attBy.get(a.contactId) || attBy.set(a.contactId, []).get(a.contactId)).push(a);
+  for (const a of atts) if (a.contactId && a.kind !== 'voice') (attBy.get(a.contactId) || attBy.set(a.contactId, []).get(a.contactId)).push(a);
   const x = new Map();
   for (const c of contacts) {
     const evs = evBy.get(c.id) || [];

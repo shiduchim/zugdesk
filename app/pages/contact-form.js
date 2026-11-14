@@ -32,7 +32,7 @@ export async function render(container, params = {}) {
 
   // working copy of the attachments
   const existingAtts = editing ? await store.attachments.byIndex('contactId', id) : [];
-  const atts = existingAtts.map(a => ({ ...a }));
+  const atts = existingAtts.filter(a => a.kind !== 'voice').map(a => ({ ...a })); // voice notes live on their history entry
   const removedAtts = [];
   if (token !== gen) return;
 
