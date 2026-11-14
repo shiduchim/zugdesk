@@ -1,10 +1,16 @@
 /* Claude paste import: Home button / chip, the "Add from Claude" preview, Settings text. Tokens only. */
 .claude-chip{margin-top:var(--gap)}
-.bulk-body{gap:var(--gap)}
-.bulk-card{border:1px solid var(--card-edge);border-radius:var(--radius);background:var(--card-bg);padding:10px 12px;display:flex;flex-direction:column;gap:var(--gap)}
+.bulk-sheet .sheet-body{background:var(--bg)}
+.bulk-body{display:flex;flex-direction:column;gap:var(--gap-lg)}
+.bulk-card{border:1px solid var(--card-edge);border-inline-start:var(--bulk-strip) solid var(--bulk-other);border-radius:var(--radius);background:var(--card-bg);padding:0 12px 12px;display:flex;flex-direction:column;gap:var(--gap);overflow:hidden}
+.bulk-card.tone-single{border-inline-start-color:var(--bulk-single)}
+.bulk-card.tone-shadchan{border-inline-start-color:var(--bulk-shadchan)}
+.bulk-card.tone-todo{border-inline-start-color:var(--bulk-todo)}
 .bulk-card.off{opacity:.6}
-.bulk-head{display:flex;align-items:center;gap:var(--gap);min-width:0}
-.bulk-head .spacer{flex:1}
+.bulk-head{display:flex;align-items:center;gap:var(--gap);min-width:0;margin:0 -12px;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--border)}
+.bulk-card.off .bulk-head{border-bottom:0}
+.bulk-title{flex:1;min-width:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bulk-num{color:var(--muted);font-weight:500}
 .bulk-include{min-height:0;padding:0;gap:var(--gap);flex:0 0 auto}
 .bulk-include .toggle-text{font-size:var(--font-sm);color:var(--muted)}
 .bulk-field{display:flex;flex-direction:column;gap:2px;margin:0;min-width:0;flex:1}

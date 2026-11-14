@@ -275,25 +275,32 @@ function cardEl(c, i, m, draw, relabel) {
   const sw = h('label', { class: 'toggle bulk-include', 'data-id': 'bulk.include' },
     h('span', { class: 'toggle-text' }, 'Include'),
     h('input', { type: 'checkbox', role: 'switch', checked: c.include || null, 'aria-label': 'Include this', onChange: (e) => { c.include = e.target.checked; draw(); } }));
-  const head = h('div', { class: 'bulk-head' },
-    h('span', { class: 'eyebrow' }, TYPE_LABEL[c.type] + (c.type === 'other' && c.title ? ' · ' + c.title : '')),
-    h('span', { class: 'spacer' }), sw);
-  const wrap = h('article', { class: 'bulk-card' + (off ? ' off' : ''), 'data-card': String(i), 'data-id': 'bulk.card-' + c.type }, head);
+  // "1 of 3 · Single · Moshe Klein": where each card starts is easy to see (owner request)
+  const who = h('span', { class: 'bulk-who', dir: 'auto' }, c.name || '');
+  const head = h('div', { class: 'bulk-head', 'data-id': 'bulk.card-head' },
+    h('span', { class: 'bulk-title' },
+      h('span', { class: 'bulk-num' }, `${i + 1} of ${m.cards.length}`), ' · ',
+      TYPE_LABEL[c.type] + (c.type === 'other' && c.title ? ' · ' + c.title : ''),
+      c.name ? ' · ' : '', who),
+    sw);
+  c.whoEl = who;
+  const tone = ['single', 'shadchan', 'todo'].includes(c.type) ? c.type : 'other';
+  const wrap = h('article', { class: `bulk-card tone-${tone}` + (off ? ' off' : ''), 'data-card': String(i), 'data-id': 'bulk.card-' + c.type }, head);
   if (!c.include) return wrap;
   if (c.type === 'single') {
     wrap.append(
-      field('Name', c, 'name', 'bulk.name', relabel),
+      field('Name', c, 'name', 'bulk.name', () => { relabel(); if (c.whoEl) c.whoEl.textContent = c.name; }),
       h('div', { class: 'bulk-row' }, field('Age', c, 'age', 'bulk.age', null, { inputmode: 'numeric', class: 'input short' }), field('City', c, 'city', 'bulk.city')),
       field('Job', c, 'job', 'bulk.job'));
     if (c.action !== 'update' || !c.dup?.kind) wrap.append(h('div', { class: 'typepick bulk-kind' + (c.kind ? '' : ' need'), role: 'group', 'aria-label': 'Guy or girl', 'data-id': 'bulk.kind' },
       ...[['guy', 'Guy'], ['girl', 'Girl']].map(([k, l]) => h('button', { type: 'button', 'aria-pressed': c.kind === k ? 'true' : 'false', 'data-id': 'bulk.kind-' + k,
         onClick: () => { c.kind = k; draw(); } }, l))),
-      c.kind ? null : h('span', { class: 'note bulk-need' }, c.kindNote ? `Claude wrote “${c.kindNote}”. Choose one.` : 'Choose Guy or Girl'));
+      ...(c.kind ? [] : [h('span', { class: 'note bulk-need' }, c.kindNote ? `Claude wrote “${c.kindNote}”. Choose one.` : 'Choose Guy or Girl')]));
     if (c.shadchan) wrap.append(h('p', { class: 'note', dir: 'auto' }, 'Shadchan: ' + c.shadchan));
     if (c.about) wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, c.about));
     if (c.dup) wrap.append(dupChoice(c, `Already have ${c.dup.name}${c.dup.age ? ', ' + c.dup.age : ''}${c.dup.city ? ' · ' + c.dup.city : ''}`, draw));
   } else if (c.type === 'shadchan') {
-    wrap.append(field('Name', c, 'name', 'bulk.shadchan-name', relabel),
+    wrap.append(field('Name', c, 'name', 'bulk.shadchan-name', () => { relabel(); if (c.whoEl) c.whoEl.textContent = c.name; }),
       h('div', { class: 'bulk-row' }, field('Phone', c, 'phone', 'bulk.phone', null, { inputmode: 'tel', dir: 'ltr' }), field('City', c, 'city', 'bulk.shadchan-city')));
     if (c.note) wrap.append(h('p', { class: 'bulk-text', dir: 'auto' }, c.note));
     if (c.fromSingle) wrap.append(h('p', { class: 'note' }, 'Named as a shadchan above.'));

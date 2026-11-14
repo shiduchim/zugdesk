@@ -105,6 +105,11 @@
   --tick-bg:var(--ok);
   --tick-text:var(--accent-text);
   --card-bg:var(--surface);
+  --bulk-single:var(--link);      /* Add from Claude preview: strip colour per card type */
+  --bulk-shadchan:var(--ok);
+  --bulk-todo:var(--warn);
+  --bulk-other:var(--muted);
+  --bulk-strip:4px;
   --card-edge:var(--border);
   --dropzone-bg:var(--surface-2);
   --original-bg:var(--surface-2);
