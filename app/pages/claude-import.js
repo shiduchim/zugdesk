@@ -357,7 +357,7 @@ export async function openImport(text, { onSaved, onUndone } = {}) {
     if (y != null && body.parentElement) body.parentElement.scrollTop = y;
   };
   draw();
-  const p = sheet({ title: 'Add from Claude', dataId: 'bulk', className: 'tall bulk-sheet', body,
+  const p = sheet({ title: 'Add from paste', dataId: 'bulk', className: 'tall bulk-sheet', body,
     actions: [{ id: 'save', label: 'Add', primary: true, run: async () => {
       const missing = counted(m).find(c => c.type === 'single' && c.action === 'new' && !c.kind);
       if (missing) {
@@ -710,16 +710,17 @@ export async function copyInstructions() {
   }
 }
 
-// Home → "Paste from AI". Falls back to the notepad when the clipboard is blocked.
-export async function pasteFromClaude({ fallback, onSaved, onUndone } = {}) {
+// Home → "Paste". A ZugDesk block opens the Add sheet; any other text goes to onPlain (the New Note box).
+// Falls back to the notepad when the clipboard is blocked.
+export async function pasteFromClaude({ fallback, onSaved, onUndone, onPlain } = {}) {
   let text = '';
   try { text = await navigator.clipboard.readText(); }
   catch {
-    toast('This browser blocked the clipboard. Long-press in New Note, choose Paste, then tap “Add … from this note”.', 6000);
+    toast('Long-press in the New Note box and choose Paste.', 5000);
     fallback && fallback();
     return false;
   }
-  if (!text.trim()) { toast('The clipboard is empty. In Claude, tap Copy on the code box first.', 4500); return false; }
-  if (!hasBlock(text)) { toast('No ZugDesk block in the clipboard. In Claude, tap Copy on the code box and try again.', 5000); return false; }
+  if (!text.trim()) { toast('Nothing copied yet. Copy something first, then tap Paste.', 4500); return false; }
+  if (!hasBlock(text)) { if (onPlain) { onPlain(text); return false; } toast('Nothing to add in what was copied.', 4000); return false; }
   return openImport(text, { onSaved, onUndone });
 }

@@ -126,6 +126,8 @@ function composer(key) {
     drawFoot(key, foot, writing, sync);
   };
   ta.addEventListener('input', () => { d.text = ta.value; persist(); grow(ta); sync(); });
+  // Pasting a ZugDesk block into New Note opens the Add sheet by itself (no special button needed).
+  if (isNew) ta.addEventListener('paste', (e) => { if (CI.hasBlock(e.clipboardData?.getData('text') || '')) setTimeout(importFromNote, 0); });
   if (isNew) {
     const pin = h('button', { type: 'button', class: 'pin-text', 'aria-pressed': d.pinned ? 'true' : 'false', 'data-id': 'home.new-note.pin',
       onClick: () => { d.pinned = !d.pinned; persist(); pin.textContent = d.pinned ? 'Unpin' : 'Pin'; pin.setAttribute('aria-pressed', d.pinned ? 'true' : 'false'); } }, d.pinned ? 'Unpin' : 'Pin');
@@ -136,7 +138,7 @@ function composer(key) {
       h('span', { class: 'suggest-dot-core' }));
     const title = h('input', { class: 'ed-title', dir: 'auto', placeholder: 'Title (optional)', 'aria-label': 'Note title (optional)', value: d.title, 'data-id': 'home.new-note.title',
       onInput: (e) => { d.title = e.target.value; persist(); } });
-    const fromClaude = h('button', { type: 'button', class: 'btn small mini', 'data-id': 'home.paste-claude', onClick: pasteClaude }, 'Paste from AI');
+    const fromClaude = h('button', { type: 'button', class: 'btn small mini', 'data-id': 'home.paste-claude', onClick: pasteClaude }, 'Paste');
     wrap.append(h('div', { class: 'ed-head' }, h('h2', {}, ico('edit'), 'New Note'), fromClaude, h('span', { class: 'spacer' }), pin, dot), title);
   }
   const edWrap = h('div', { class: 'ed-wrap' }, mirror, ta);
@@ -150,7 +152,8 @@ function composer(key) {
 
 // ---------- Claude paste import (pages/claude-import.js) ----------
 function pasteClaude() {
-  return CI.pasteFromClaude({ fallback: () => root?.querySelector('textarea[data-key="new"]')?.focus() });
+  return CI.pasteFromClaude({ fallback: () => root?.querySelector('textarea[data-key="new"]')?.focus(),
+    onPlain: (text) => { const d = draft('new'); d.text = d.text.trim() ? d.text.replace(/\s*$/, '\n') + text : text; persist(); drawComposer(); root?.querySelector('textarea[data-key="new"]')?.focus(); } });
 }
 // The pasted block becomes records; the New Note box is emptied, and Undo puts the words back.
 async function importFromNote() {
