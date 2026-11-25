@@ -2,7 +2,7 @@
 // My Profile (source/Shadchanim Offers.html). Reads the one shared person record; editing
 // opens the Add Person form. Interest never creates, ends or reopens a formal offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock, swipeTabs } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock, editDock, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { isShadchan, peopleListPath, peopleListName, rememberList } from '../js/mode.js';
 import { suggestedFor, loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
@@ -28,15 +28,15 @@ const atFrom = (d, prev) => (!d ? store.now() : prev && prev.slice(0, 10) === d 
 
 let root = null, gen = 0, unsub = null, timer = 0, B = null, tab = 'profile';
 const drafts = {}; // personId → unsent note text
-export function destroy() { if (root) swipeTabs(root, null); EDITF = false; SEC = null; SNAPF = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { if (root) swipeTabs(root, null); EDITF = false; SEC = null; SNAPF = null; OPENF = null; ACT = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('person-card-page');
-  swipeTabs(root, { keys: () => (EDITF || SEC ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
+  swipeTabs(root, { keys: () => (busy() ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub && unsub();
-  unsub = store.subscribe((ch) => { if (EDITF || SEC || document.activeElement?.dataset.id === 'person-card.note-text') return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
+  unsub = store.subscribe((ch) => { if (busy() || document.activeElement?.dataset.id === 'person-card.note-text') return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
   await draw(params.id);
 }
 
@@ -46,7 +46,7 @@ async function draw(id, keepScroll = false) {
   if (b && isShadchan) b.sh = await forSingle(b.p); // every shidduch this single is part of (stage S3)
   if (token !== gen || !root) return;
   CH = ch;
-  if (B && B.p.id !== id) { EDITF = false; SEC = null; }
+  if (B && B.p.id !== id) { EDITF = false; SEC = null; OPENF = null; }
   const y = window.scrollY;
   root.innerHTML = '';
   if (!b) { root.append(h('p', { class: 'empty' }, 'This person is no longer saved.'), h('a', { class: 'btn', href: '#/people' }, isShadchan ? 'Back to the list' : 'Back to Ideas')); return; }
@@ -70,7 +70,7 @@ async function draw(id, keepScroll = false) {
     h('div', { class: 'pc-body', 'data-id': 'person-card.body-' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? singleShidduchim(b.p, b.sh, { refresh: redraw }) : offersTab(b)) : notesTab(b)),
     // The main step stays on screen at the bottom (owner request); hidden while a section is being edited.
     // Single Mode: the interest buttons. Shadchan Mode: Find a match (Status and Talk to sit at the top of the Profile tab).
-    EDITF || SEC ? '' : isShadchan
+    EDITF || SEC ? (ACT ? editDock(ACT) : '') : isShadchan
       ? dock('person-card.dock', h('span', { class: 'grow note', dir: 'auto' }, 'Ideas for ' + firstName(p)),
           h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'person-card.find-match', onClick: () => navigate(`/match/${encodeURIComponent(p.id)}`) }, 'Find a match'))
       : dock('person-card.dock', statusStrip(b)));
@@ -88,26 +88,38 @@ function setTab(k) {
 // Every pencil edits its section right here (owner request, tweak mode). Facts save as you go
 // (one Done); the other sections are a small Cancel / Save form. The top pencil opens the full form.
 let CH = {}, EDITF = false, SEC = null, SNAPF = null; // SNAPF: person as it was when Editing facts began (Cancel puts it back)
+let OPENF = null; // one fact open right in its row (tap a fact): saves as you go, Undo in the message
+let ACT = null;   // Cancel / Save of what is being edited; shown in the bottom bar
+const busy = () => EDITF || SEC || OPENF;
 const pencil = (label, dataId, onClick) => h('button', { type: 'button', class: 'icon-btn', 'aria-label': label, 'data-id': dataId, html: icon('edit'), onClick });
 const redraw = () => draw(B.p.id, true);
-const openSec = (key) => { SEC = key; EDITF = false; redraw(); };
+const openSec = (key) => { SEC = key; EDITF = false; OPENF = null; redraw(); };
 // Facts editing (pencil, or tap one fact like on My Profile): every fact opens; a tapped one gets the focus.
-async function startFacts(focusId) {
-  EDITF = true; SEC = null; SNAPF = structuredClone(B.p); await redraw();
-  const row = focusId && root?.querySelector(`[data-id="${focusId}"]`);
-  if (row) { row.scrollIntoView({ block: 'center' }); row.querySelector('input,button')?.focus({ preventScroll: true }); }
+// Facts pencil = edit all facts at once; Cancel / Done in the bottom bar.
+async function startFacts() {
+  EDITF = true; SEC = null; OPENF = null; SNAPF = structuredClone(B.p);
+  ACT = { dataId: 'person-card.facts-dock', label: 'Editing facts', cancelId: 'person-card.facts-cancel', saveId: 'person-card.facts-done', saveLabel: 'Done',
+    cancel: async () => { document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); EDITF = false; ACT = null; if (SNAPF && B.p.updatedAt !== SNAPF.updatedAt) { B.p = await store.people.save(SNAPF); toast('Changes undone'); } SNAPF = null; redraw(); },
+    save: () => { document.activeElement?.blur(); EDITF = false; ACT = null; SNAPF = null; setTimeout(redraw, 120); } };
+  redraw();
 }
+// Tap one fact: only that row opens, right where it is.
+async function openFact(id) {
+  if (OPENF === id) return;
+  document.activeElement?.blur(); await new Promise(r => setTimeout(r, 60)); // a half-typed row saves first
+  OPENF = id; SEC = null; await redraw();
+  const row = root?.querySelector(`[data-id="${id}"]`);
+  if (row) { row.scrollIntoView({ block: 'center' }); row.querySelector('input')?.focus({ preventScroll: true }); }
+}
+const closeFact = () => { OPENF = null; redraw(); };
 const keyTap = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } };
 const tapFact = (f) => { const el = fact(f.label, f.value, f.dataId); if (el && f.ed) { el.classList.add('mp-tap'); el.setAttribute('role', 'button'); el.tabIndex = 0;
-  el.addEventListener('click', () => startFacts(f.dataId)); el.addEventListener('keydown', keyTap); } return el; };
+  el.addEventListener('click', () => openFact(f.dataId)); el.addEventListener('keydown', keyTap); } return el; };
 function sec(title, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDITF : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDITF ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
-        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: async () => { document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); EDITF = false; if (SNAPF && B.p.updatedAt !== SNAPF.updatedAt) { B.p = await store.people.save(SNAPF); toast('Changes undone'); } SNAPF = null; redraw(); } }, 'Cancel'),
-        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDITF = false; SNAPF = null; setTimeout(redraw, 120); } }, 'Save'))
-      : EDITF || SEC ? null
+      EDITF || SEC ? null
       : facts ? pencil('Edit facts here', dataId + '-edit', () => startFacts())
       : key ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
@@ -145,7 +157,7 @@ function profileTab(b) {
     isShadchan && !EDITF && !SEC ? singlePanel(p, savePerson) : null,
     sec('Facts', 'person-card.facts', 'facts',
       h('dl', { class: 'facts' },
-        ...factList(p).map(f => EDITF && f.ed ? editRow(f) : tapFact(f))),
+        ...factList(p).map(f => (EDITF || OPENF === f.dataId) && f.ed ? editRow(f, !EDITF) : tapFact(f))),
       !EDITF && !factList(p).some(f => !isEmpty(f.value)) ? h('p', { class: 'muted' }, 'Not filled in yet') : null),
     !p.about && SEC !== 'about' ? null : sec(`About ${firstName(p)}`, 'person-card.about', 'about',
       h('p', { class: 'prewrap', dir: 'auto' }, p.about)),
@@ -496,18 +508,27 @@ function factList(p) {
     c('Character & lifestyle', 'pTraits', 'person-card.fact-traits'), c('Body type', 'pBody', 'person-card.fact-body'),
     isShadchan ? null : t('Looking up to age', 'maxAge', 'person-card.fact-max-age'), ...custom].filter(Boolean);
 }
-async function savePerson(patch, quiet) {
-  const p = { ...B.p, ...patch };
+async function savePerson(patch, quiet, undo = false) {
+  const prev = B.p, p = { ...prev, ...patch };
   if (patch.contactCards) p.contactIds = [...new Set([...p.contactCards.map(c => c.contactId), p.senderContactId].filter(Boolean))];
   B.p = await store.people.save(p);
-  toast('Saved', quiet ? 1200 : 2600);
+  if (!undo) { toast('Saved', quiet ? 1200 : 2600); return; }
+  // Undo puts back only what this save changed, so a later change to another fact stays.
+  const keys = Object.keys(patch).concat(patch.contactCards ? ['contactIds'] : []);
+  toast('Saved', 5000, { label: 'Undo', run: async () => {
+    const cur = await store.people.get(prev.id); if (!cur) return;
+    const back = { ...cur }; for (const k of keys) back[k] = prev[k];
+    B.p = await store.people.save(back); toast('Undone'); redraw();
+  } });
 }
-function editRow(f) {
+function editRow(f, one = false) {
   const p = B.p, box = h('div', { class: 'mp-inline' });
   if (f.ed.type === 'text') {
-    const inp = h('input', { class: 'input', dir: 'auto', value: f.ed.get() || '', 'aria-label': f.label, 'data-id': 'person-card.inline-text' });
-    inp.addEventListener('change', () => savePerson(f.ed.set(inp.value.trim()), true));
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+    const inp = h('input', { class: 'input', dir: 'auto', value: f.ed.get() || '', enterkeyhint: 'done', 'aria-label': f.label, 'data-id': 'person-card.inline-text' });
+    const before = inp.value;
+    inp.addEventListener('change', async () => { await savePerson(f.ed.set(inp.value.trim()), true, one); if (one && OPENF === f.dataId) closeFact(); });
+    inp.addEventListener('blur', () => { if (one && inp.value === before) setTimeout(() => { if (OPENF === f.dataId) closeFact(); }, 150); }); // nothing typed: just close
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } if (e.key === 'Escape' && one) { inp.value = before; closeFact(); } });
     box.append(inp);
   } else {
     const key = f.ed.key, A = p.answers || {};
@@ -516,14 +537,17 @@ function editRow(f) {
     const opts = (CH[key] || []).filter(o => !o.hidden && (girl || !only.includes(o.v))).map(o => [o.v, o.v]);
     let cur = [].concat((key === 'languages' ? p.languages : A[key]) ?? []).filter(Boolean);
     for (const v of cur) if (!opts.some(o => o[0] === v)) opts.push([v, v]); // keep answers no longer in the list
-    const put = (val) => savePerson(key === 'languages' ? { languages: val } : { answers: { ...(B.p.answers || {}), [key]: multi ? val : (val[0] || '') } }, true);
+    const put = (val) => savePerson(key === 'languages' ? { languages: val } : { answers: { ...(B.p.answers || {}), [key]: multi ? val : (val[0] || '') } }, true, one);
     const wrap = h('div', {});
     const paint = () => { wrap.innerHTML = ''; wrap.append(bubbles({ options: opts, selected: cur, multi, dataId: 'person-card.inline-choice', onChange: (v) => {
       let next = multi ? v : (v ? [v] : []);
       for (const group of EXCLUSIVE[key] || []) { const added = next.find(x => group.includes(x) && !cur.includes(x)); if (added) next = next.filter(x => !group.includes(x) || x === added); }
-      const changed = next.length !== v.length; cur = next; put(next); if (changed) paint();
+      const changed = next.length !== v.length; cur = next;
+      if (one && !multi) { put(next).then(closeFact); return; } // one answer: saved, row closes
+      put(next); if (changed) paint();
     } })); };
     paint(); box.append(wrap);
+    if (one && multi) box.append(h('button', { type: 'button', class: 'btn small mp-row-done', 'data-id': 'person-card.fact-done', onClick: closeFact }, 'Done'));
   }
   return h('div', { class: 'fact mp-edit-row', 'data-id': f.dataId }, h('dt', { dir: 'auto' }, f.label), h('dd', {}, box));
 }
@@ -584,16 +608,14 @@ function secForm(key, dataId) {
     body = [wrap, row('Years known', years), row('How do you know them?', how)];
     collect = () => ({ know, yearsKnown: t(years.value), howKnow: how.value.trim() });
   }
-  const close = () => { SEC = null; redraw(); };
-  const form = h('div', { class: 'mp-form', 'data-id': id },
-    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': id + '.bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
-      h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => {
-        const patch = collect();
-        if (key === 'summary' && !patch.name && !(patch.contactCards || []).some(c => c.role === 'person' && c.number)) { toast('Write a name or their own phone number first'); return; }
-        await savePerson(patch); close();
-      } }, 'Save')),
-    ...body);
+  const close = () => { SEC = null; ACT = null; redraw(); };
+  ACT = { dataId: id + '.bar', label: 'Editing', cancelId: id + '.cancel', saveId: id + '.save', cancel: close,
+    save: async () => {
+      const patch = collect();
+      if (key === 'summary' && !patch.name && !(patch.contactCards || []).some(c => c.role === 'person' && c.number)) { toast('Write a name or their own phone number first'); return; }
+      await savePerson(patch); close();
+    } };
+  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body);
   setTimeout(() => form.querySelector('input,textarea,select')?.focus({ preventScroll: true }), 30);
   return form;
 }

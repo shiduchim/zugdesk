@@ -30,6 +30,10 @@ two Fable checks. Everything below is done and pushed unless it says otherwise.
 - My Profile: Edit facts also shows the usual empty facts; the page uses the same column as a person's card on a computer.
 - Short versions: same look on both pages; Delete gives Undo.
 
+## Easier editing (owner request after the review, Fable's design)
+- Tap a fact: only that row opens, right where it is. One answer saves on tap; text saves on keyboard Done; several answers save each tap, with Done in the row. "Saved · Undo" replaces Cancel.
+- The Facts pencil still edits all facts at once. Cancel / Done (and Cancel / Save of About, the summary, contacts) are in the bottom bar near the thumb, above the keyboard. The bar at the top of the screen is gone.
+
 ## Bugs fixed
 - My Profile: Cancel could undo changes made elsewhere; changing two answers in Edit facts lost the first; typing in Add a fact or in one fact was wiped; a cancelled New short version left an empty card.
 - Shadchan card: the star and Status did nothing while a section was open, and Cancel undid them.

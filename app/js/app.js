@@ -146,11 +146,14 @@ function applyTheme() {
 }
 
 // Phones (mainly iPhone): while the keyboard is open the page can slide under "pinned" bars.
-// Keep --vv-top = how far the visible area has moved, so edit bars stay at the visible top.
+// Keep --vv-top = how far the visible area has moved, and --vv-kb = how much the keyboard covers at the
+// bottom, so the editing bar (Cancel / Save at the bottom) stays just above the keyboard.
 (function keepBarsOnScreen() {
   const vv = window.visualViewport; if (!vv) return;
   let raf = 0;
-  const set = () => { raf = 0; document.documentElement.style.setProperty('--vv-top', Math.max(0, Math.round(vv.offsetTop)) + 'px'); };
+  const set = () => { raf = 0; const st = document.documentElement.style;
+    st.setProperty('--vv-top', Math.max(0, Math.round(vv.offsetTop)) + 'px');
+    st.setProperty('--vv-kb', Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) + 'px'); };
   const soon = () => { if (!raf) raf = requestAnimationFrame(set); };
   vv.addEventListener('scroll', soon); vv.addEventListener('resize', soon);
   window.addEventListener('scroll', soon, { passive: true }); document.addEventListener('focusin', () => setTimeout(set, 350)); document.addEventListener('focusout', () => setTimeout(set, 350));

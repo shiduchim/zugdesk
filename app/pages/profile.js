@@ -1,7 +1,7 @@
 // My Profile — Profile · Short versions · Notes (spec/my-profile.md; source My Profile.html and
 // my profile short tab.html, Claude look). One owner record; the tabs are views of it.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, confirmDialog, promptText, bubbles, telLink, mailLink, dock, swipeTabs } from '../js/ui.js';
+import { h, icon, toast, sheet, confirmDialog, promptText, bubbles, telLink, mailLink, dock, editDock, swipeTabs } from '../js/ui.js';
 import { listType, GIRLS_ONLY } from './people-data.js';
 import { navigate } from '../js/router.js';
 import * as PD from './profile-data.js';
@@ -19,7 +19,7 @@ const busy = () => EDIT || SEC || ADDF || OPEN; // something is open for editing
 let lastDeleted = null;               // { version } for the inline Undo line
 let shareOpen = false;
 
-export function destroy() { if (root) swipeTabs(root, null); EDIT = false; SEC = null; OPEN = null; ADDF = false; SNAP = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
+export function destroy() { if (root) swipeTabs(root, null); EDIT = false; SEC = null; OPEN = null; ADDF = false; SNAP = null; ACT = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
 
 export async function render(container, params) {
   root = container;
@@ -51,7 +51,7 @@ async function draw(keep = false) {
         TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'profile.tab-' + k, onClick: () => setTab(k) }, l))),
       h('div', { class: 'mp-body', dir: PD.isRtl(lang) ? 'rtl' : null, 'data-id': 'profile.' + tab },
         tab === 'short' ? shortTab(v) : profileTab(v)),
-      !busy() ? dock('profile.dock', h('span', { class: 'grow note' }, 'Send your profile to a shadchan'),
+      EDIT || SEC || ADDF ? (ACT ? editDock(ACT) : null) : !OPEN ? dock('profile.dock', h('span', { class: 'grow note' }, 'Send your profile to a shadchan'),
         h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'profile.dock-share', onClick: () => share() }, 'Share profile')) : null)));
   if (keep) window.scrollTo(0, y);
 }
@@ -75,16 +75,13 @@ const editAt = (s) => '#/profile/edit' + (s ? '/' + s : '');
 // Every pencil edits its section right here (owner request, tweak mode). Facts save as you go
 // (one Done); the other sections are a small form with Cancel / Save.
 const pencil = (label, dataId, onClick) => h('button', { type: 'button', class: 'icon-btn', 'aria-label': label, 'data-id': dataId, html: icon('edit'), onClick });
-const openSec = (key) => { SEC = key; EDIT = false; OPEN = null; draw(true); };
+const openSec = (key) => { SEC = key; EDIT = false; ADDF = false; OPEN = null; draw(true); };
 function sec(title, id, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDIT : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), id, 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
-        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: () => cancelFacts() }, 'Cancel'),
-        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDIT = false; ADDF = false; OPEN = null; SNAP = null; setTimeout(() => draw(true), 120); } }, 'Save'))
-      : busy() ? null
-      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; SNAP = structuredClone(P.me || null); draw(true); })
+      busy() ? null
+      : facts ? pencil('Edit facts here', dataId + '-edit', () => startFacts('Editing facts'))
       : key ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
@@ -244,14 +241,32 @@ function editorFor(id) {
 }
 // Quick "Add a fact": one line (name + value) right in the Facts list, no full edit screen.
 let ADDF = false, SNAP = null; // SNAP: profile as it was when Editing / Adding facts began (Cancel puts it back)
+let ACT = null; // Cancel / Done of what is being edited; shown in the bottom bar
+// Facts pencil (edit all) and Add a fact: Cancel / Done sit in the bottom bar, near the thumb.
+function startFacts(label, add = false) {
+  if (add) ADDF = true; else EDIT = true;
+  SEC = null; OPEN = null; SNAP = structuredClone(P.me || null);
+  ACT = { dataId: 'profile.facts-dock', label, cancelId: 'profile.facts-cancel', saveId: 'profile.facts-done', saveLabel: 'Done', cancel: () => cancelFacts(),
+    save: () => { document.activeElement?.blur(); EDIT = false; ADDF = false; OPEN = null; SNAP = null; ACT = null; setTimeout(() => draw(true), 120); } };
+  draw(true);
+}
+// One fact saved right in its row: the message offers Undo (puts the profile back as it was, if nothing changed since).
+async function saveOne(patch) {
+  const prev = P.me; P.me = await PD.saveProfile(P.me, lang, patch); const mine = P.me;
+  toast('Saved', 5000, { label: 'Undo', run: async () => {
+    if (P.me?.updatedAt !== mine.updatedAt) { toast('Changed again since: undo that change in its row'); return; }
+    P.me = await store.profile.save(prev); toast('Undone'); draw(true);
+  } });
+}
+const closeOne = () => { OPEN = null; draw(true); };
 async function cancelFacts() {
   document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); // let a half-typed field finish first
-  EDIT = false; ADDF = false; OPEN = null;
+  EDIT = false; ADDF = false; OPEN = null; ACT = null;
   if (SNAP && P.me?.updatedAt !== SNAP.updatedAt) { P.me = await store.profile.save(SNAP); toast('Changes undone'); } // nothing changed: leave the record as it is
   SNAP = null; draw(true);
 }
 function addFactRow() {
-  if (!ADDF && !EDIT) return h('button', { type: 'button', class: 'linkish mp-more-link', 'data-id': 'profile.fact-add-open', onClick: () => { ADDF = true; SNAP = structuredClone(P.me || null); draw(true); setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30); } }, 'Add a fact');
+  if (!ADDF && !EDIT) return h('button', { type: 'button', class: 'linkish mp-more-link', 'data-id': 'profile.fact-add-open', onClick: () => { startFacts('Adding facts', true); setTimeout(() => document.querySelector('[data-id="profile.fact-add-label"]')?.focus(), 30); } }, 'Add a fact');
   const lab = h('input', { class: 'input', dir: 'auto', placeholder: 'Name, e.g. Shul', 'aria-label': 'Fact name', 'data-id': 'profile.fact-add-label' });
   const val = h('input', { class: 'input', dir: 'auto', placeholder: 'Fact', 'aria-label': 'Fact', 'data-id': 'profile.fact-add-value',
     onKeydown: (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } } });
@@ -267,9 +282,6 @@ function addFactRow() {
     h('div', { class: 'mp-add-fact-row' }, lab, val),
     h('div', { class: 'mp-add-fact-foot' },
       h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-save', onClick: add }, 'Add fact'),
-      !EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.fact-add-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Adding facts'),
-        h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.fact-add-cancel', onClick: () => cancelFacts() }, 'Cancel'),
-        h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.fact-add-close', onClick: () => { ADDF = false; SNAP = null; draw(true); } }, 'Save')) : null,
       h('a', { class: 'linkish mp-add-fact-full', href: editAt('personal'), 'data-id': 'profile.facts-full-edit' }, 'Full edit screen')));
 }
 // Facts the owner added (Add a fact): tap to change the name / text, or delete it.
@@ -302,19 +314,21 @@ function customFact(f, otherTitle = '') {
   }
   // Tapped one fact: type right in its place (the text only), Delete beside it.
   const txt = h('input', { class: 'input', dir: 'auto', value: f.value || f.label, 'aria-label': 'Fact', 'data-id': 'profile.fact-custom-value' });
+  txt.setAttribute('enterkeyhint', 'done');
+  const before = txt.value;
+  let gone = false;
   const save = async () => {
+    if (gone) return; gone = true;
     const x = txt.value.trim();
-    if (x) { const nf = f.value ? { ...f, value: x } : { ...f, label: x }; P.me = await PD.saveProfile(P.me, lang, { facts: (P.me.facts || []).map(y => y.id === f.id ? nf : y) }); toast('Saved'); }
-    OPEN = null; draw(true);
+    if (x && x !== before) { const nf = f.value ? { ...f, value: x } : { ...f, label: x }; await saveOne({ facts: (P.me.facts || []).map(y => y.id === f.id ? nf : y) }); }
+    if (OPEN === f.id) closeOne();
   };
-  txt.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+  txt.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); txt.blur(); } if (e.key === 'Escape') { gone = true; closeOne(); } });
+  txt.addEventListener('blur', () => setTimeout(save, 200)); // short wait so a tap on Delete beside the box still lands
   setTimeout(() => { txt.focus(); txt.setSelectionRange(txt.value.length, txt.value.length); }, 30);
   return [h('div', { class: 'fact mp-edit-row', 'data-id': 'profile.fact-custom' },
     h('dt', { dir: 'auto' }, f.value ? f.label : otherTitle),
-    h('dd', {}, h('div', { class: 'mp-fact-inplace' }, txt, delBtn)),
-    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
-      h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => { OPEN = null; draw(true); } }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')))];
+    h('dd', {}, h('div', { class: 'mp-fact-inplace' }, txt, delBtn)))];
 }
 function tapFact(id, label, value, dataId) {
   if (!value && !EDIT) return [];
@@ -322,13 +336,15 @@ function tapFact(id, label, value, dataId) {
   const row = h('div', { class: 'fact mp-tap' + (open ? ' open' : ''), 'data-id': dataId, role: ed ? 'button' : null, tabindex: ed ? 0 : null,
     'aria-expanded': ed ? String(open) : null, onClick: ed && !EDIT ? () => { OPEN = open ? null : id; draw(true); } : null, onKeydown: ed ? keyTap : null },
     h('dt', { dir: 'auto' }, label), h('dd', { dir: 'auto' }, value));
-  if (EDIT && ed) return [h('div', { class: 'fact mp-edit-row', 'data-id': dataId }, h('dt', { dir: 'auto' }, label), h('dd', {}, inlineEditor(id, ed)))];
-  return open && ed ? [row, inlineEditor(id, ed)] : [row];
+  if (open && ed) return [h('div', { class: 'fact mp-edit-row', 'data-id': dataId }, h('dt', { dir: 'auto' }, label), h('dd', {}, inlineEditor(id, ed)))];
+  return [row];
 }
 function inlineEditor(id, ed) {
-  const done = async (patch) => {
+  // Editing all facts: saves as you go, stays open (Cancel in the bottom bar undoes). One fact: saves, closes, Undo in the message.
+  const done = async (patch, close = true) => {
     if (EDIT) { if (patch) { P.me = await PD.saveProfile(P.me, lang, patch); toast('Saved', 1200); } return; } // stay open, no redraw
-    OPEN = null; if (patch) { P.me = await PD.saveProfile(P.me, lang, patch); toast('Saved'); } draw(true);
+    if (patch) await saveOne(patch);
+    if (close && OPEN === id) closeOne();
   };
   const box = h('div', { class: 'mp-inline', 'data-id': 'profile.inline-editor' });
   if (ed.type === 'iam') {
@@ -337,14 +353,15 @@ function inlineEditor(id, ed) {
     return box;
   }
   if (ed.type === 'text') {
-    const inp = h('input', { class: 'input', dir: 'auto', value: ed.get() || '', 'data-id': 'profile.inline-text' });
-    const save = () => done(ed.set(inp.value.trim()));
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); save(); } });
+    const inp = h('input', { class: 'input', dir: 'auto', value: ed.get() || '', enterkeyhint: 'done', 'data-id': 'profile.inline-text' });
+    const before = inp.value;
+    let gone = false;
+    const save = () => { if (gone) return; gone = !EDIT; done(inp.value === before ? null : ed.set(inp.value.trim())); };
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } if (e.key === 'Escape' && !EDIT) { gone = true; closeOne(); } });
     if (EDIT) { inp.addEventListener('change', save); box.append(inp); return box; } // saves when you leave the box
+    inp.addEventListener('blur', save); // Done on the keyboard, or tapping elsewhere, saves and closes
     setTimeout(() => inp.focus(), 30);
-    box.append(inp, h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
-      h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')));
+    box.append(inp);
     return box;
   }
   const type = listType(ed.key), multi = type !== 'single';
@@ -353,10 +370,8 @@ function inlineEditor(id, ed) {
   let cur = ed.get();
   for (const v of cur) if (!opts.some(o => o[0] === v)) opts.push([v, v]); // keep answers no longer in the list
   box.append(bubbles({ options: opts, selected: cur, multi, dataId: 'profile.inline-choice',
-    onChange: (v) => { if (multi) { cur = v; if (EDIT) done(ed.set(cur)); } else done(ed.set(v ? [v] : [])); } }));
-  if (multi && !EDIT) box.append(h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': 'profile.inline-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
-    h('button', { type: 'button', class: 'btn small', 'data-id': 'profile.inline-cancel', onClick: () => done(null) }, 'Cancel'),
-    h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: () => done(ed.set(cur)) }, 'Save')));
+    onChange: (v) => { if (multi) { cur = v; done(ed.set(cur), false); } else done(ed.set(v ? [v] : [])); } })); // several: each tap saves, row stays
+  if (multi && !EDIT) box.append(h('button', { type: 'button', class: 'btn small mp-row-done', 'data-id': 'profile.fact-done', onClick: closeOne }, 'Done'));
   return box;
 }
 
@@ -405,12 +420,10 @@ function secForm(key, dataId) {
     body = [row('Title', title), text, h('label', { class: 'share-tick' }, shareBox, h('span', {}, 'Include when sharing the full profile'))];
     collect = () => ({ sections: v.sections.map(x => x.id === sid ? { ...x, title: t(title.value) || x.title, text: text.value.trim(), share: shareBox.checked } : x) });
   }
-  const close = () => { SEC = null; draw(true); };
-  const form = h('div', { class: 'mp-form', 'data-id': id },
-    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': id + '.bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
-      h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => { P.me = await PD.saveProfile(P.me, lang, collect()); toast('Saved'); close(); } }, 'Save')),
-    ...body);
+  const close = () => { SEC = null; ACT = null; draw(true); };
+  ACT = { dataId: id + '.bar', label: 'Editing', cancelId: id + '.cancel', saveId: id + '.save', cancel: close,
+    save: async () => { P.me = await PD.saveProfile(P.me, lang, collect()); toast('Saved'); close(); } };
+  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body);
   setTimeout(() => form.querySelector('input,textarea')?.focus({ preventScroll: true }), 30);
   return form;
 }

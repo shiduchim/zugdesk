@@ -60,6 +60,12 @@ export function icon(name, size) {
 // Dock: the page's main button(s) stay on screen at the bottom, where the thumb is (owner request).
 // Put it last in the page; it sticks above the bottom bar while the page scrolls.
 export function dock(dataId, ...kids) { return h('div', { class: 'dock', 'data-id': dataId }, ...kids); }
+// While a section is being edited, its Cancel / Save sit in the bottom bar, near the thumb (owner request).
+export function editDock({ dataId, label, cancelId, saveId, cancel, save, saveLabel = 'Save' }) {
+  return h('div', { class: 'dock dock-edit', 'data-id': dataId }, h('span', { class: 'grow note' }, label),
+    h('button', { type: 'button', class: 'btn', 'data-id': cancelId, onClick: cancel }, 'Cancel'),
+    h('button', { type: 'button', class: 'btn primary', 'data-id': saveId, onClick: save }, saveLabel));
+}
 
 // Phone / email links: same look everywhere (green phone, blue mail).
 export function telLink(n, dataId) { return h('a', { class: 'tel-link', href: 'tel:' + String(n).replace(/[^0-9]/g, ''), dir: 'ltr', 'data-id': dataId || null, html: icon('phone') }, String(n)); }

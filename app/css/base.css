@@ -94,6 +94,9 @@ textarea.input{min-height:88px;resize:vertical}
 
 /* toast + dialog */
 .toast{position:fixed;left:50%;bottom:calc(var(--nav-height) + var(--safe-bottom) + 12px);transform:translateX(-50%);background:var(--text);color:var(--accent-text);padding:10px 14px;border-radius:var(--radius);font-size:var(--font-sm);z-index:60;max-width:calc(100vw - 32px);box-shadow:var(--shadow)}
+/* a page with a bottom bar (dock): the message sits above it, never over its buttons */
+body:has(main .dock) .toast{bottom:calc(var(--dock-bottom) + var(--dock-clear))}
+@media (min-width:1024px){body:has(main .dock) .toast{bottom:var(--dock-clear)}}
 .toast .toast-action{margin-left:12px;min-height:28px;padding:2px 10px;border:1px solid var(--accent-text);border-radius:var(--radius-pill);background:transparent;color:var(--accent-text);font-weight:600;font-size:var(--font-sm)}
 dialog.sheet{border:0;border-radius:var(--radius-lg);padding:20px;max-width:min(420px,calc(100vw - 32px));width:100%;background:var(--surface);color:var(--text);box-shadow:var(--shadow-lg)}
 dialog.sheet::backdrop{background:var(--backdrop)}
@@ -206,6 +209,8 @@ dialog.cal-sheet{padding:12px 12px calc(12px + var(--safe-bottom));max-width:min
 body{--dock-bottom:calc(var(--nav-height) + var(--safe-bottom));--dock-safe:0px} /* on body: follows the slim bar height */
 /* bar slid away (or no bar): the dock goes to the very edge and pads itself over the phone's home strip */
 body.shell-slim.bar-hidden,body.focus-mode{--dock-bottom:0px;--dock-safe:var(--safe-bottom)}
+/* editing bar (Cancel / Save): rides just above the phone keyboard while it is open */
+.dock.dock-edit{bottom:max(var(--dock-bottom),var(--vv-kb,0px))}
 /* desktop: the bar is on the left side, so the dock sits on the screen edge */
 @media (min-width:1024px){body{--dock-bottom:0px}}
 .dock{position:sticky;bottom:var(--dock-bottom);z-index:15;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin:12px calc(var(--pad-page) * -1) 0;padding:8px var(--pad-page) calc(8px + var(--dock-safe));background:var(--bg);border-top:1px solid var(--border);transition:bottom .2s ease,padding .2s ease}
