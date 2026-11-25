@@ -32,8 +32,8 @@ async function draw() {
   const byId = new Map(contacts.map(c => [c.id, c]));
   const latest = latestByPerson(ints);
   const withOffer = new Set(offers.filter(o => o.status !== 'ended').map(o => o.personId));
-  const endedOnly = new Set(offers.filter(o => o.status === 'ended').map(o => o.personId));
-  const status = new Map(people.map(p => [p.id, ideaStatus(p, latest.get(p.id), withOffer.has(p.id), endedOnly.has(p.id))]));
+  const endedOnly = new Map(offers.filter(o => o.status === 'ended').map(o => [o.personId, o.updatedAt || true]));
+  const status = new Map(people.map(p => [p.id, ideaStatus(p, latest.get(p.id), withOffer.has(p.id), endedOnly.get(p.id) || false)]));
   const senders = new Map();
   for (const s of srcs) if (s.personId && s.sender) (senders.get(s.personId) || senders.set(s.personId, new Set()).get(s.personId)).add(s.sender);
   const searchText = (p) => [p.name, p.city, p.occupation, p.about, p.looking, p.sender, ...(p.languages || []),

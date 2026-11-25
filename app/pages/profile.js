@@ -15,19 +15,20 @@ const MAX_FILE = 5 * 1024 * 1024;
 
 let root = null, unsub = null, timer = 0, gen = 0, tab = 'profile';
 let P = null, ND = null, lang = 'en';
+const busy = () => EDIT || SEC || ADDF || OPEN; // something is open for editing
 let lastDeleted = null;               // { version } for the inline Undo line
 let shareOpen = false;
 
-export function destroy() { if (root) swipeTabs(root, null); EDIT = false; SEC = null; OPEN = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
+export function destroy() { if (root) swipeTabs(root, null); EDIT = false; SEC = null; OPEN = null; ADDF = false; SNAP = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); N.closeMenu(); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('profile-page', 'wide');
-  swipeTabs(root, { keys: () => (EDIT || SEC ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
+  swipeTabs(root, { keys: () => (busy() ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' || ch.store === 'meta') return;
-    if (EDIT || SEC) return; // editing in place: do not redraw under the typing finger
+    if (busy()) return; // editing in place: do not redraw under the typing finger
     clearTimeout(timer); timer = setTimeout(() => draw(true), 100);
   });
   await draw();
@@ -51,7 +52,7 @@ async function draw(keep = false) {
         TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'profile.tab-' + k, onClick: () => setTab(k) }, l))),
       h('div', { class: 'mp-body', dir: PD.isRtl(lang) ? 'rtl' : null, 'data-id': 'profile.' + tab },
         tab === 'short' ? shortTab(v) : profileTab(v)),
-      !EDIT && !SEC ? dock('profile.dock', h('span', { class: 'grow note' }, 'Send your profile to a shadchan'),
+      !busy() ? dock('profile.dock', h('span', { class: 'grow note' }, 'Send your profile to a shadchan'),
         h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'profile.dock-share', onClick: () => share() }, 'Share profile')) : null)));
   if (keep) window.scrollTo(0, y);
 }
@@ -96,9 +97,10 @@ function sec(title, id, dataId, key, ...kids) {
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
       facts && EDIT ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
         h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: () => cancelFacts() }, 'Cancel'),
-        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDIT = false; OPEN = null; SNAP = null; setTimeout(() => draw(true), 120); } }, 'Save'))
+        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDIT = false; ADDF = false; OPEN = null; SNAP = null; setTimeout(() => draw(true), 120); } }, 'Save'))
+      : busy() ? null
       : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDIT = true; SEC = null; OPEN = null; SNAP = structuredClone(P.me || null); draw(true); })
-      : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
+      : key ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
 const fact = (k, v, dataId, extra = null) => !v ? null : h('div', { class: 'fact', 'data-id': dataId }, h('dt', { dir: 'auto' }, k), h('dd', { dir: 'auto' }, v), extra); // empty = left out
@@ -115,7 +117,7 @@ function profileTab(v) {
         h('div', { class: 'pc-summary-line', dir: 'auto' }, PD.summaryLine(v) || notYet('Age · city · work')),
         (c.phone || c.email) ? h('div', { class: 'reach', 'data-id': 'profile.reach' }, c.phone ? telLink(c.phone, 'profile.phone') : null, c.email ? mailLink(c.email, 'profile.email') : null) : null,
         h('div', { class: 'muted', dir: 'auto' }, v.intro || 'A one-line introduction')),
-      pencil('Edit summary here', 'profile.summary-edit', () => openSec('summary'))),
+      busy() ? null : pencil('Edit summary here', 'profile.summary-edit', () => openSec('summary'))),
     sec(l.facts, 'mp-facts', 'profile.facts', 'facts',
       h('dl', { class: 'facts' },
         ...tapFact('i-am', 'I am a', iAm === 'guy' ? 'Guy' : iAm === 'girl' ? 'Girl' : '', 'profile.fact-i-am'),
@@ -208,8 +210,7 @@ function shortTab(v) {
     h('button', { type: 'button', class: 'btn', 'data-id': 'profile.short-new', onClick: async () => {
       const t = await promptText({ title: 'New short version', label: 'Name (e.g. who it is for)', ok: 'Create', dataId: 'profile.version-name' });
       if (!t) return;
-      const x = await store.profileVersions.save({ title: t, lang: sLang, text: '', savedAt: store.now() });
-      versionSheet(x);
+      versionSheet({ title: t, lang: sLang, text: '', savedAt: store.now() }); // saved only when Save is tapped
     } }, 'New short version'),
     h('p', { class: 'stamp mp-foot' }, 'these are the texts people receive · copy any box'),
     (sharingEl = h('section', { class: 'pc-sec', 'data-id': 'profile.sharing' }), drawSharing(), sharingEl),
@@ -228,9 +229,9 @@ function card({ title, sub, text, dataId, edit, menu, lang: cardLang = 'en', lan
 async function versionSheet(x) {
   const title = inp(x.title, 'profile.version-sheet.title'), text = area(x.text, 'profile.version-sheet.text', 12);
   text.classList.add('mono');
-  await sheet({ title: 'Edit short version', dataId: 'profile.version-sheet', className: 'tall', body: [field('Name', title), field('Text people receive', text),
+  await sheet({ title: x.id ? 'Edit short version' : 'New short version', dataId: 'profile.version-sheet', className: 'tall', body: [field('Name', title), field('Text people receive', text),
     h('p', { class: 'note' }, 'Saved versions stay as you wrote them — they do not change when your profile changes. Anything you already sent stays in Sharing activity exactly as sent.')],
-    actions: [{ id: 'save', label: 'Save', primary: true, run: async () => { await store.profileVersions.save({ ...x, title: title.value.trim() || x.title, text: text.value, savedAt: store.now() }); toast('Saved'); } }] });
+    actions: [{ id: 'save', label: 'Save', primary: true, run: async () => { if (!text.value.trim()) { toast('Write some text first'); return false; } await store.profileVersions.save({ ...x, title: title.value.trim() || x.title, text: text.value, savedAt: store.now() }); toast('Saved'); } }] });
 }
 async function shortSettings() {
   const v = PD.view(P.me, lang);
@@ -297,7 +298,7 @@ function editorFor(id) {
   const me = P.me || {}, A = me.answers || {};
   const text = (get, set) => ({ type: 'text', get, set });
   const choice = (key) => ({ type: 'choice', key, get: () => key === 'languages' ? (me.languages || []) : [].concat(A[key] ?? []).filter(Boolean),
-    set: (val) => key === 'languages' ? { languages: val } : { answers: { ...A, [key]: val } } });
+    set: (val) => key === 'languages' ? { languages: val } : { answers: { ...(P.me?.answers || {}), [key]: val } } });
   if (id === 'i-am') return { type: 'iam' };
   if (id === 'age') return text(() => me.age, (x) => ({ age: x }));
   if (id === 'city') return text(() => me.city, (x) => ({ city: x }));
@@ -307,7 +308,7 @@ function editorFor(id) {
   if (DKEY[id]) return choice(DKEY[id]);
   if (id.startsWith('d:')) return choice(id.slice(2));
   const f = (me.facts || []).find(x => x.id === id);
-  if (f) return text(() => f.value, (x) => ({ facts: me.facts.map(y => y.id === id ? { ...y, value: x } : y) }));
+  if (f) return text(() => f.value, (x) => ({ facts: (P.me?.facts || []).map(y => y.id === id ? { ...y, value: x } : y) }));
   return null;
 }
 // Quick "Add a fact": one line (name + value) right in the Facts list, no full edit screen.
@@ -315,7 +316,7 @@ let ADDF = false, SNAP = null; // SNAP: profile as it was when Editing / Adding 
 async function cancelFacts() {
   document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); // let a half-typed field finish first
   EDIT = false; ADDF = false; OPEN = null;
-  if (SNAP) { P.me = await store.profile.save(SNAP); toast('Changes undone'); }
+  if (SNAP && P.me?.updatedAt !== SNAP.updatedAt) { P.me = await store.profile.save(SNAP); toast('Changes undone'); } // nothing changed: leave the record as it is
   SNAP = null; draw(true);
 }
 function addFactRow() {

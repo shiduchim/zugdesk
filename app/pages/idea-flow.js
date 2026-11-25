@@ -7,7 +7,7 @@
 // Status is read from the dated interest records (history kept); nothing is deleted.
 import * as store from '../js/store.js';
 import { pron } from './people-data.js';
-import { startOffer } from './shidduch-data.js';
+import { startOffer, tryAgain } from './shidduch-data.js';
 
 export const MINE_YES = ['Interested', 'Want to learn more'];
 export const MINE_NO = ['Not interested'];
@@ -22,10 +22,13 @@ export function latestByPerson(ints) {
   return out;
 }
 
+// endedOffer: when the ended shidduch was last changed (or true). An interest saved after that
+// (Reopen, or a new answer) puts the person back among the open ideas.
 export function ideaStatus(p, l = {}, hasOffer = false, endedOffer = false) {
   const P = pron(p), mine = l.mine?.value, theirs = l.theirs?.value;
   if (hasOffer) return { key: 'shidduch', label: 'In a shidduch' };
-  if (endedOffer) return { key: 'closed', label: 'Shidduch ended' };
+  const newer = typeof endedOffer === 'string' && [l.mine, l.theirs].some(i => i?.at && i.at > endedOffer);
+  if (endedOffer && !newer) return { key: 'closed', label: 'Shidduch ended' };
   if (MINE_NO.includes(mine)) return { key: 'closed', label: 'Not for me' };
   if (THEIRS_NO.includes(theirs)) return { key: 'closed', label: `${P.He} said no` };
   if (MINE_YES.includes(mine)) return { key: 'waiting', label: `Waiting for ${P.him}` };
@@ -44,6 +47,13 @@ export async function maybeStart(personId) {
   if (offers.some(o => o.status !== 'ended')) return null;
   const l = latestByPerson(ints).get(personId) || {};
   if (!MINE_YES.includes(l.mine?.value) || !THEIRS_YES.includes(l.theirs?.value)) return null;
+  const ended = offers[0];
+  if (ended) { // same couple again after an ended shidduch: a new try on the same record (Try Again), both Yes
+    const tries = (await store.tries.byIndex('personId', personId)).filter(t => t.offerId === ended.id).sort((a, c) => (a.n || 0) - (c.n || 0));
+    const t = await tryAgain({ o: ended, cur: { t: tries[tries.length - 1] || { phase: 'ended' } }, tries });
+    if (t) await store.tries.save({ ...t, myAnswer: 'Yes', theirAnswer: 'Yes' });
+    return store.offers.get(ended.id);
+  }
   const p = await store.people.get(personId);
   return startOffer({ personId, contactId: p?.senderContactId || (p?.contactIds || [])[0] || null, myAnswer: 'Yes', theirAnswer: 'Yes' });
 }

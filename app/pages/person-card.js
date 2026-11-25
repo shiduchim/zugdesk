@@ -26,15 +26,15 @@ const atFrom = (d, prev) => (!d ? store.now() : prev && prev.slice(0, 10) === d 
 
 let root = null, gen = 0, unsub = null, timer = 0, B = null, tab = 'profile';
 const drafts = {}; // personId → unsent note text
-export function destroy() { if (root) swipeTabs(root, null); EDITF = false; SEC = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { if (root) swipeTabs(root, null); EDITF = false; SEC = null; SNAPF = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('person-card-page');
-  swipeTabs(root, { keys: () => TABS.map(t => t[0]), current: () => tab, go: (k) => setTab(k) });
+  swipeTabs(root, { keys: () => (EDITF || SEC ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub && unsub();
-  unsub = store.subscribe((ch) => { if (EDITF || SEC) return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
+  unsub = store.subscribe((ch) => { if (EDITF || SEC || document.activeElement?.dataset.id === 'person-card.note-text') return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
   await draw(params.id);
 }
 
@@ -65,7 +65,7 @@ async function draw(id, keepScroll = false) {
     h('div', { class: 'pc-tabs', role: 'tablist', 'data-id': 'person-card.tabs' },
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l,
         isShadchan && k === 'offers' && b.sh.length ? h('span', { class: 'pc-tab-n' }, b.sh.length) : null))),
-    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? singleShidduchim(b.p, b.sh, { refresh: redraw }) : offersTab(b)) : notesTab(b)),
+    h('div', { class: 'pc-body', 'data-id': 'person-card.body-' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? singleShidduchim(b.p, b.sh, { refresh: redraw }) : offersTab(b)) : notesTab(b)),
     // Status buttons stay on screen at the bottom (owner request); hidden while a section is being edited.
     // (Single Mode's interest buttons. In Shadchan Mode, Status and Talk to sit at the top of the Profile tab.)
     EDITF || SEC || isShadchan ? '' : dock('person-card.dock', statusStrip(b)));
@@ -88,10 +88,11 @@ function sec(title, dataId, key, ...kids) {
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
       facts && EDITF ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
-        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: async () => { document.activeElement?.blur(); EDITF = false; if (SNAPF) { B.p = await store.people.save(SNAPF); toast('Changes undone'); } SNAPF = null; redraw(); } }, 'Cancel'),
+        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: async () => { document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); EDITF = false; if (SNAPF && B.p.updatedAt !== SNAPF.updatedAt) { B.p = await store.people.save(SNAPF); toast('Changes undone'); } SNAPF = null; redraw(); } }, 'Cancel'),
         h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDITF = false; SNAPF = null; setTimeout(redraw, 120); } }, 'Save'))
+      : EDITF || SEC ? null
       : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDITF = true; SEC = null; SNAPF = structuredClone(B.p); redraw(); })
-      : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
+      : key ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
 // Empty answers are left out of the profile screen (owner request): no "Not recorded" rows.
@@ -118,9 +119,9 @@ function profileTab(b) {
         // Their own phone and email live only here, under the name (owner request).
         ownCards.length ? h('div', { class: 'reach', 'data-id': 'person-card.phone' }, ownCards.map(c => [c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null])) : null,
         p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
-      pencil('Edit basic info here', 'person-card.summary-edit', () => openSec('summary'))),
+      EDITF || SEC ? null : pencil('Edit summary here', 'person-card.summary-edit', () => openSec('summary'))),
     // Shadchan Mode: Status, Working on, ages, Talk to, Last confirmed, Find a match (stage S2).
-    isShadchan ? singlePanel(p, savePerson) : null,
+    isShadchan && !EDITF && !SEC ? singlePanel(p, savePerson) : null,
     sec('Facts', 'person-card.facts', 'facts',
       h('dl', { class: 'facts' },
         ...factList(p).map(f => EDITF && f.ed ? editRow(f) : fact(f.label, f.value, f.dataId)),
@@ -589,12 +590,12 @@ function movedToast(o) {
 function statusStrip(b) {
   const p = b.p, P = pron(p), l = latestByPerson(b.ints).get(p.id) || {};
   const live = b.offers.filter(o => o.status !== 'ended'), endedOnly = !live.length && b.offers.length > 0;
-  const st = ideaStatus(p, l, live.length > 0, endedOnly);
+  const st = ideaStatus(p, l, live.length > 0, endedOnly && (b.offers[0].updatedAt || true));
   const quick = (label, dataId, rec, primary) => h('button', { type: 'button', class: 'btn small' + (primary ? ' primary' : ''), 'data-id': dataId, onClick: async () => {
     const o = await recordInterest(p.id, rec);
     if (o) movedToast(o); else toast('Saved');
   } }, label);
-  const strip = (...kids) => h('div', { class: 'pc-status pc-status-' + st.key, 'data-id': 'person-card.status' }, ...kids);
+  const strip = (...kids) => h('div', { class: 'pc-status pc-status-' + st.key, 'data-id': 'person-card.interest-strip' }, ...kids);
   const label = h('span', { class: 'pc-status-label' }, st.label);
   if (st.key === 'shidduch') {
     const o = live[0];
