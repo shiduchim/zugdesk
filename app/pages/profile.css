@@ -36,15 +36,14 @@
 .mp-exp-tag{margin-inline-start:8px;padding:1px 6px;border:1px solid var(--exp-edge);border-radius:var(--radius);color:var(--exp-edge);font-family:var(--font-mono);font-size:var(--font-xs);font-weight:500;vertical-align:middle}
 .mp-short-head{padding:var(--gap-lg) 0 6px}
 .mp-cards{display:flex;flex-direction:column;gap:12px}
+.mp-cards+.btn{margin-top:12px;align-self:flex-start}
 .mp-card{border:1px solid var(--mp-card-edge);background:var(--mp-card-bg);border-radius:var(--radius-lg);padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .mp-card-head{display:flex;align-items:center;gap:6px}
-select.mp-lang-pick{width:auto;flex:0 0 auto;min-height:var(--btn-small-height);height:var(--btn-small-height);padding:0 4px;font-family:var(--font-mono);font-size:var(--font-xs);border-radius:var(--radius);background:var(--surface-2)}
 .mp-card-title{flex:1 1 100px;min-width:0;display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
 .mp-card-head{flex-wrap:wrap}
 .mp-card-title strong{overflow-wrap:anywhere}
 .mp-card .icon-btn{width:36px;height:36px}
 .mp-text{margin:0;font-family:var(--mp-text-font);font-size:var(--mp-text-size);line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--text)}
-.mp-undo{display:flex;align-items:center;gap:8px;padding:12px 0 0}
 .mp-body>.btn{align-self:flex-start;margin-top:14px}
 .mp-foot{padding:14px 0;margin-top:14px;border-top:1px solid var(--border)}
 textarea.mono{font-family:var(--mp-text-font);font-size:var(--mp-text-size);line-height:1.6}

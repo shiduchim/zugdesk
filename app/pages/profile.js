@@ -14,7 +14,7 @@ const TABS = [['profile', 'Profile'], ['short', 'Short versions']];
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 
 let root = null, unsub = null, timer = 0, gen = 0, tab = 'profile';
-let P = null, ND = null, lang = 'en';
+let P = null, lang = 'en';
 const busy = () => EDIT || SEC || ADDF || OPEN; // something is open for editing
 let lastDeleted = null;               // { version } for the inline Undo line
 let shareOpen = false;
@@ -36,10 +36,10 @@ export async function render(container, params) {
 
 async function draw(keep = false) {
   const token = ++gen;
-  const [p, nd, ch] = await Promise.all([PD.loadProfile(), N.loadNotes(), store.getChoices()]);
+  const [p, ch] = await Promise.all([PD.loadProfile(), store.getChoices()]);
   CH = ch;
   if (token !== gen || !root) return;
-  P = p; ND = nd;
+  P = p;
   lang = P.me?.lang || 'en'; // the profile is written in one language; each short version chooses its own
   const y = window.scrollY;
   root.innerHTML = '';
@@ -110,6 +110,8 @@ function profileTab(v) {
         // one list in order: "name: value" rows and one-line facts (no value) together, newest last
         // "name: value" facts first, then the one-line facts together under "Other facts" (text in the second column)
         ...v.facts.filter(f => f.value).flatMap(f => isCustom(f.id) ? customFact(f) : tapFact(f.id, f.label, f.value, 'profile.fact')),
+        // Edit facts also lists the usual facts that are still empty, like a person's card does
+        ...(EDIT ? STD_FACTS.filter(([id]) => !v.facts.some(f => f.id === id && f.value)).flatMap(([id, label]) => tapFact(id, label, '', 'profile.fact')) : []),
         ...v.facts.filter(f => !f.value && f.label).flatMap((f, i) => isCustom(f.id) ? customFact(f, i === 0 ? 'Other facts' : '')
           : [h('div', { class: 'fact', 'data-id': 'profile.fact-line' }, h('dt', {}, i === 0 ? 'Other facts' : ''), h('dd', { dir: 'auto' }, f.label))]),
         addFactRow())),
@@ -138,24 +140,18 @@ const inp = (value, dataId, extra = {}) => h('input', { class: 'input', dir: 'au
 const area = (value, dataId, rows = 6) => { const t = h('textarea', { class: 'input', dir: 'auto', rows, 'data-id': dataId }); t.value = value || ''; return t; };
 
 // ---------- Short versions ----------
-// Language choice on each short version (owner request, Stage 8): the Suggested text follows the
-// profileLang preference; a saved version keeps its own `lang`. Nothing is translated automatically.
-function langPick(value, dataId, onChange) {
-  return h('select', { class: 'input mp-lang-pick', 'aria-label': 'Language of this version', 'data-id': dataId, onChange: (e) => onChange(e.target.value) },
-    PD.LANGS.map(([k, , code]) => h('option', { value: k, selected: k === value || null }, code)));
-}
+// The Suggested text follows the profileLang preference; a saved version keeps its own `lang`
+// (it sets the text direction). The language box on each card was removed at the owner's request.
 function shortTab(v) {
   const sLang = store.getPrefs().profileLang || lang;
   const sugg = PD.suggestedText(P.me, sLang);
   const suggested = card({ title: 'Suggested', sub: 'auto · always up to date', experimental: true, text: sugg, dataId: 'profile.short-suggested', lang: sLang,
-    langPick: langPick(sLang, 'profile.short-suggested.lang', (k) => { store.setPref('profileLang', k); draw(true); toast(`Suggested shown in ${PD.langName(k)}`); }),
     menu: (a) => N.openMenu(a, 'profile.short-menu', (panel) => panel.append(
     N.menuItem('Save as a new version', 'keeps this text', async () => { N.closeMenu(); const t = await promptText({ title: 'Save as a new version', label: 'Name (e.g. who it is for)', ok: 'Save', dataId: 'profile.version-name' }); if (t) { await store.profileVersions.save({ title: t, lang: sLang, text: sugg, savedAt: store.now() }); toast('Saved'); } }, { dataId: 'profile.short-menu.save' }),
     N.menuItem('Share this text', '', () => { N.closeMenu(); share({ source: 'suggested' }); }, { dataId: 'profile.short-menu.share' }),
     N.menuItem('Choose what goes in it', '', () => { N.closeMenu(); shortSettings(); }, { dataId: 'profile.short-menu.settings' }))) });
   const cards = [];
   for (const x of P.versions) cards.push(card({ title: x.title || 'Saved version', sub: `saved ${store.formatDate(x.savedAt || x.createdAt)}`, text: x.text, dataId: 'profile.short-version', edit: () => versionSheet(x), lang: x.lang || 'en',
-    langPick: langPick(x.lang || 'en', 'profile.short-version.lang', async (k) => { await store.profileVersions.save({ ...x, lang: k }); toast(`Marked as ${PD.langName(k)}`); }),
     menu: (a) => N.openMenu(a, 'profile.version-menu', (panel) => panel.append(
       N.menuItem('Share this version', '', () => { N.closeMenu(); share({ source: x.id }); }, { dataId: 'profile.version-menu.share' }),
       N.menuItem('Duplicate', '', async () => { N.closeMenu(); await store.profileVersions.save({ title: (x.title || 'Version') + ' copy', lang: x.lang, text: x.text, savedAt: store.now() }); toast('Duplicated'); }, { dataId: 'profile.version-menu.duplicate' }),
@@ -168,7 +164,6 @@ function shortTab(v) {
     h('div', { class: 'pc-sec-head mp-short-head' }, h('h2', { class: 'eyebrow' }, 'Short versions'),
       h('button', { type: 'button', class: 'icon-btn', 'aria-label': 'Choose what goes in Suggested', title: 'Choose what goes in Suggested', 'data-id': 'profile.short-settings', html: icon('settings'), onClick: () => shortSettings() })),
     h('div', { class: 'mp-cards' }, cards),
-    lastDeleted ? h('div', { class: 'mp-undo', 'data-id': 'profile.short-undo' }, h('span', { class: 'stamp' }, `“${lastDeleted.title}” deleted`), h('button', { type: 'button', class: 'linkish', onClick: undoDelete }, 'Undo')) : null,
     h('button', { type: 'button', class: 'btn', 'data-id': 'profile.short-new', onClick: async () => {
       const t = await promptText({ title: 'New short version', label: 'Name (e.g. who it is for)', ok: 'Create', dataId: 'profile.version-name' });
       if (!t) return;
@@ -178,7 +173,7 @@ function shortTab(v) {
   ];
 }
 async function undoDelete() { if (!lastDeleted) return; const x = lastDeleted; lastDeleted = null; await store.profileVersions.save(x); toast('Restored'); }
-function card({ title, sub, text, dataId, edit, menu, lang: cardLang = 'en', langPick: pick = null, experimental = false }) {
+function card({ title, sub, text, dataId, edit, menu, lang: cardLang = 'en', experimental = false }) {
   return h('article', { class: 'mp-card' + (experimental ? ' mp-card-exp' : ''), 'data-id': dataId, dir: PD.isRtl(cardLang) ? 'rtl' : null },
     h('div', { class: 'mp-card-head' },
       h('div', { class: 'mp-card-title' }, h('strong', { dir: 'auto' }, title, experimental ? h('span', { class: 'mp-exp-tag', 'data-id': dataId + '.experimental' }, 'Experimental') : null), h('span', { class: 'stamp' }, sub)),
@@ -225,6 +220,11 @@ function drawSharing() {
 let CH = {}, OPEN = null, EDIT = false, SEC = null; // SEC: section open as a small form // EDIT: Facts pencil opened every fact at once
 const DKEY = { 'd:Languages': 'languages', 'd:Status': 'pStatus', 'd:Religious level': 'pLevel', 'd:Tzniut': 'pTzniut',
   'd:Religious background': 'pBackground', 'd:Religious': 'pReligious', 'd:Character & lifestyle': 'pTraits', 'd:Body type': 'pBody' };
+// The usual facts (same list as a person's card), shown even when empty while editing facts.
+const STD_FACTS = [['d:Languages', 'Languages'], ['d:Status', 'Marital status'], ['d:Religious level', 'Religious level'], ['d:Tzniut', 'Tzniut'],
+  ['d:Religious background', 'Religious background'], ['d:Religious', 'Religious'], ['d:Other religious details', 'Other religious details'],
+  ['d:Character & lifestyle', 'Character & lifestyle'], ['d:Body type', 'Body type'], ['d:maxAge', 'Looking up to age']];
+const keyTap = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } }; // a tappable row also opens from the keyboard
 function editorFor(id) {
   const me = P.me || {}, A = me.answers || {};
   const text = (get, set) => ({ type: 'text', get, set });
@@ -278,7 +278,7 @@ function customFact(f, otherTitle = '') {
   const open = OPEN === f.id || EDIT;
   const show = f.value ? [h('dt', { dir: 'auto' }, f.label), h('dd', { dir: 'auto' }, f.value)] : [h('dt', {}, otherTitle), h('dd', { dir: 'auto' }, f.label)];
   const row = h('div', { class: 'fact mp-tap' + (open ? ' open' : ''), 'data-id': 'profile.fact-custom', role: 'button', tabindex: 0,
-    'aria-expanded': String(open), onClick: EDIT ? null : () => { OPEN = OPEN === f.id ? null : f.id; draw(true); } }, ...show);
+    'aria-expanded': String(open), onClick: EDIT ? null : () => { OPEN = OPEN === f.id ? null : f.id; draw(true); }, onKeydown: keyTap }, ...show);
   if (!open) return [row];
   const lab = h('input', { class: 'input', dir: 'auto', value: f.value ? f.label : '', placeholder: 'Name (optional)', 'aria-label': 'Fact name', 'data-id': 'profile.fact-custom-label' });
   const val = h('input', { class: 'input', dir: 'auto', value: f.value ? f.value : f.label, placeholder: 'Fact', 'aria-label': 'Fact', 'data-id': 'profile.fact-custom-value' });
@@ -317,10 +317,10 @@ function customFact(f, otherTitle = '') {
       h('button', { type: 'button', class: 'btn small primary', 'data-id': 'profile.inline-done', onClick: save }, 'Save')))];
 }
 function tapFact(id, label, value, dataId) {
-  if (!value) return [];
+  if (!value && !EDIT) return [];
   const ed = editorFor(id), open = OPEN === id || (EDIT && !!ed);
   const row = h('div', { class: 'fact mp-tap' + (open ? ' open' : ''), 'data-id': dataId, role: ed ? 'button' : null, tabindex: ed ? 0 : null,
-    'aria-expanded': ed ? String(open) : null, onClick: ed && !EDIT ? () => { OPEN = open ? null : id; draw(true); } : null },
+    'aria-expanded': ed ? String(open) : null, onClick: ed && !EDIT ? () => { OPEN = open ? null : id; draw(true); } : null, onKeydown: ed ? keyTap : null },
     h('dt', { dir: 'auto' }, label), h('dd', { dir: 'auto' }, value));
   if (EDIT && ed) return [h('div', { class: 'fact mp-edit-row', 'data-id': dataId }, h('dt', { dir: 'auto' }, label), h('dd', {}, inlineEditor(id, ed)))];
   return open && ed ? [row, inlineEditor(id, ed)] : [row];
