@@ -67,7 +67,11 @@ export async function sendSheet(m, side, { onDone = null } = {}) {
   const atts = await store.attachments.byIndex('personId', P.id);
   const files = atts.filter(f => !isImg(f) && f.dataUrl), photos = atts.filter(f => isImg(f) && f.dataUrl);
   const numbers = (P.contactCards || []).filter(c => c.role !== 'shadchan' && (c.number || c.email));
-  const texts = [['suggested', T.suggested, suggestedFor(P)], ...(P.shortVersions || []).filter(x => (x.text || '').trim()).map(x => [x.id, x.title || 'Short version', x.text])];
+  // Which text: Suggested, the shadchan's own short versions, and each pasted original word for word ("as received").
+  const edited = new Set((P.shortVersions || []).map(x => x.fromSourceId).filter(Boolean));
+  const originals = (await store.sourcesForPerson(P.id)).filter(s => (s.text || '').trim() && !edited.has(s.id))
+    .map(s => [s.id, 'Original as received' + (s.sender ? ' · ' + s.sender : ''), s.text]);
+  const texts = [['suggested', T.suggested, suggestedFor(P)], ...(P.shortVersions || []).filter(x => (x.text || '').trim()).map(x => [x.id, x.title || 'Short version', x.text]), ...originals];
   const cards = (Q.contactCards || []).filter(c => c.number || c.email);
   const saved = store.getPrefs()[PREF] || {};
   const S = {
@@ -83,7 +87,7 @@ export async function sendSheet(m, side, { onDone = null } = {}) {
   const message = () => {
     const parts = [openLine().trim()];
     if (S.tick.text) parts.push((texts.find(x => x[0] === S.textId) || texts[0])[2].trim());
-    if (S.tick.numbers) parts.push([T.numbersHead, ...numbers.map(c => [c.role === 'person' ? store.phoneRoleLabel('person') : store.phoneRoleLabel(c.role), c.role === 'person' ? '' : c.name, c.number, c.email].filter(Boolean).join(' · '))].join('\n'));
+    if (S.tick.numbers) parts.push([T.numbersHead, ...numbers.map(c => [c.role === 'person' ? first(store.personName(P)) : store.phoneRoleLabel(c.role), c.role === 'person' ? '' : c.name, c.number, c.email].filter(Boolean).join(' · '))].join('\n'));
     return parts.filter(Boolean).join('\n\n');
   };
 
@@ -104,7 +108,7 @@ export async function sendSheet(m, side, { onDone = null } = {}) {
       h('p', { class: 'note', dir: 'auto' }, T.lead(store.personName(P), `${sd.T.sideLow[side]} (${store.personName(Q)})`)),
       h('div', { class: 'field', 'data-id': 'sh-send.to' }, h('label', { for: 'sh-send-to' }, T.to),
         cards.length ? h('select', { class: 'input', id: 'sh-send-to', 'data-id': 'sh-send.to-select', onChange: (e) => { S.to = e.target.value; draw(); } },
-          cards.map(c => h('option', { value: c.id, selected: S.to === c.id || null }, [c.role === 'person' ? `${store.personName(Q)} (own number)` : `${store.phoneRoleLabel(c.role)} · ${c.name || ''}`, c.number].filter(Boolean).join(' · '))),
+          cards.map(c => h('option', { value: c.id, selected: S.to === c.id || null }, [c.role === 'person' ? `Own number · ${store.personName(Q)}` : `${store.phoneRoleLabel(c.role)} · ${c.name || ''}`, c.number].filter(Boolean).join(' · '))),
           h('option', { value: '', selected: !S.to || null }, T.toNone))
           : h('p', { class: 'note', dir: 'auto' }, T.noCards(first(store.personName(Q))))),
       h('div', { class: 'field' }, h('label', { for: 'sh-send-open' }, T.opening),

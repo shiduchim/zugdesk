@@ -16,8 +16,9 @@ import { filesInline } from './files-inline.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
-// Shadchan Mode (spec/shadchan/design.md 6.2): Profile · Shidduchim · Notes. The tab key stays 'offers' so links keep working.
-const TABS = isShadchan ? [['profile', 'Profile'], ['offers', 'Shidduchim'], ['notes', 'Notes']]
+// Shadchan Mode (spec/shadchan/design.md 6.2): Profile · Short versions · Shidduchim · Notes. The tab key stays 'offers' so links keep working.
+// Short versions: the pasted original word for word, and texts the shadchan writes (Send offers them all).
+const TABS = isShadchan ? [['profile', 'Profile'], ['short', 'Short versions'], ['offers', 'Shidduchim'], ['notes', 'Notes']]
   : [['profile', 'Profile'], ['short', 'Short versions'], ['offers', 'Offers'], ['notes', 'Notes']];
 export const MY_INTEREST = ['Interested', 'Want to learn more', 'Not sure yet', 'Not interested'];
 export const THEIR_RESPONSE = ['Yes, interested', 'Checking availability', 'Thinking about it', 'Not available now', 'No', 'Not asked yet'];
@@ -423,7 +424,7 @@ async function followUpSheet(f = null) {
 }
 
 // ---------- Short versions (owner request, tweak mode) ----------
-// Like My Profile › Short versions. A pasted profile shows here word for word ("Pasted profile");
+// Like My Profile › Short versions. A pasted profile shows here word for word ("Original as received");
 // editing it saves an editable copy on the person (shortVersions) — the original itself never changes.
 // Suggested is built from the person's fields and is always up to date.
 function shortCard({ title, sub, text, dataId, edit, remove }) {
@@ -446,8 +447,8 @@ function shortTab(b) {
         if (!(await confirmDialog({ title: 'Delete this short version?', text: x.fromSourceId ? 'The pasted original stays in Original profiles.' : '', ok: 'Delete', danger: true, dataId: 'person-card.short-delete' }))) return;
         await saveList(list.filter(y => y.id !== x.id)); toast('Deleted');
       } })),
-    ...pasted.map(s => shortCard({ title: 'Pasted profile', sub: [s.sender, dateOnly(s.receivedAt || s.createdAt)].filter(Boolean).join(' · '), text: s.text, dataId: 'person-card.short-pasted',
-      edit: () => shortSheet(p, { id: store.newId('sv'), title: 'Pasted profile', text: s.text, fromSourceId: s.id }) })),
+    ...pasted.map(s => shortCard({ title: 'Original as received', sub: [s.sender, dateOnly(s.receivedAt || s.createdAt)].filter(Boolean).join(' · '), text: s.text, dataId: 'person-card.short-pasted',
+      edit: () => shortSheet(p, { id: store.newId('sv'), title: 'Original as received', text: s.text, fromSourceId: s.id }) })),
     shortCard({ title: 'Suggested', sub: 'auto · always up to date', text: suggestedFor(p), dataId: 'person-card.short-suggested' }),
     h('button', { type: 'button', class: 'btn', 'data-id': 'person-card.short-new', onClick: () => shortSheet(p, { id: store.newId('sv'), title: '', text: '' }) }, 'New short version'),
   ];
