@@ -81,3 +81,4 @@
 - My Profile: in Edit facts, changing two choice lists keeps both; after "Add fact" the next fact can be typed straight away; a cancelled New short version leaves nothing behind; leaving the page with Add a fact open and coming back does not undo newer changes.
 - Person card: Cancel on Edit facts with no change does not change "updated"; while a section is open the other pencils (and, in Shadchan Mode, the Status panel) hide; tabs do not swipe while editing.
 - Single Mode: Reopen on a person whose shidduch ended shows New; both yes again starts a new try on the same shidduch.
+- Profile pages, wording: Facts say "Marital status" and "Work / learning" on all three pages; the sender shows once ("Sent by · date"); no About text under the name; GUY/GIRL tag only in Shadchan Mode, beside the name.

@@ -212,7 +212,6 @@ function shortTab(v) {
       if (!t) return;
       versionSheet({ title: t, lang: sLang, text: '', savedAt: store.now() }); // saved only when Save is tapped
     } }, 'New short version'),
-    h('p', { class: 'stamp mp-foot' }, 'these are the texts people receive · copy any box'),
     (sharingEl = h('section', { class: 'pc-sec', 'data-id': 'profile.sharing' }), drawSharing(), sharingEl),
   ];
 }

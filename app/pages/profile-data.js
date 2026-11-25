@@ -30,13 +30,14 @@ export async function loadProfile() {
 // The profile as seen in one language: translated text where it exists, base text otherwise.
 // `missing` lists fields still showing the base language.
 // Answers picked in the Edit form (same choices as Add Person) shown as facts, before the typed ones.
-const DERIVED = [['Languages', (b) => b.languages], ['Status', (b) => b.answers.pStatus], ['Religious level', (b) => b.answers.pLevel],
+// A third item is the id when the shown name changed (saved choices still point at 'd:Status').
+const DERIVED = [['Languages', (b) => b.languages], ['Marital status', (b) => b.answers.pStatus, 'Status'], ['Religious level', (b) => b.answers.pLevel],
   ['Tzniut', (b) => b.answers.pTzniut], ['Religious background', (b) => b.answers.pBackground], ['Religious', (b) => b.answers.pReligious],
   ['Other religious details', (b) => b.religiousOther], ['Character & lifestyle', (b) => b.answers.pTraits], ['Body type', (b) => b.answers.pBody]];
 const STD_KEYS = ['pStatus', 'pLevel', 'pTzniut', 'pBackground', 'pReligious', 'pTraits', 'pBody', 'languages'];
 function derivedFacts(b) {
   const txt = (v) => Array.isArray(v) ? v.filter(Boolean).join(', ') : String(v ?? '').trim();
-  const out = DERIVED.map(([label, get]) => ({ id: 'd:' + label, label, value: txt(get(b)), derived: true }));
+  const out = DERIVED.map(([label, get, idName]) => ({ id: 'd:' + (idName || label), label, value: txt(get(b)), derived: true }));
   for (const [k, v] of Object.entries(b.answers || {})) if (!STD_KEYS.includes(k)) out.push({ id: 'd:' + k, label: (b.answerLabels || {})[k] || k, value: txt(v), derived: true });
   if (b.maxAge) out.push({ id: 'd:maxAge', label: 'Looking up to age', value: String(b.maxAge), derived: true });
   return out.filter(f => f.value);

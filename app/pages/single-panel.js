@@ -8,11 +8,8 @@ import { STATUSES, statusOf, agoWords } from './singles-data.js';
 import { dateOnly } from './people-data.js';
 
 const T = {
-  head: 'Shadchan',
   status: 'Status',
-  working: 'Working on',
   workingOn: 'Working on',
-  workingOff: 'On file',
   ages: 'Looking for ages',
   from: 'from', to: 'to',
   talkTo: 'Talk to',
@@ -51,7 +48,7 @@ export function singlePanel(p, save) {
         STATUSES.map(([v, l]) => h('option', { value: v, selected: st === v || null }, l))),
       h('button', { type: 'button', class: 'btn small sp-star', 'aria-pressed': p.starred ? 'true' : 'false', 'data-id': 'person-card.working-on',
         title: p.starred ? 'Tap to put back on file' : 'Tap to mark Working on',
-        onClick: () => save({ starred: !p.starred }, true) }, ico('star'), p.starred ? T.workingOn : T.workingOff)),
+        onClick: () => save({ starred: !p.starred }, true) }, ico('star'), T.workingOn)), // the filled star shows it is on
     st === 'busy' && p.busyUntil ? h('p', { class: 'note', 'data-id': 'person-card.busy-until' }, T.busyUntil(p.busyUntil)) : null,
     // Stage S3: Busy or Engaged that a shidduch set by itself (it goes back to Available when that shidduch ends).
     p.statusBy && (st === 'busy' || st === 'engaged') ? h('p', { class: 'note', 'data-id': 'person-card.status-by' }, st === 'busy' ? T.busyAuto : T.engagedAuto, ' ',

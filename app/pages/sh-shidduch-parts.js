@@ -49,7 +49,6 @@ const T = {
   tabNew: (first) => `New idea for ${first}`,
   tabEmpty: (name) => `No shidduch recorded for ${name} yet.`,
   tabOpen: 'Open now', tabIdeas: 'Ideas', tabPast: 'Finished',
-  tabNote: 'Answers, dates and the history are on the shidduch itself. Tap one to open it.',
   yourMove: 'Your move',
 };
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
@@ -221,5 +220,5 @@ export function singleShidduchim(p, list, { refresh = null } = {}) {
         onClick: () => newIdeaSheet({ [k + 'Id']: p.id, lock: k, onSaved: refresh }) }, T.tabNew(first)) : null),
     list.length ? null : h('p', { class: 'note', 'data-id': 'person-card.shidduchim-empty' }, T.tabEmpty(store.personName(p))),
     grp(T.tabOpen, live, 'person-card.shidduchim-open'), grp(T.tabIdeas, ideas, 'person-card.shidduchim-ideas'), grp(T.tabPast, past, 'person-card.shidduchim-past'),
-    list.length ? h('p', { class: 'note' }, T.tabNote) : null)];
+    )];
 }

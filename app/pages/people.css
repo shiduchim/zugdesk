@@ -17,6 +17,7 @@
 .pc-namebar h1{font-size:var(--font-h1);min-width:0;overflow-wrap:anywhere}
 .pc-namebar .spacer{flex:1}
 .pc-kind{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.pc-namebar h1 .pc-kind{margin-inline-start:8px;vertical-align:middle;font-weight:400;white-space:nowrap}
 .icon-btn.bordered{border:1px solid var(--border);background:var(--surface)}
 .pc-actions{display:flex;gap:var(--gap);flex-wrap:wrap;margin:6px 0 10px}
 .pc-tabs{display:flex;gap:3px;padding:3px;background:var(--surface-2);border-radius:var(--radius-lg);overflow-x:auto;scrollbar-width:none}

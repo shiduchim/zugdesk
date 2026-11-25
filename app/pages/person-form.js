@@ -259,7 +259,7 @@ function section(cat) {
       : h('div', { class: 'inline-field' }, h('label', { for: 'ap-maxAge' }, 'Up to what age?'),
         h('input', { class: 'input tiny', id: 'ap-maxAge', type: 'number', min: 18, max: 120, inputmode: 'numeric', value: d.p.maxAge || '', placeholder: 'Age', 'data-id': 'person.max-age', onInput: (e) => { d.p.maxAge = e.target.value; touch(); } })));
     case 'personal': return block(cat,
-      textField('Occupation', 'occupation', {}, 'person.occupation'),
+      textField('Work / learning', 'occupation', {}, 'person.occupation'),
       cityField(),
       h('div', { class: 'field' }, h('label', {}, 'Languages spoken'), choiceGroup('languages', 'person.languages')));
     case 'contacts': return block(cat,

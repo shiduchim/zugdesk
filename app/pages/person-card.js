@@ -55,8 +55,8 @@ async function draw(id, keepScroll = false) {
   root.append(
     h('div', { class: 'pc-namebar', 'data-id': 'person-card.namebar' },
       h('a', { class: 'icon-btn', href: '#' + peopleListPath(p.kind), 'aria-label': 'Back to ' + peopleListName(p.kind), 'data-id': 'person-card.back', html: icon('back') }),
-      h('h1', { dir: 'auto' }, store.personName(p)),
-      p.kind ? h('span', { class: 'pc-kind' }, kindLabel(p.kind)) : null,
+      // Guy / Girl tag only in Shadchan Mode (in Single Mode everyone on this list is the same kind). Inside the title so it stays beside a long name.
+      h('h1', { dir: 'auto' }, store.personName(p), isShadchan && p.kind ? h('span', { class: 'pc-kind' }, kindLabel(p.kind)) : null),
       h('span', { class: 'spacer' }),
       h('a', { class: 'icon-btn bordered', href: `#/people/${enc}/edit`, 'aria-label': 'Edit person', title: 'Edit person', 'data-id': 'person-card.edit', html: icon('edit') })),
     h('div', { class: 'pc-actions', 'data-id': 'person-card.actions' },
@@ -110,43 +110,42 @@ function profileTab(b) {
   const cards = p.contactCards || [];
   const ownCards = cards.filter(c => c.role === 'person' && (c.number || c.email));
   const others = cards.filter(c => c.role !== 'person');
+  const sender = p.sender || first?.sender || '';
   return [
     SEC === 'summary' ? h('div', { class: 'pc-summary mp-editing', 'data-id': 'person-card.summary' }, secForm('summary', 'person-card.summary')) :
     h('div', { class: 'pc-summary', 'data-id': 'person-card.summary' },
       h('div', { class: 'avatar lg' }, store.initials(p)),
       h('div', { class: 'pc-summary-text' },
-        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || ''),
+        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || h('span', { class: 'muted' }, 'Age · city · work')),
         // Their own phone and email live only here, under the name (owner request).
         ownCards.length ? h('div', { class: 'reach', 'data-id': 'person-card.phone' }, ownCards.map(c => [c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null])) : null,
-        p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
+        ),
       EDITF || SEC ? null : pencil('Edit summary here', 'person-card.summary-edit', () => openSec('summary'))),
     // Shadchan Mode: Status, Working on, ages, Talk to, Last confirmed, Find a match (stage S2).
     isShadchan && !EDITF && !SEC ? singlePanel(p, savePerson) : null,
     sec('Facts', 'person-card.facts', 'facts',
       h('dl', { class: 'facts' },
-        ...factList(p).map(f => EDITF && f.ed ? editRow(f) : fact(f.label, f.value, f.dataId)),
-        EDITF ? null : fact('Profile source', first ? [first.sender || 'Sender not recorded', dateOnly(first.receivedAt || first.createdAt)].join(' · ') : (p.sender || ''), 'person-card.fact-source')),
+        ...factList(p).map(f => EDITF && f.ed ? editRow(f) : fact(f.label, f.value, f.dataId))),
       h('a', { class: 'pc-add', href: edit('about'), 'data-id': 'person-card.add-fact' }, 'Add a fact…')),
     !p.about ? null : sec(`About ${firstName(p)}`, 'person-card.about', 'about',
       h('p', { class: 'prewrap', dir: 'auto' }, p.about)),
     !p.looking ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', 'looking',
       h('p', { class: 'prewrap', dir: 'auto' }, p.looking)),
-    !(others.length || p.sender) ? null : sec('Contacts and source', 'person-card.contacts', 'contacts',
-      others.length || p.sender ? h('dl', { class: 'facts' },
+    // "Sent by" carries the date the profile came in (it used to be repeated as "Profile source" in Facts).
+    !(others.length || sender) ? null : sec('Contacts and source', 'person-card.contacts', 'contacts',
+      h('dl', { class: 'facts' },
         ...others.map(c => contactFact(c, b)),
-        p.sender ? h('div', { class: 'fact' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(p.sender, p.senderContactId, b)), h('span', { class: 'priv' }, 'private')) : null)
-        : h('p', {}, NR()),
-      h('p', { class: 'note' }, 'A number given for a mother, father, reference or shadchan is never shown as their own number.')),
+        sender ? h('div', { class: 'fact', 'data-id': 'person-card.sent-by' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(sender, p.senderContactId || first?.senderContactId, b),
+          first ? h('span', { class: 'note' }, ' · ' + store.formatDate(first.receivedAt || first.createdAt)) : null)) : null)),
     !((p.know || []).length || p.yearsKnown || p.howKnow) ? null : sec(`How I know ${P.him}`, 'person-card.known', 'known',
       (p.know || []).length || p.yearsKnown || p.howKnow ? h('dl', { class: 'facts' },
         fact('Contact', p.know, 'person-card.fact-know'),
         p.yearsKnown ? fact('Years known', p.yearsKnown) : null,
-        p.howKnow ? fact('How', p.howKnow) : null) : h('p', {}, NR()),
-      h('p', { class: 'note' }, 'Internal only. Never part of anything you share.')),
+        p.howKnow ? fact('How', p.howKnow) : null) : h('p', {}, NR())),
     sec('Also yours to keep', 'person-card.keep', null,
       h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'person-card.attachments', onClick: () => attachmentsSheet(b) },
         ico('folder'), h('span', { class: 'grow' }, 'Attachments'), h('span', { class: 'mono note' }, `${atts.length ? atts.length : 'No files'} · private`), ico('chevron'))),
-    h('div', { class: 'stamp pc-stamp' }, `updated ${dateOnly(p.updatedAt)} · added ${dateOnly(p.createdAt)}`),
+    h('div', { class: 'stamp pc-stamp' }, `updated ${store.formatDate(p.updatedAt)} · added ${store.formatDate(p.createdAt)}`),
     h('div', { class: 'pc-danger' }, h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'person-card.delete', onClick: () => deletePerson(b) }, 'Delete this person')),
   ];
 }
@@ -164,7 +163,7 @@ function contactFact(c, b) {
     h('dd', { dir: 'auto' },
       h('div', {}, name ? linkedName(name, c.contactId, b) : h('span', { class: 'muted' }, c.role === 'unknown' ? 'Not sure whose number' : 'Name not recorded')),
       c.number || c.email ? h('div', { class: 'reach' }, c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null) : h('div', { class: 'small' }, 'Phone not recorded')),
-    h('span', { class: 'priv' }, 'private'));
+    );
 }
 
 function attachmentsSheet(b) {
@@ -219,17 +218,14 @@ function offersTab(b) {
     sec('Formal offers and shidduchim', 'person-card.formal', null,
       offersList.length
         ? offersList.map(o => formalRow(o, b))
-        : h('p', {}, 'No formal offer has been created. Saving a name or recording interest does not move anyone into In Progress.'),
+        : h('p', {}, 'No formal offer yet.'),
       h('dl', { class: 'facts' },
-        fact('Existing tries', b.tries.length ? String(b.tries.length) : 'None'),
+        b.tries.length ? fact('Existing tries', String(b.tries.length)) : null,
         b.fus.filter(f => !f.done)[0] ? fact('Next step', b.fus.filter(f => !f.done).sort((a, c) => (a.dueAt || '9').localeCompare(c.dueAt || '9'))[0].text) : null),
-      offersList.length
-        ? h('p', { class: 'note' }, 'Answers, dates, ending and Try Again are recorded on the shidduch itself, never here.')
+      offersList.length ? null
         : h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.start-offer', onClick: () => startOfferSheet(b) }, 'Start a formal offer')),
     sec('Suggested by', 'person-card.suggested', null,
-      suggestedBy(b),
-      h('p', { class: 'note' }, 'One person record. Several sources. No duplicate profiles.')),
-    h('p', { class: 'note pc-foot' }, 'Formal dates and earlier tries, once there are any, live in Shidduchim with their own history. This card only shows a short status.'),
+      suggestedBy(b)),
   ];
 }
 
@@ -357,10 +353,7 @@ function notesTab(b) {
           await store.recordEvent({ personIds: [p.id], contactIds: d.contactIds, type: d.type === '_unknown' ? '' : d.type, text: d.text, at: atFrom(d.date) });
           drafts[p.id] = { text: '', type: '_unknown', date: today(), contactIds: [] };
           toast(d.contactIds.length ? 'Saved — also in the contact’s history' : 'Note saved');
-        } }, 'Save note')),
-      h('p', { class: 'note' }, 'Saved only on this phone. Nothing is sent to anyone.')),
-    sec('Source and privacy', 'person-card.privacy', null,
-      h('p', {}, 'These notes are separate from anything you send from My Profile. A note linked to a shadchan is one record that shows in both places.')),
+        } }, 'Save note'))),
   ];
 }
 function grow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 420) + 'px'; }
@@ -474,8 +467,8 @@ function factList(p) {
   const t = (label, field, dataId) => ({ label, value: p[field], dataId, ed: { type: 'text', get: () => p[field], set: (x) => ({ [field]: x }) } });
   const c = (label, key, dataId) => ({ label, value: key === 'languages' ? p.languages : A[key], dataId, ed: { type: 'choice', key } });
   const custom = Object.entries(A).filter(([k, v]) => !LISTS[k] && (Array.isArray(v) ? v.length : v)).map(([k]) => c((p.answerLabels || {})[k] || k, k, 'person-card.fact-custom'));
-  return [t('Age', 'age', 'person-card.fact-age'), t('City', 'city', 'person-card.fact-city'), t('Occupation', 'occupation', 'person-card.fact-occupation'),
-    c('Languages', 'languages', 'person-card.fact-languages'), c('Status', 'pStatus', 'person-card.fact-status'), c('Religious level', 'pLevel', 'person-card.fact-level'),
+  return [t('Age', 'age', 'person-card.fact-age'), t('City', 'city', 'person-card.fact-city'), t('Work / learning', 'occupation', 'person-card.fact-occupation'),
+    c('Languages', 'languages', 'person-card.fact-languages'), c('Marital status', 'pStatus', 'person-card.fact-status'), c('Religious level', 'pLevel', 'person-card.fact-level'),
     c('Tzniut', 'pTzniut', 'person-card.fact-tzniut'), c('Religious background', 'pBackground', 'person-card.fact-background'),
     c('Religious', 'pReligious', 'person-card.fact-religious'), t('Other religious details', 'religiousOther', 'person-card.fact-religious-other'),
     c('Character & lifestyle', 'pTraits', 'person-card.fact-traits'), c('Body type', 'pBody', 'person-card.fact-body'),
@@ -525,7 +518,7 @@ function secForm(key, dataId) {
     const own = cards.find(c => c.role === 'person');
     const f = { name: tin(p.name, 'name'), age: tin(p.age, 'age', { inputmode: 'numeric' }), city: tin(p.city, 'city'), occupation: tin(p.occupation, 'occupation'),
       phone: tin(own?.number, 'phone', { type: 'tel' }), email: tin(own?.email, 'email', { type: 'email' }) };
-    body = [row('Name', f.name), h('div', { class: 'mp-fgrid' }, row('Age', f.age), row('City', f.city)), row('Occupation', f.occupation),
+    body = [row('Name', f.name), h('div', { class: 'mp-fgrid' }, row('Age', f.age), row('City', f.city)), row('Work / learning', f.occupation),
       h('div', { class: 'mp-fgrid' }, row('Their phone', f.phone), row('Their email', f.email))];
     collect = () => {
       const number = store.cleanPhone(t(f.phone.value)), email = t(f.email.value);

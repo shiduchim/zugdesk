@@ -555,7 +555,7 @@ export const PERSON_CHOICE_DEFAULTS = {
   pStatus: ['Never been married', 'Divorced', 'Has children'],
   pReligious: ['Kohen', 'Prays 3× daily', 'Baal Teshuvah', 'Kosher for Kohen'],
   pLevel: ['Strong', 'Moderate', 'Light'],
-  pTzniut: ['Light', 'Moderate', 'Strong'],
+  pTzniut: ['Strong', 'Moderate', 'Light'], // same order as Religious level
   pBackground: ['Chabad', 'Yeshivish', 'Breslev', 'Sephardi', 'Dati Leumi'],
   pTraits: ['Kind', 'Quiet', 'Outgoing', 'Athletic'],
   pBody: ['Regular', 'Overweight', 'Highly overweight'],

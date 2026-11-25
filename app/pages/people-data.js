@@ -19,7 +19,7 @@ export function pron(p) {
 // Bubble lists. type: rows = oval yes-rows (empty = not recorded), multi, single.
 export const LISTS = {
   languages: { name: 'Languages spoken', type: 'multi' },
-  pStatus: { name: 'Status', type: 'rows' },
+  pStatus: { name: 'Marital status', type: 'rows' },
   pLevel: { name: 'Religious Level', type: 'single' },
   pTzniut: { name: 'Tzniut', type: 'single' },
   pBackground: { name: 'Religious Background', type: 'multi' },
@@ -226,7 +226,7 @@ export function suggestedFor(p) {
   const lines = [p.name || ''];
   const sum = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
   if (sum) lines.push('• ' + sum);
-  for (const [k, v] of [['Religious level', A.pLevel], ['Religious background', A.pBackground], ['Languages', p.languages], ['Status', A.pStatus]]) if (txt(v)) lines.push(`• ${k}: ${txt(v)}`);
+  for (const [k, v] of [['Religious level', A.pLevel], ['Religious background', A.pBackground], ['Languages', p.languages], ['Marital status', A.pStatus]]) if (txt(v)) lines.push(`• ${k}: ${txt(v)}`);
   if (p.about) lines.push('', p.about.split(/(?<=[.!?])\s/)[0]);
   if (p.looking) lines.push('', 'Looking for: ' + p.looking.split(/(?<=[.!?])\s/)[0]);
   return lines.join('\n').trim();
