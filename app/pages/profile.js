@@ -7,11 +7,11 @@ import { navigate } from '../js/router.js';
 import * as PD from './profile-data.js';
 import * as N from './notes-data.js';
 import { openShare, copy } from './profile-share.js';
+import { filesInline } from './files-inline.js';
 
 // No Notes tab here any more (owner request, tweak mode): your own notes live on Home.
 const TABS = [['profile', 'Profile'], ['short', 'Short versions']];
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
-const MAX_FILE = 5 * 1024 * 1024;
 
 let root = null, unsub = null, timer = 0, gen = 0, tab = 'profile';
 let P = null, ND = null, lang = 'en';
@@ -23,7 +23,7 @@ export function destroy() { if (root) swipeTabs(root, null); EDIT = false; SEC =
 
 export async function render(container, params) {
   root = container;
-  root.classList.add('profile-page', 'wide');
+  root.classList.add('profile-page');
   swipeTabs(root, { keys: () => (busy() ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub = store.subscribe((ch) => {
@@ -45,7 +45,6 @@ async function draw(keep = false) {
   root.innerHTML = '';
   const v = PD.view(P.me, lang);
   root.append(h('div', { class: 'mp-layout' },
-    sideNav(v),
     h('div', { class: 'mp-main' },
       header(v),
       h('div', { class: 'pc-tabs mp-tabs', role: 'tablist', 'data-id': 'profile.tabs' },
@@ -58,29 +57,15 @@ async function draw(keep = false) {
 }
 function setTab(k) { navigate(k === 'profile' ? '/profile' : '/profile/' + k, { replace: true }); }
 
-// ---------- header + desktop navigator ----------
+// ---------- header ----------
 function header(v) {
   return h('div', { class: 'mp-head', 'data-id': 'profile.header' },
     h('h1', { dir: 'auto' }, v.name || 'My Profile'),
     h('span', { class: 'spacer' }),
-    h('a', { class: 'icon-btn bordered', href: '#/profile/edit', 'aria-label': 'Edit profile', title: 'Edit profile', 'data-id': 'profile.edit', html: icon('edit') }),
-    h('button', { type: 'button', class: 'btn primary mp-share-top', 'data-id': 'profile.share', onClick: () => share() }, 'Share'));
+    h('a', { class: 'icon-btn bordered', href: '#/profile/edit', 'aria-label': 'Edit profile', title: 'Edit profile', 'data-id': 'profile.edit', html: icon('edit') }));
 }
 async function share(opts) { if (shareOpen) return; shareOpen = true; try { await openShare(opts); } finally { shareOpen = false; } }
 
-function sideNav(v) {
-  const go = (id) => (e) => { e.preventDefault(); if (tab !== 'profile') { setTab('profile'); setTimeout(() => scrollToSec(id), 250); } else scrollToSec(id); };
-  const link = (label, id) => h('a', { href: '#/profile', class: 'mp-nav-sub', onClick: go(id) }, label);
-  return h('nav', { class: 'mp-nav', 'aria-label': 'My Profile sections', 'data-id': 'profile.side-nav' },
-    h('div', { class: 'mp-nav-title' }, 'My Profile'),
-    h('a', { href: '#/profile', class: 'mp-nav-item', 'aria-current': tab === 'profile' ? 'page' : null }, 'Profile'),
-    link('Facts', 'mp-facts'), link('About me', 'mp-about'), link('What I’m looking for', 'mp-looking'), link('Contact', 'mp-contact'), link('References', 'mp-refs'), link('Files', 'mp-files'),
-    h('a', { href: '#/profile/short', class: 'mp-nav-item', 'aria-current': tab === 'short' ? 'page' : null }, 'Short versions', h('span', { class: 'mp-count' }, String(P.versions.length + 1))),
-    h('div', { class: 'mp-nav-foot' },
-      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.side-add-section', onClick: () => navigate('/profile/edit/me-sections') }, 'Add section…'),
-      h('div', { class: 'stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet')));
-}
-function scrollToSec(id) { document.getElementById(id)?.scrollIntoView({ block: 'start', behavior: 'smooth' }); }
 
 // ---------- Profile tab ----------
 // Profile tab = how your profile reads (owner request, tweak mode). Editing happens in the
@@ -139,7 +124,10 @@ function profileTab(v) {
     ...v.sections.map(s => sec(s.title, 'mp-sec-' + s.id, 'profile.section', 'sec:' + s.id,
       h('p', { dir: 'auto', class: 'prewrap' }, s.text || notYet()),
       s.share === false ? h('p', { class: 'note' }, 'Kept out of the full profile when sharing.') : null)),
-    sec('Photos and docs', 'mp-files', 'profile.files-sec', null, filesInline()),
+    // Add-line: the same kind of line as on a person's card (the desktop side menu that held it is gone)
+    busy() ? null : h('div', { class: 'pc-add-row', 'data-id': 'profile.add-row' }, h('span', { class: 'note' }, 'Add:'),
+      h('button', { type: 'button', class: 'linkish', 'data-id': 'profile.add-section', onClick: () => navigate('/profile/edit/me-sections') }, 'A section of your own')),
+    sec('Photos and docs', 'mp-files', 'profile.files-sec', null, filesInline({ files: P.files, dataId: 'profile.files', extra: { profileFile: true } })),
     h('div', { class: 'stamp pc-stamp' }, P.me?.updatedAt ? 'updated ' + store.formatDate(P.me.updatedAt) : 'not saved yet'),
   ];
 }
@@ -148,32 +136,6 @@ const save = async (patch, msg = 'Saved') => { P.me = await PD.saveProfile(P.me,
 const field = (label, input) => h('div', { class: 'field' }, h('label', {}, label), input);
 const inp = (value, dataId, extra = {}) => h('input', { class: 'input', dir: 'auto', value: value || '', 'data-id': dataId, ...extra });
 const area = (value, dataId, rows = 6) => { const t = h('textarea', { class: 'input', dir: 'auto', rows, 'data-id': dataId }); t.value = value || ''; return t; };
-
-async function filesSheet() {
-  const list = h('div', { class: 'mp-files' });
-  const picker = h('input', { type: 'file', multiple: true, class: 'hidden', accept: 'image/*,application/pdf', 'data-id': 'profile.files.input' });
-  const drawFiles = () => {
-    list.innerHTML = '';
-    if (!P.files.length) list.append(h('p', { class: 'note' }, 'No files yet. Photos or documents you may want to send.'));
-    for (const f of P.files) list.append(h('div', { class: 'mp-file', 'data-id': 'profile.file' },
-      h('a', { class: 'att-row', href: f.dataUrl, download: f.name }, ico('file'), h('span', { dir: 'auto' }, f.name), h('span', { class: 'priv' }, PD.fileKind(f))),
-      h('button', { type: 'button', class: 'linkish danger-text', onClick: async () => {
-        if (!(await confirmDialog({ title: 'Remove this file?', text: f.name, ok: 'Remove', danger: true, dataId: 'profile.file-remove-dialog' }))) return;
-        await store.attachments.remove(f.id); P.files = P.files.filter(x => x.id !== f.id); drawFiles();
-      } }, 'Remove')));
-  };
-  picker.addEventListener('change', async () => {
-    for (const f of picker.files) {
-      if (f.size > MAX_FILE) { toast(`${f.name} is larger than 5 MB`); continue; }
-      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
-      P.files.push(await store.attachments.save({ name: f.name, type: f.type, size: f.size, dataUrl, profileFile: true, personId: null, contactId: null }));
-    }
-    picker.value = ''; drawFiles();
-  });
-  drawFiles();
-  await sheet({ title: 'Files', dataId: 'profile.files-sheet', body: [h('p', { class: 'note' }, 'Kept on this phone. Nothing is attached unless you tick it while sharing.'), list, picker,
-    h('button', { type: 'button', class: 'btn', 'data-id': 'profile.files.add', onClick: () => picker.click() }, ico('upload'), 'Add files')] });
-}
 
 // ---------- Short versions ----------
 // Language choice on each short version (owner request, Stage 8): the Suggested text follows the
@@ -256,36 +218,6 @@ function drawSharing() {
         h('pre', { class: 'mp-text', dir: 'auto' }, s.text), s.files?.length ? h('p', { class: 'note' }, 'Files: ' + s.files.join(', ')) : null] }) },
         h('span', { class: 'stamp' }, store.formatDate(s.at)), h('span', { class: 'grow', dir: 'auto' }, `${s.recipientName || 'No recipient chosen'} · ${s.what}`), ico('chevron'))))));
   sharingEl.append(det);
-}
-
-// Photos and docs live right on the page: list, Add and Remove, no popup (owner request).
-function filesInline() {
-  const wrap = h('div', { class: 'mp-files', 'data-id': 'profile.files' });
-  const picker = h('input', { type: 'file', multiple: true, class: 'hidden', accept: 'image/*,application/pdf', 'data-id': 'profile.files.input' });
-  const draw = () => {
-    wrap.innerHTML = '';
-    const photos = P.files.filter(f => PD.fileKind(f) === 'photo'), docs = P.files.filter(f => PD.fileKind(f) !== 'photo');
-    const del = async (f) => {
-      if (!(await confirmDialog({ title: 'Remove this file?', text: f.name, ok: 'Remove', danger: true, dataId: 'profile.file-remove-dialog' }))) return;
-      await store.attachments.remove(f.id); P.files = P.files.filter(x => x.id !== f.id); draw();
-    };
-    if (photos.length) wrap.append(h('div', { class: 'me-photos' }, photos.map(f => h('figure', { class: 'me-photo', 'data-id': 'profile.photo' },
-      h('a', { href: f.dataUrl, download: f.name }, h('img', { src: f.dataUrl, alt: f.name })),
-      h('button', { type: 'button', class: 'linkish danger-text', onClick: () => del(f) }, 'Remove')))));
-    for (const f of docs) wrap.append(h('div', { class: 'me-doc', 'data-id': 'profile.file' }, ico('file'),
-      h('a', { class: 'grow', dir: 'auto', href: f.dataUrl, download: f.name }, f.name), h('button', { type: 'button', class: 'linkish danger-text', onClick: () => del(f) }, 'Remove')));
-    wrap.append(picker, h('button', { type: 'button', class: 'btn small me-add', 'data-id': 'profile.files.add', onClick: () => picker.click() }, ico('upload'), 'Add photos or docs'));
-  };
-  picker.addEventListener('change', async () => {
-    for (const f of picker.files) {
-      if (f.size > MAX_FILE) { toast(`${f.name} is larger than 5 MB`); continue; }
-      const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => rej(r.error); r.readAsDataURL(f); });
-      P.files.push(await store.attachments.save({ name: f.name, type: f.type, size: f.size, dataUrl, profileFile: true, personId: null, contactId: null }));
-    }
-    picker.value = ''; draw();
-  });
-  draw();
-  return wrap;
 }
 
 // ---------- Tap a fact to change it right here (owner request, tweak mode) ----------

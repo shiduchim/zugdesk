@@ -12,6 +12,7 @@ import { singlePanel } from './single-panel.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 import { forSingle, removeShidduch, fullName as shName, other as shOther } from './sh-shidduch-data.js';
 import { singleShidduchim } from './sh-shidduch-parts.js';
+import { filesInline } from './files-inline.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
@@ -66,9 +67,12 @@ async function draw(id, keepScroll = false) {
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l,
         isShadchan && k === 'offers' && b.sh.length ? h('span', { class: 'pc-tab-n' }, b.sh.length) : null))),
     h('div', { class: 'pc-body', 'data-id': 'person-card.body-' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? singleShidduchim(b.p, b.sh, { refresh: redraw }) : offersTab(b)) : notesTab(b)),
-    // Status buttons stay on screen at the bottom (owner request); hidden while a section is being edited.
-    // (Single Mode's interest buttons. In Shadchan Mode, Status and Talk to sit at the top of the Profile tab.)
-    EDITF || SEC || isShadchan ? '' : dock('person-card.dock', statusStrip(b)));
+    // The main step stays on screen at the bottom (owner request); hidden while a section is being edited.
+    // Single Mode: the interest buttons. Shadchan Mode: Find a match (Status and Talk to sit at the top of the Profile tab).
+    EDITF || SEC ? '' : isShadchan
+      ? dock('person-card.dock', h('span', { class: 'grow note', dir: 'auto' }, 'Ideas for ' + firstName(p)),
+          h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'person-card.find-match', onClick: () => navigate(`/match/${encodeURIComponent(p.id)}`) }, 'Find a match'))
+      : dock('person-card.dock', statusStrip(b)));
   if (keepScroll) window.scrollTo(0, y);
 }
 
@@ -103,14 +107,17 @@ const firstName = (p) => (p.name || '').trim().split(/\s+/)[0] || pron(p).him;
 // ---------- Profile ----------
 function profileTab(b) {
   const { p, srcs, atts } = b;
-  const P = pron(p), enc = encodeURIComponent(p.id), A = p.answers || {};
-  const edit = (s) => `#/people/${enc}/edit/${s}`;
+  const P = pron(p);
   const summary = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
   const first = srcs[0];
   const cards = p.contactCards || [];
   const ownCards = cards.filter(c => c.role === 'person' && (c.number || c.email));
   const others = cards.filter(c => c.role !== 'person');
   const sender = p.sender || first?.sender || '';
+  const inquiries = others.filter(c => c.role !== 'reference'), refs = others.filter(c => c.role === 'reference');
+  const missing = [[!p.about, 'about', 'About'], [!p.looking, 'looking', 'What ' + P.he + (p.kind ? '’s' : '’re') + ' looking for'],
+    [!(others.length || sender), 'contacts', 'Inquiries and references'], [!((p.know || []).length || p.yearsKnown || p.howKnow), 'known', 'How I know ' + P.him]]
+    .filter(m => m[0]).map(m => [m[1], m[2]]);
   return [
     SEC === 'summary' ? h('div', { class: 'pc-summary mp-editing', 'data-id': 'person-card.summary' }, secForm('summary', 'person-card.summary')) :
     h('div', { class: 'pc-summary', 'data-id': 'person-card.summary' },
@@ -126,25 +133,30 @@ function profileTab(b) {
     sec('Facts', 'person-card.facts', 'facts',
       h('dl', { class: 'facts' },
         ...factList(p).map(f => EDITF && f.ed ? editRow(f) : fact(f.label, f.value, f.dataId))),
-      h('a', { class: 'pc-add', href: edit('about'), 'data-id': 'person-card.add-fact' }, 'Add a fact…')),
-    !p.about ? null : sec(`About ${firstName(p)}`, 'person-card.about', 'about',
+      !EDITF && !factList(p).some(f => !isEmpty(f.value)) ? h('p', { class: 'muted' }, 'Not filled in yet') : null),
+    !p.about && SEC !== 'about' ? null : sec(`About ${firstName(p)}`, 'person-card.about', 'about',
       h('p', { class: 'prewrap', dir: 'auto' }, p.about)),
-    !p.looking ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', 'looking',
+    !p.looking && SEC !== 'looking' ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', 'looking',
       h('p', { class: 'prewrap', dir: 'auto' }, p.looking)),
     // "Sent by" carries the date the profile came in (it used to be repeated as "Profile source" in Facts).
-    !(others.length || sender) ? null : sec('Contacts and source', 'person-card.contacts', 'contacts',
+    !(others.length || sender) && SEC !== 'contacts' ? null : sec('Inquiries and references', 'person-card.contacts', 'contacts',
+      // same shape as My Profile: whom to call first, then references under their own heading
       h('dl', { class: 'facts' },
-        ...others.map(c => contactFact(c, b)),
+        ...inquiries.map(c => contactFact(c, b)),
         sender ? h('div', { class: 'fact', 'data-id': 'person-card.sent-by' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(sender, p.senderContactId || first?.senderContactId, b),
-          first ? h('span', { class: 'note' }, ' · ' + store.formatDate(first.receivedAt || first.createdAt)) : null)) : null)),
-    !((p.know || []).length || p.yearsKnown || p.howKnow) ? null : sec(`How I know ${P.him}`, 'person-card.known', 'known',
+          first ? h('span', { class: 'note' }, ' · ' + store.formatDate(first.receivedAt || first.createdAt)) : null)) : null),
+      refs.length ? h('div', { class: 'mp-sub' }, 'References') : null,
+      refs.length ? h('dl', { class: 'facts' }, refs.map(c => contactFact(c, b))) : null),
+    !((p.know || []).length || p.yearsKnown || p.howKnow) && SEC !== 'known' ? null : sec(`How I know ${P.him}`, 'person-card.known', 'known',
       (p.know || []).length || p.yearsKnown || p.howKnow ? h('dl', { class: 'facts' },
         fact('Contact', p.know, 'person-card.fact-know'),
         p.yearsKnown ? fact('Years known', p.yearsKnown) : null,
         p.howKnow ? fact('How', p.howKnow) : null) : h('p', {}, NR())),
-    sec('Also yours to keep', 'person-card.keep', null,
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'person-card.attachments', onClick: () => attachmentsSheet(b) },
-        ico('folder'), h('span', { class: 'grow' }, 'Attachments'), h('span', { class: 'mono note' }, `${atts.length ? atts.length : 'No files'} · private`), ico('chevron'))),
+    // Empty sections stay hidden (owner request); this line opens any of them right here.
+    EDITF || SEC || !missing.length ? null : h('div', { class: 'pc-add-row', 'data-id': 'person-card.add-row' }, h('span', { class: 'note' }, 'Add:'),
+      missing.map(([key, label]) => h('button', { type: 'button', class: 'linkish', 'data-id': 'person-card.add-' + key, onClick: () => openSec(key) }, label))),
+    sec('Photos and docs', 'person-card.files-sec', null,
+      filesInline({ files: atts, dataId: 'person-card.files', extra: { personId: p.id }, tag: (a) => a.sourceId ? 'original' : '' })),
     h('div', { class: 'stamp pc-stamp' }, `updated ${store.formatDate(p.updatedAt)} · added ${store.formatDate(p.createdAt)}`),
     h('div', { class: 'pc-danger' }, h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'person-card.delete', onClick: () => deletePerson(b) }, 'Delete this person')),
   ];
@@ -164,13 +176,6 @@ function contactFact(c, b) {
       h('div', {}, name ? linkedName(name, c.contactId, b) : h('span', { class: 'muted' }, c.role === 'unknown' ? 'Not sure whose number' : 'Name not recorded')),
       c.number || c.email ? h('div', { class: 'reach' }, c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null) : h('div', { class: 'small' }, 'Phone not recorded')),
     );
-}
-
-function attachmentsSheet(b) {
-  sheet({ title: 'Attachments', dataId: 'person-card.attachments-sheet',
-    body: b.atts.length ? b.atts.map(a => h('a', { class: 'att-row', href: a.dataUrl, download: a.name, 'data-id': 'person-card.attachment' }, ico('file'),
-      h('span', { dir: 'auto', class: 'att-name' }, a.name), h('span', { class: 'note' }, a.sourceId ? 'original' : '')))
-      : [h('p', { class: 'note' }, 'No files attached. Use Edit person → Attached items to add some.')] });
 }
 
 async function deletePerson(b) {
@@ -335,12 +340,7 @@ function notesTab(b) {
   const open = fus.filter(f => !f.done).sort((a, c) => (a.dueAt || '9').localeCompare(c.dueAt || '9'));
   const done = fus.filter(f => f.done);
   return [
-    sec('Private notes and conversations', 'person-card.notes', null,
-      evs.length ? h('ol', { class: 'timeline' }, evs.map(e => eventItem(e, b))) : h('p', { class: 'note' }, 'Nothing recorded yet.')),
-    sec('Follow-ups', 'person-card.followups', null,
-      open.length ? open.map(f => fuRow(f, b)) : h('p', { class: 'note' }, 'No open follow-ups.'),
-      done.length ? h('details', { class: 'pc-history' }, h('summary', {}, `Done · ${done.length}`), done.map(f => fuRow(f, b))) : null,
-      h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.add-followup', onClick: () => followUpSheet() }, ico('clock'), 'Add a follow-up')),
+    // Writing box first (owner: "Add note" lands at the top), then the notes, then follow-ups.
     sec('Add private note', 'person-card.composer', null,
       text,
       h('div', { class: 'field' }, h('label', {}, 'How'), bubbles({ options: TYPE_OPTS, selected: [d.type], multi: false, dataId: 'person-card.note-type', onChange: (v) => { d.type = v || '_unknown'; } })),
@@ -354,6 +354,12 @@ function notesTab(b) {
           drafts[p.id] = { text: '', type: '_unknown', date: today(), contactIds: [] };
           toast(d.contactIds.length ? 'Saved — also in the contact’s history' : 'Note saved');
         } }, 'Save note'))),
+    sec('Private notes and conversations', 'person-card.notes', null,
+      evs.length ? h('ol', { class: 'timeline' }, evs.map(e => eventItem(e, b))) : h('p', { class: 'note' }, 'Nothing recorded yet.')),
+    sec('Follow-ups', 'person-card.followups', null,
+      open.length ? open.map(f => fuRow(f, b)) : h('p', { class: 'note' }, 'No open follow-ups.'),
+      done.length ? h('details', { class: 'pc-history' }, h('summary', {}, `Done · ${done.length}`), done.map(f => fuRow(f, b))) : null,
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.add-followup', onClick: () => followUpSheet() }, ico('clock'), 'Add a follow-up')),
   ];
 }
 function grow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 420) + 'px'; }

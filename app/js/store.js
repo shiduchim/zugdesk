@@ -577,7 +577,7 @@ export const PERSON_CATEGORY_DEFAULTS = [
   { key: 'personal', name: 'Personal Info', jump: 'Personal' },
   { key: 'contacts', name: 'Contacts & Source', jump: 'Contacts' },
   { key: 'known', name: 'How well do I know them?', jump: 'Know them' },
-  { key: 'status', name: 'Status', jump: 'Status' },
+  { key: 'status', name: 'Marital status', jump: 'Status' },
   { key: 'religious', name: 'Religious', jump: 'Religious' },
   { key: 'lifestyle', name: 'Character & Lifestyle', jump: 'Character & Lifestyle' },
 ].map(c => ({ ...c, builtin: true, hidden: false }));

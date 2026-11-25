@@ -38,13 +38,11 @@
 .pc-sec .facts .fact{grid-template-columns:var(--fact-key) minmax(0,1fr) auto;padding:6px 0}
 .pc-sec .fact .priv{font-family:var(--font-mono);font-size:var(--font-xs);color:var(--muted);padding-top:2px}
 .pc-sec .fact .small{font-size:var(--font-sm);color:var(--muted)}
-.pc-add{font-size:var(--font-sm);align-self:flex-start;min-height:32px;display:inline-flex;align-items:center}
-.pc-keep-row{display:flex;align-items:center;gap:12px;min-height:var(--touch-min);padding:6px 0;border:0;border-top:1px solid var(--border);background:transparent;color:var(--text);text-align:start;width:100%}
-.pc-keep-row svg{width:17px;height:17px;flex-shrink:0;color:var(--muted)}
-.pc-keep-row .grow{flex:1;min-width:0}
+/* "Add: About · Looking for …" line (person card) and "Add: a section" (My Profile) */
+.pc-add-row{display:flex;flex-wrap:wrap;align-items:center;gap:4px 14px;padding:12px 0;border-bottom:1px solid var(--border);font-size:var(--font-sm)}
+.pc-add-row .linkish{min-height:32px}
 .pc-stamp{padding:12px 0}
 .pc-danger{padding:4px 0 12px}
-.pc-foot{padding:12px 0}
 
 .interest{display:flex;flex-direction:column;gap:4px}
 .interest-value{font-weight:600;font-size:var(--font-lg)}
