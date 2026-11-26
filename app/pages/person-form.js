@@ -30,7 +30,9 @@ export async function render(container, params = {}, path = '') {
   const me = path.startsWith('/profile/edit');
   const editing = !!params.id;
   const key = me ? 'me' : editing ? 'edit:' + params.id : params.sourceId ? 'from:' + params.sourceId : params.contactId ? 'by:' + params.contactId : 'new';
-  if (!drafts.has(key)) {
+  // A form copy with nothing typed in it is rebuilt from the saved record every time, so changes made
+  // elsewhere (the card, Status, star) are never undone by an old copy, and Add Guy never opens as Add Girl.
+  if (!drafts.has(key) || !drafts.get(key).dirty) {
     const fresh = me ? await makeMeDraft() : await makeDraft({ key, editing, params, path });
     if (!fresh) { root.append(h('p', { class: 'empty' }, 'This person or original no longer exists.'), h('a', { class: 'btn', href: '#/people' }, isShadchan ? 'Back to the list' : 'Back to Ideas')); return; }
     drafts.set(key, fresh);
@@ -120,6 +122,8 @@ function goTab(k) {
 
 // Fill only empty fields from labelled lines. Never overwrite what the owner typed.
 function applyExtraction() {
+  if (d.sourceText === d.lastRead) return; // read the pasted text once: a field cleared by hand stays empty
+  d.lastRead = d.sourceText;
   const x = extract(d.sourceText);
   for (const k of ['name', 'age', 'city', 'occupation', 'about', 'looking', 'maxAge']) if (x[k] && !String(d.p[k] || '').trim()) { d.p[k] = x[k]; touch(); }
   if (x.languages?.length && !d.p.languages.length) { d.p.languages = x.languages; touch(); }
@@ -153,7 +157,7 @@ function pasteTab() {
       h('button', { type: 'button', class: 'btn', 'data-id': 'person.attach-original', onClick: () => fileIn.click() }, 'Attach a file'),
       h('span', { class: 'note' }, 'PDF, screenshot, photo or audio'), fileIn,
       fileTags(d.files, 'person.original-file-remove'),
-      d.existingAtts.filter(a => a.sourceId && !d.removedAttIds.includes(a.id)).length ? h('p', { class: 'note' }, 'Already kept with the original: ' + d.existingAtts.filter(a => a.sourceId).map(a => a.name).join(', ')) : null),
+      d.existingAtts.filter(a => a.sourceId && !d.removedAttIds.includes(a.id)).length ? h('p', { class: 'note' }, 'Already kept with the original: ' + d.existingAtts.filter(a => a.sourceId && !d.removedAttIds.includes(a.id)).map(a => a.name).join(', ')) : null),
     h('details', { class: 'source-toggle', open: d.sender ? true : null, 'data-id': 'person.source-optional' },
       h('summary', {}, 'Source · optional'),
       senderField()),
@@ -610,6 +614,8 @@ async function saveForLater() {
 }
 
 
+// The fields the full form edits (everything else on a person belongs to other pages).
+const FORM_KEYS = ['name', 'age', 'city', 'occupation', 'languages', 'about', 'looking', 'maxAge', 'contactCards', 'know', 'yearsKnown', 'howKnow', 'answers', 'religiousOther', 'answerLabels'];
 async function save({ then }) {
   const p = d.p;
   const own = p.contactCards.find(c => c.role === 'person' && c.number.trim());
@@ -623,8 +629,13 @@ async function save({ then }) {
     .map(c => ({ ...c, number: store.cleanPhone(c.number), name: c.name.trim(), email: c.email.trim() }));
   const answerLabels = { ...(p.answerLabels || {}) };
   for (const cat of ctx.cats) for (const k of listsOf(cat)) if (!LISTS[k]) answerLabels[k] = cat.key === k ? cat.name : `${cat.name} · ${(cat.subs || []).find(s => s.key === k)?.name || ''}`;
+  // Editing: lay only the form's own fields over the newest saved record (changes made on the card
+  // meanwhile stay). A person deleted meanwhile is not brought back.
+  const cur = d.personId ? await store.people.get(d.personId) : null;
+  if (d.personId && !cur) { drafts.delete(d.key); toast('This person was deleted meanwhile. Nothing was saved.', 5000); navigate('/people'); return; }
+  const mine = cur ? Object.fromEntries(FORM_KEYS.map(k => [k, p[k]])) : p;
   const rec = {
-    ...p, id: d.personId || undefined, kind: d.kind, name: p.name.trim().replace(/\s+/g, ' '), age: String(p.age || '').trim(),
+    ...(cur || {}), ...mine, id: d.personId || undefined, kind: d.kind, name: p.name.trim().replace(/\s+/g, ' '), age: String(p.age || '').trim(),
     city: (p.city || '').trim(), occupation: (p.occupation || '').trim(), contactCards: cards, answerLabels,
     sender: d.sender.trim(), senderContactId: d.senderContactId,
     contactIds: [...new Set([...cards.map(c => c.contactId), d.senderContactId].filter(Boolean))],

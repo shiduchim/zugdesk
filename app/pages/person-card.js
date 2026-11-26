@@ -13,6 +13,7 @@ import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from '
 import { forSingle, removeShidduch, fullName as shName, other as shOther } from './sh-shidduch-data.js';
 import { singleShidduchim } from './sh-shidduch-parts.js';
 import { filesInline } from './files-inline.js';
+import { dropDraft } from './person-form.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
@@ -226,6 +227,7 @@ async function deletePerson(b) {
     }
     await store.people.remove(p.id);
   });
+  dropDraft('edit:' + p.id); // an open edit form must not bring the person back
   toast(store.SOFT_DELETE ? 'Deleted. It waits 30 days in Settings → Recently deleted' : 'Deleted', store.SOFT_DELETE ? 5000 : undefined); navigate(peopleListPath(p.kind));
 }
 
