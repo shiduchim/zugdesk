@@ -101,16 +101,14 @@ export async function importBackup(file) {
   // A backup made before Shadchan Mode existed only holds Single Mode.
   const scope = json.shadchan ? 'It holds both modes.' : 'It holds Single Mode only, so Shadchan Mode records on this device are not touched.';
   const files = json.noFiles ? ' It has no attached files, so the files on this device stay.' : '';
-  const replace = await confirmDialog({
-    title: 'Import this backup?',
-    text: `${rows} records from ${new Date(json.exportedAt).toLocaleString()}. ${scope}${files} “Replace” deletes what is on this device first; “Merge” keeps it and brings in what is new or changed later in the backup. Use Merge to keep phone and computer in step.`,
-    ok: 'Replace', cancel: 'Merge', dataId: 'settings.import-dialog',
-  });
-  // Cancel in this dialog means Merge; closing with Escape also lands on merge — ask once more for safety.
-  if (!replace) {
-    const merge = await confirmDialog({ title: 'Merge backup into current data?', text: 'Anything that is on both sides keeps the copy that was changed last. Nothing on this device is removed, except what was deleted on the other device.', ok: 'Merge', dataId: 'settings.merge-dialog' });
-    if (!merge) { toast('Import cancelled'); return; }
-  }
+  // Three plain choices (Merge is the safe one, so it is the highlighted button); Close or Back cancels.
+  const how = await sheet({ title: 'Import this backup?', dataId: 'settings.import-dialog',
+    body: [h('p', {}, `${rows} records from ${new Date(json.exportedAt).toLocaleString()}. ${scope}${files}`),
+      h('p', { class: 'note' }, '“Merge” keeps what is on this device and brings in what is new or changed later in the backup (use it to keep phone and computer in step). “Replace” deletes what is on this device first.')],
+    actions: [{ id: 'merge', label: 'Merge', primary: true }, { id: 'replace', label: 'Replace', danger: true }] });
+  if (!how) { toast('Import cancelled'); return; }
+  const replace = how === 'replace';
+  if (replace && !(await confirmDialog({ title: 'Replace everything on this device?', text: 'What is on this device now is deleted first and the backup takes its place.', ok: 'Replace', danger: true, dataId: 'settings.replace-dialog' }))) { toast('Import cancelled'); return; }
   try {
     const r = await store.importAll(json, replace ? 'replace' : 'merge');
     toast(r.keptHere ? `Brought in ${r.total} records; kept ${r.keptHere} that were newer on this device` : `Imported ${r.total} records`, 5000);

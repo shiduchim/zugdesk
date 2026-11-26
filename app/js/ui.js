@@ -76,7 +76,10 @@ let toastTimer;
 // Optional `action`: { label, run } adds one button (e.g. Undo) to the toast.
 export function toast(msg, ms = 2600, action = null) {
   let t = document.getElementById('toast');
-  if (!t) { t = h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' }); document.body.append(t); }
+  if (!t) t = h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' });
+  // inside an open sheet the message must sit in the sheet, or the sheet covers it
+  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+  if (t.parentNode !== host) host.append(t);
   t.textContent = msg; t.classList.remove('hidden');
   if (action) t.append(h('button', { type: 'button', class: 'toast-action', 'data-id': 'toast.action', onClick: () => { t.classList.add('hidden'); clearTimeout(toastTimer); action.run(); } }, action.label));
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), action ? Math.max(ms, 5000) : ms);

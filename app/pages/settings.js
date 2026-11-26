@@ -37,7 +37,7 @@ export async function render(root) {
 
   const fileInput = h('input', { type: 'file', accept: 'application/json,.json', 'data-id': 'settings.import-file', onChange: async (e) => { const f = e.target.files[0]; e.target.value = ''; await importBackup(f); } });
 
-  root.append(
+  root.append(...[ // filter: a mode-only section is null in the other mode (append would print "null")
     h('div', { class: 'page-head' }, h('h1', {}, 'Settings')),
 
     section('Mode', 'settings.mode',
@@ -124,8 +124,8 @@ export async function render(root) {
       h('p', { class: 'note' }, 'Deletes everything on this phone, in both modes, and starts again empty. Export first if you want to keep anything.'),
       h('button', { class: 'btn danger', 'data-id': 'settings.reset-btn', onClick: async () => {
         if (await confirmDialog({ title: 'Reset everything?', text: 'All contacts, people, notes and settings on this phone will be deleted, in Single Mode and in Shadchan Mode. This cannot be undone.', ok: 'Reset everything', danger: true, dataId: 'settings.reset-dialog' })) {
-          await store.resetAll({ reseed: true }); toast('Reset done — the app is empty'); location.hash = '#/home';
-          if (isShadchan) location.reload(); // start clean in the same mode
+          await store.resetAll({ reseed: true }); location.hash = '#/home';
+          location.reload(); // start clean in the same mode (labels, theme and drafts in memory go too)
         }
       } }, 'Reset everything')),
 
@@ -140,7 +140,7 @@ export async function render(root) {
         fact('Records', Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => `${k} ${n}`).join(' · ') || 'none'),
         fact('Storage', typeof indexedDB !== 'undefined' ? 'IndexedDB on this device' : 'unavailable'),
         fact('Offline', 'serviceWorker' in navigator ? (navigator.serviceWorker.controller ? 'ready' : 'installing…') : 'not supported'))),
-  );
+  ].filter(Boolean));
 
   unsub = store.subscribe((ch) => {
     if (ch.store === 'prefs' || !live()) return;

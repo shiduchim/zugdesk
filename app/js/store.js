@@ -78,7 +78,7 @@ function collection(store, prefix) {
       if (soft) {
         const rec = await idb.get(store, id);
         if (alive(rec)) { const t = now(); await idb.put(store, { ...rec, deletedAt: t, deletedBatch: openBatch || newId('del'), updatedAt: t }); }
-      } else await idb.delete(store, id);
+      } else { await idb.delete(store, id); await noteErased(store, [id]); }
       emit({ store, type: 'remove', id });
     },
   };
@@ -147,6 +147,17 @@ export function setPref(key, value) {
 }
 
 // ---------- meta ----------
+// Records erased for good are remembered (store:id → when), so a later Merge of an older backup
+// does not bring them back. Kept one year; travels in backups and is joined on Merge.
+const ERASED_DAYS = 365;
+async function noteErased(storeName, ids) {
+  if (!ids.length) return;
+  const t = now(), cut = new Date(Date.now() - ERASED_DAYS * 86400000).toISOString();
+  const cur = (await getMeta('erased')) || {};
+  const next = Object.fromEntries(Object.entries(cur).filter(([, at]) => at > cut));
+  for (const id of ids) next[storeName + ':' + id] = t;
+  await setMeta('erased', next);
+}
 async function getMeta(key) { const r = await idb.get('meta', key); return r ? r.value : undefined; }
 async function setMeta(key, value) { await idb.put('meta', { id: key, value, updatedAt: now() }); }
 
@@ -379,7 +390,7 @@ export async function eraseDeleted(batch) {
   let count = 0;
   for (const col of ALL) {
     const ids = (await idb.byIndex(col.store, 'deletedAt')).filter(r => (r.deletedBatch || r.id) === batch).map(r => r.id);
-    if (ids.length) { await idb.deleteMany(col.store, ids); count += ids.length; }
+    if (ids.length) { await idb.deleteMany(col.store, ids); await noteErased(col.store, ids); count += ids.length; }
     const marked = await idb.byIndex(col.store, 'unlinkedIn', batch);
     if (marked.length) { marked.forEach(r => forgetUnlinks(r, new Set([batch]))); await idb.putMany(col.store, marked); }
   }
@@ -393,7 +404,7 @@ export async function purgeExpired() {
   let count = 0;
   for (const col of ALL) {
     const ids = await idb.keysByIndex(col.store, 'deletedAt', IDBKeyRange.upperBound(cutoff));
-    if (ids.length) { await idb.deleteMany(col.store, ids); count += ids.length; }
+    if (ids.length) { await idb.deleteMany(col.store, ids); await noteErased(col.store, ids); count += ids.length; }
   }
   return count;
 }
@@ -457,17 +468,24 @@ async function loadInto(db, data, mode, noFiles) {
   // Deletes are marks with a newer updatedAt, so a delete on one device carries over too.
   const here = {};
   if (mode !== 'replace') for (const name of names) here[name] = new Map((await db.idb.getAll(name)).map(r => [r.id, r]));
+  // Merge: what was erased for good on either side stays erased (an older backup never brings it back).
+  const erasedRow = (rows) => (Array.isArray(rows) ? rows : []).find(r => r && r.id === 'erased')?.value || {};
+  const erased = mode === 'replace' ? null : { ...erasedRow(data.meta) };
+  if (erased) for (const [k, at] of Object.entries((await db.idb.get('meta', 'erased'))?.value || {})) if (!erased[k] || erased[k] < at) erased[k] = at;
   await db.tx(names, 'readwrite', (s) => {
     for (const name of names) {
       if (mode === 'replace') s[name].clear();
       const rows = Array.isArray(data[name]) ? data[name] : [];
       for (const r of rows) {
         if (!r || !r.id) continue;
+        if (erased && name === 'meta' && r.id === 'erased') continue; // joined below
         const mine = here[name] && here[name].get(r.id);
         if (mine && (mine.updatedAt || '') > (r.updatedAt || '')) { stats.keptHere++; continue; }
+        if (!mine && erased && (erased[name + ':' + r.id] || '') >= (r.updatedAt || '')) continue; // erased here after this copy was made
         s[name].put(r); stats.total++;
       }
     }
+    if (erased && Object.keys(erased).length) s.meta.put({ id: 'erased', value: erased, updatedAt: now() });
     s.meta.put({ id: 'seeded', value: { at: now(), imported: true } });
     s.meta.put({ id: 'schemaVersion', value: db.version });
   });

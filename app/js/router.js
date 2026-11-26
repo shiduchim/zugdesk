@@ -19,16 +19,21 @@ export function navigate(path, { replace = false } = {}) {
   if (replace) location.replace(target); else location.hash = target;
 }
 
+let seq = 0; // a newer address change wins: an older page that finishes loading later is not shown
 export async function resolve(container, onChange) {
+  const tok = ++seq;
   const path = currentPath();
   for (const r of routes) {
     const m = path.match(r.re);
     if (!m) continue;
-    const params = Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])]));
+    let params;
+    try { params = Object.fromEntries(r.keys.map((k, i) => [k, decodeURIComponent(m[i + 1])])); }
+    catch { navigate('/home', { replace: true }); return; } // a broken address goes Home
     if (current && current.mod.destroy) { try { current.mod.destroy(); } catch (e) { console.error(e); } }
     // A sheet left open (e.g. phone Back while it was showing) never stays over the next page.
     document.querySelectorAll('dialog[open]').forEach(d => d.close());
     const mod = await r.loader();
+    if (tok !== seq) return;
     container.innerHTML = '';
     container.className = 'content'; // pages add their own classes; never let them leak to the next page
     container.scrollTop = 0; window.scrollTo(0, 0);
