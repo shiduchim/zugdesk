@@ -108,19 +108,16 @@ Status: recorded for future phase. No second app-wide skin, no Game/Neon recreat
 ## Session handoff
 _Live notes for /handoff. Everything above this section is the fixed spec: do not edit it._
 
-_Last updated: 2026-11-14 (paste import: Shadchan tap + instructions v3)_
+_Last updated: 2026-11-26 (profile pages review done; whole-app check started)_
 
-### Done this session (branch `claude/happy-newton-wgb0pz`)
-- Claude paste import step 1: `app/pages/claude-import.js` (+ css). Home "Paste from AI" (`home.paste-claude`) and notepad chip (`home.claude-chip`); preview `bulk.*`; Settings → Claude instructions (`settings.claude-text`, FORMAT_VERSION 1). Duplicate helpers now shared: `findPersonDup` / `fillEmpty` (people-data.js), `findContactDuplicate` (contacts-data.js).
-- Claude paste import step 2: [To do] cards are real Follow Ups (Date + Time boxes in the preview, `bulk.todo-text` / `bulk.todo-date` / `bulk.todo-time`; `whenOf()` reads `YYYY-MM-DD HH:MM (words)`). Linked to full names found in the text and to the whole-paste note. Instructions text unchanged (FORMAT_VERSION still 1).
-- Claude paste import step 3: [Update] / [Date] cards find the shidduch for the Pair (`findPairs`, both modes), owner confirms (`bulk.shidduch-pick` / `bulk.shidduch-note`), answer side + value (`bulk.answer-*`), date Date/Time/Where (`bulk.date-*`). Saves through shidduch-data.js / sh-shidduch-data.js (`snapshot` now exported for the paste's Undo). Instructions text changed: FORMAT_VERSION 2 (`Who:` / `Answer:` in [Update]).
-- Shadchan tap in the preview (`bulk.single-shadchan`, `bulk.shadchan-pick` / `-change` / `-none`; `shadchanSuggestions`) and instructions FORMAT_VERSION 3 (rule 10: one shadchan in a note = shadchan of its singles, noted under Unclear; rule 11: promises become [To do]). Advice from a Fable review: let the app link, don't count on Claude's memory; skipped auto-learning from corrections.
-- Owner set up the Claude Project (version 1 text) before step 3; needs only to re-copy the version 3 text.
+### Done (branch `claude/wonderful-albattani-z685cv`, version 0.9.1, published)
+- Profile pages review (My Profile, Single person card, Shadchan single card): see `spec/profile-pages-review.md`.
+- Easier editing: tap a fact = that row edits in place (Saved · Undo); Facts pencil = edit all; Cancel / Save in the bottom bar (`editDock` in ui.js, rides above the keyboard via `--vv-kb`).
+- APP_VERSION in store.js: raise the last number with each batch so Settings → About shows if the phone updated.
+- GitHub Pages publish failed for a few hours on Nov 25 (GitHub side); a later workflow_dispatch run worked.
+
+### In progress
+- Owner asked: check the whole app for bugs (Opus reviewers per area) and one Fable helper for improvements. Fix bugs area by area; improvements go to the owner as a list first.
 
 ### Next
-- Claude paste import is complete (steps 1–3). Owner: replace the Project's instructions with the version 3 text (Settings → Claude instructions → Copy).
-- Owner phone type (iPhone/Android) still unknown; if Android, Share Target is an optional extra.
-
-### Notes / blockers
-- Not testable from here: clipboard reading on the owner's phone (iPhone asks with a "Paste" bubble), Claude's real answers to the instructions, where each phone saves a downloaded file, real NetFree / TAG filters.
-- Optional screen lock (design.md section 7) is not built; nobody asked for it yet.
+- PR not made yet (owner says "make the PR").
