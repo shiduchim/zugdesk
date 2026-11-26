@@ -20,7 +20,6 @@ const T = {
   draftSub: 'Unsaved form — tap to continue',
   discard: 'Discard',
   toFileHead: (n) => `To file · ${n}`,
-  toFileNote: 'Profiles kept exactly as they arrived. Open one to file it.',
   toFileAll: (n) => `Show all ${n}`,
   toFileLess: 'Show fewer',
   noSender: 'sender not recorded',
@@ -245,7 +244,6 @@ function toFileSection(later) {
   const list = open ? later : later.slice(0, TOFILE_FEW);
   return h('section', { class: 'section', 'data-id': 'singles.to-file' },
     h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, T.toFileHead(later.length))),
-    h('p', { class: 'note' }, T.toFileNote),
     list.map(s => h('div', { class: 'row-link' },
       h('div', { class: 'avatar', html: icon('file') }),
       h('a', { class: 'row-main', href: `#/people/new/from/${encodeURIComponent(s.id)}`, 'data-id': 'singles.to-file-open', onClick: () => store.setPref('personKind', kind) },

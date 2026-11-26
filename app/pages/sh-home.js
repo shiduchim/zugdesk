@@ -54,7 +54,6 @@ const T = {
   stats: [['open', 'Open'], ['waiting', 'Waiting'], ['dating', 'Dating'], ['ideas', 'Ideas']],
   statNote: { open: 'Offers and In Progress', waiting: 'asked, no answer yet', dating: 'In Progress', ideas: 'nobody asked yet' },
   noOpen: 'No open shidduch',
-  noOpenNote: 'Singles you are working on with nothing in Offers or In Progress. Tap one to find a match.',
   noStarred: 'Star a single as “Working on” on their card, and they show here when nothing is moving for them.',
   allMoving: 'Every single you are working on has something moving.',
   // My singles
@@ -282,7 +281,7 @@ function drawGlance(el, SH) {
     subHead(T.noOpen, idle.length, 'home.no-open'),
     !starred.length ? h('p', { class: 'note shh-none' }, T.noStarred)
       : !idle.length ? h('p', { class: 'note shh-none' }, T.allMoving)
-        : [h('p', { class: 'note shh-lead' }, T.noOpenNote),
+        : [
           h('ul', { class: 'shh-list' }, cut(idle, 'noOpen').map(p => singleRow(p, statusOf(p) === 'available' ? T.nothingNext : statusLabel(statusOf(p)), 'home.no-open-row', 'match'))),
           moreBtn('noOpen', idle.length, 'home.no-open-more', () => drawGlance(el, SH))]);
 }

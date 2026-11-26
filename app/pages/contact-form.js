@@ -143,7 +143,6 @@ export async function render(container, params = {}) {
     h('div', { class: 'page-head' },
       h('a', { class: 'icon-btn', href: editing ? `#/contacts/${encodeURIComponent(id)}` : '#/contacts', 'aria-label': 'Back', 'data-id': 'shadchan.back', html: icon('back') }),
       h('h1', {}, editing ? 'Edit contact' : isShadchan ? 'Add Contact' : 'Add Shadchan')),
-    h('p', { class: 'note intro' }, 'Everything is optional except the name. Leave anything you don’t know empty.'),
     form);
 
   function cancel() { navigate(editing ? `/contacts/${encodeURIComponent(id)}` : '/contacts'); }

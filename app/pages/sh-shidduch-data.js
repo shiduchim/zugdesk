@@ -17,8 +17,8 @@ import { removeAudio } from '../js/voice.js';
 export const T = {
   lanes: { ideas: 'Ideas', offers: 'Offers', progress: 'In Progress', ended: 'Ended' },
   laneIntro: {
-    ideas: 'Nobody was asked yet.',
-    offers: 'Waiting for answers.',
+    ideas: '', // no explanation lines above the lists (owner: less clutter)
+    offers: '',
     progress: '',
     ended: '',
   },

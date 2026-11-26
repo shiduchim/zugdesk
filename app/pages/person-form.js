@@ -101,7 +101,6 @@ function paint({ keepScroll = false } = {}) {
     h('div', { class: 'page-head' },
       h('a', { class: 'icon-btn', href: d.personId ? `#/people/${encodeURIComponent(d.personId)}` : '#/people', 'aria-label': 'Back', 'data-id': 'person.back', html: icon('back') }),
       h('h1', { dir: 'auto' }, title)),
-    h('p', { class: 'note intro' }, d.personId ? 'Changes save into the same person. Originals stay exactly as received.' : 'Start with what you have. Fill in the rest later.'),
     h('div', { class: 'typepick', role: 'group', 'aria-label': 'Who is this?', 'data-id': 'person.kind' },
       ...KINDS.filter(([k]) => d.personId || !seekingKind(store.getPrefs()) || k === seekingKind(store.getPrefs())).map(([k, l]) => h('button', { type: 'button', 'aria-pressed': d.kind === k ? 'true' : 'false', 'data-id': 'person.kind-' + k, onClick: () => {
         d.kind = k; touch(); store.setPref('personKind', k); paint({ keepScroll: true });

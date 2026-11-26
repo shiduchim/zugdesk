@@ -75,7 +75,6 @@ async function draw() {
         } }, 'Discard')))) : null,
     later.length ? h('section', { class: 'section', 'data-id': 'people.later' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `Saved for later · ${later.length}`)),
-      h('p', { class: 'note' }, 'Originals kept exactly as received. Whose profile it is has not been filed yet.'),
       later.map(s => h('div', { class: 'row-link' },
         h('div', { class: 'avatar', html: icon('file') }),
         h('a', { class: 'row-main', href: `#/people/new/from/${encodeURIComponent(s.id)}`, 'data-id': 'people.later-open' },

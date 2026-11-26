@@ -24,7 +24,7 @@ const T = {
   elsewhere: (list) => `Also found in: ${list.join(', ')}`,
   demoHint: 'Want to look around first? Load the fictional demo in Guys or Girls.',
   yourMove: 'Your move',
-  nothingYet: 'Nothing to do until the date',
+  nothingYet: '',
   afterDate: (n) => `After Date ${n}`,
   changeAnswer: (side, name) => `${side} · ${name}`,
   endedPanel: 'This try has ended',

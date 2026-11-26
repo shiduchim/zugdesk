@@ -10,8 +10,8 @@ import { isShadchan, listState } from './mode.js';
 // Each mode has its own five places (spec/shadchan/design.md section 5); the bar looks the same.
 const NAV = isShadchan ? [
   { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
-  { path: '/guys', label: 'Guys', icon: 'profile', id: 'nav.guys', word: true },
-  { path: '/girls', label: 'Girls', icon: 'profile', id: 'nav.girls', word: true },
+  { path: '/guys', label: 'Guys', icon: 'profile', id: 'nav.guys' },
+  { path: '/girls', label: 'Girls', icon: 'profile', id: 'nav.girls' },
   { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
   { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
 ] : [
@@ -70,8 +70,8 @@ function renderNav() {
   for (const it of NAV) {
     // A single's card and Add Person live under /people: they light up the list they came from.
     const active = path === it.path || path.startsWith(it.path + '/') || (isShadchan && path.startsWith('/people') && listState.last === it.path);
-    // `word`: the name stays visible under the icon (Guys and Girls share one icon).
-    inner.append(h('a', { href: '#' + it.path, class: it.word ? 'with-word' : null, 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': it.label, title: it.label },
+    // Every place shows its name under the icon (owner request: words under every icon, both modes).
+    inner.append(h('a', { href: '#' + it.path, class: 'with-word', 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': it.label, title: it.label },
       h('span', { class: 'ico', html: icon(it.icon) }).firstChild, h('span', {}, it.label)));
   }
 }

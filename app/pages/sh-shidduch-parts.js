@@ -55,6 +55,7 @@ const ico = (n) => h('span', { html: icon(n) }).firstChild;
 
 // ---------- progress bar (11 steps: Offer, References, Dates 1–8, Engaged) ----------
 export function bar(v, { dim = false, large = false, dataId = null } = {}) {
+  if (!large && !dim && !(v.dates || []).length) return null; // before the first date the strip says nothing
   const done = sd.segmentsDone(v), next = sd.segmentsNext(v);
   return h('div', { class: 'sh-bars' + (large ? ' large' : ''), role: 'img', 'aria-label': T.barLabel, 'data-id': dataId },
     sd.T.seg.map((label, i) => {

@@ -456,7 +456,7 @@ function drawNotes() {
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
   if (other.length) els.notes.append(pinned.length ? h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))) : '', h('div', { class: 'note-list' }, other.map(noteCard)));
   els.notes.append(h('div', { class: 'notes-delete-all' },
-    h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'home.notes-delete-all', onClick: () => deleteAllFlow(list) }, `Delete all ${list.length} notes`)));
+    ));
 }
 // Deletes exactly the notes shown (My notes, or All). Pinned ones too. Follow Ups stay.
 async function deleteAllFlow(list) {
@@ -480,7 +480,7 @@ function noteCard(n) {
       pin,
       h('h3', { dir: 'auto' }, n.title),
       h('p', { class: 'preview', dir: 'auto' }, es[es.length - 1]?.text || ''),
-      h('div', { class: 'note-meta' }, h('span', {}, `${store.formatDate(D.lastAt(n))} · ${es.length} dated ${es.length === 1 ? 'entry' : 'entries'}`), linkRow),
+      h('div', { class: 'note-meta' }, h('span', {}, store.formatDate(D.lastAt(n)) + (es.length > 1 ? ` · ${es.length} dated entries` : '')), linkRow),
       h('div', { class: 'note-card-foot' },
         h('button', { type: 'button', class: 'add-to-note', 'data-id': 'home.note-add', onClick: (e) => { e.stopPropagation(); expand(n.id); } }, 'Add to note'),
         h('button', { type: 'button', class: 'add-to-note danger-text', 'data-id': 'home.note-delete', onClick: (e) => { e.stopPropagation(); deleteNoteFlow(n); } }, 'Delete')));
@@ -497,7 +497,7 @@ function noteCard(n) {
         } }, 'Rename'),
         h('button', { type: 'button', class: 'pin-text danger-text', 'data-id': 'home.note-delete', onClick: () => deleteNoteFlow(n) }, 'Delete'),
         h('button', { type: 'button', class: 'pin-text', 'data-id': 'home.note-close', onClick: () => { U.expanded = null; drawNotes(); } }, 'Close'))),
-    h('div', { class: 'note-meta' }, h('span', {}, `Started ${store.formatDate(n.createdAt)} · ${es.length} dated ${es.length === 1 ? 'entry' : 'entries'}`), linkRow),
+    h('div', { class: 'note-meta' }, h('span', {}, `Started ${store.formatDate(n.createdAt)}` + (es.length > 1 ? ` · ${es.length} dated entries` : '')), linkRow),
     h('div', { class: 'note-entries', 'data-id': 'home.note-entries' }, es.map(e => h('div', { class: 'note-entry' },
       h('div', { class: 'date-divider' }, dateTimeLabel(e.at)),
       e.audioIds?.length && e.text === 'Voice note' ? null : h('div', { class: 'prewrap', dir: 'auto' }, e.text),

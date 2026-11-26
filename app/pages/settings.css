@@ -6,3 +6,7 @@
 .radio-list label:first-child{border-top:0}
 .radio-list input{margin:4px 0 0;width:18px;height:18px;flex-shrink:0;accent-color:var(--text)}
 .radio-list small{display:block;color:var(--muted);font-size:var(--font-sm)}
+/* Folded sections (tap the name to open) */
+.set-fold>summary{display:list-item;cursor:pointer;min-height:var(--touch-min);padding-top:10px;color:var(--muted)}
+.set-fold>summary .eyebrow{display:inline}
+.set-fold[open]>summary{margin-bottom:8px}

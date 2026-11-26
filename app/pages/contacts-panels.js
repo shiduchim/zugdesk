@@ -120,7 +120,7 @@ export function personBlock(c, opts = {}) {
     peopleSection(c),
     notesSection(c),
     attachmentsSection(c),
-    h('div', { class: 'stamp', 'data-id': 'contact.stamp' }, `added ${shortDate(c.createdAt)} · updated ${shortDate(c.updatedAt)}${c.demo ? ' · demo record' : ''}`));
+    h('div', { class: 'stamp', 'data-id': 'contact.stamp' }, `added ${shortDate(c.createdAt)} · updated ${shortDate(c.updatedAt)}`));
 }
 
 // Two real buttons; the rest are quiet text links (owner request: fewer bubbles).
@@ -203,7 +203,7 @@ function composer(c) {
         S.drafts[c.id] = { text: '', type: '_unknown', date: today() };
         toast('Saved to conversation history');
       } }, 'Save')),
-    h('p', { class: 'note' }, 'Saving records what you write. It does not send anything to anyone.'));
+    );
 }
 
 export function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 420) + 'px'; }
