@@ -125,6 +125,7 @@ export async function render(root) {
       h('button', { class: 'btn danger', 'data-id': 'settings.reset-btn', onClick: async () => {
         if (await confirmDialog({ title: 'Reset everything?', text: 'All contacts, people, notes and settings on this phone will be deleted, in Single Mode and in Shadchan Mode. This cannot be undone.', ok: 'Reset everything', danger: true, dataId: 'settings.reset-dialog' })) {
           await store.resetAll({ reseed: true }); location.hash = '#/home';
+          try { localStorage.removeItem('zugdesk.homeDrafts'); localStorage.removeItem('zugdesk.homeDrafts.shadchan'); } catch {}
           location.reload(); // start clean in the same mode (labels, theme and drafts in memory go too)
         }
       } }, 'Reset everything')),

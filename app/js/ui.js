@@ -73,6 +73,8 @@ export function mailLink(e, dataId) { return h('a', { class: 'mail-link', href: 
 export function iconEl(name) { const span = h('span', { class: 'ico', html: icon(name) }); return span.firstChild; }
 
 let toastTimer;
+// A closing sheet hands a message shown inside it back to the page, so it stays (e.g. Undo after Save).
+export function keepToast(dlg) { const t = dlg?.querySelector('#toast'); if (t) document.body.append(t); }
 // Optional `action`: { label, run } adds one button (e.g. Undo) to the toast.
 export function toast(msg, ms = 2600, action = null) {
   let t = document.getElementById('toast');
@@ -95,7 +97,7 @@ export function confirmDialog({ title, text, ok = 'OK', cancel = 'Cancel', dange
         h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.cancel', onClick: () => { dlg.close(); resolve(false); } }, cancel),
         h('button', { class: 'btn ' + (danger ? 'danger' : 'primary'), type: 'button', 'data-id': dataId + '.ok', onClick: () => { dlg.close(); resolve(true); } }, ok),
       ));
-    dlg.addEventListener('close', () => { dlg.remove(); resolve(false); });
+    dlg.addEventListener('close', () => { keepToast(dlg); dlg.remove(); resolve(false); });
     document.body.append(dlg);
     dlg.showModal();
   });
@@ -116,7 +118,7 @@ export function section(eyebrow, dataId, ...children) {
 export function sheet({ title, dataId, body, actions = [], className = '' }) {
   return new Promise((resolve) => {
     let done = false;
-    const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
+    const finish = (v) => { if (done) return; done = true; dlg.close(); keepToast(dlg); dlg.remove(); resolve(v); };
     // Close sits at the bottom right, after the other buttons, where a thumb can reach it (owner request).
     const closeBtn = h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.close', onClick: () => finish(null) }, 'Close');
     const dlg = h('dialog', { class: 'sheet form-sheet ' + className, 'data-id': dataId },

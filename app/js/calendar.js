@@ -2,7 +2,7 @@
 // did not show the day of the week). Any <input type="date"> or "datetime-local" is enhanced
 // automatically: the input stays (hidden) and keeps its value in the same format, so pages read
 // and write `.value` exactly as before; a button shows the date with its weekday.
-import { h, icon } from './ui.js';
+import { h, icon, keepToast } from './ui.js';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const pad = (n) => String(n).padStart(2, '0');
@@ -56,7 +56,7 @@ function openCalendar(input, withTime) {
   const time = { h: cur ? cur.getHours() : 19, m: cur ? cur.getMinutes() : 0 };
 
   const dlg = h('dialog', { class: 'sheet cal-sheet', 'data-id': 'calendar' });
-  const close = () => { dlg.close(); dlg.remove(); };
+  const close = () => { dlg.close(); keepToast(dlg); dlg.remove(); };
   const set = (val) => { input.value = val; input.dispatchEvent(new Event('input', { bubbles: true })); input.dispatchEvent(new Event('change', { bubbles: true })); };
   const commit = () => {
     if (!picked) { close(); return; }
