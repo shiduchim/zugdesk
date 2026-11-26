@@ -12,7 +12,7 @@ import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim,
 const DB = isShadchan ? SHADCHAN_DB : SINGLE_DB;
 const { idb } = DB;
 export const SCHEMA_VERSION = DB.version;
-export const APP_VERSION = '0.9.1'; // raise the last number with each batch of changes, so Settings shows whether the phone has the update
+export const APP_VERSION = '0.9.2'; // raise the last number with each batch of changes, so Settings shows whether the phone has the update
 export const STAGE = isShadchan ? 'S6' : 8; // last finished stage of this mode (shown in Settings → About)
 
 const listeners = new Set();

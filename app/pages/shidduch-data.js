@@ -241,7 +241,9 @@ export async function saveDate(m, d, { when, where, status, feedback, audioIds =
     await log(t, text, { kind: 'date', eventAt: status === 'Happened' ? when : null });
   }
   let t2 = t;
-  if (bothYes(t) && t.phase === 'checking') { t2 = { ...t, phase: 'dating' }; await store.tries.save(t2); await log(t2, 'First date set up; moved to In Progress.', { kind: 'stage' }); }
+  // A date set up means both said yes (as in Shadchan Mode): the couple moves to In Progress.
+  if (isNew && !bothYes(t) && t.phase === 'checking') { t2 = { ...t, myAnswer: 'Yes', theirAnswer: 'Yes' }; await store.tries.save(t2); await log(t2, 'Both sides marked Yes: a date was set up.', { kind: 'answer' }); }
+  if (bothYes(t2) && t2.phase === 'checking') { t2 = { ...t2, phase: 'dating' }; await store.tries.save(t2); await log(t2, 'First date set up; moved to In Progress.', { kind: 'stage' }); }
   await touch(m.o, t2);
   return rec;
 }

@@ -193,7 +193,9 @@ export function nextStep(m) {
   }
   if (r.kind === 'date' && r.upcoming) return { kind: 'none', text: T.dateSet(r.n, whenNice(r.rec.when)) };
   const a = { guy: ans(r.rec, 'guy'), girl: ans(r.rec, 'girl') };
-  if (a.guy === 'yes' && a.girl === 'yes') return { kind: 'move', text: T.arrange(r.n + 1), date: r.n + 1 };
+  // the next date's number is counted the way saveDate counts it (a cancelled date keeps its number)
+  const next = Math.max(0, ...m.cur.dates.map(dateNum)) + 1;
+  if (a.guy === 'yes' && a.girl === 'yes') return { kind: 'move', text: T.arrange(next), date: next };
   if (r.kind === 'offer') {
     if (!a.guy && !a.girl) return { kind: 'none', idea: true, text: T.ideaLine };
     for (const s of SIDES) if (a[s] === 'yes' && !a[other(s)]) return { kind: 'move', text: T.suggest(firstName(m, s), firstName(m, other(s))), ask: [other(s)] };
@@ -411,6 +413,7 @@ export async function endTry(m, { endedBy = 'unknown', reason = '', source = '',
     else if (r.kind === 'offer') t2 = withSide(t2, endedBy, no);
   }
   await store.tries.save(t2);
+  if (r.kind === 'date' && r.upcoming) await store.dateEvents.save({ ...r.rec, status: 'Cancelled' }); // a date still ahead does not happen any more
   const toldNames = wouldNeedTelling(t2, endedBy).filter(s => t2.told[s]).map(s => talkName(m, s));
   const text = (saidNo && oneSide ? T.logNo(T.side[endedBy], firstName(m, endedBy)) : T.logEnded(whoEnded(t2)))
     + (t2.endedReason ? T.logReason(t2.endedReason) : '') + (toldNames.length ? T.logToldAtEnd(toldNames) : '');
