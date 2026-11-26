@@ -39,6 +39,7 @@ export async function render(container, params) {
     onInput: (e) => { U.q = e.target.value; drawSearch(); } });
   els.results = h('section', { class: 'home-results hidden', 'data-id': 'home.search-results', 'aria-live': 'polite' });
   els.composer = h('div', { class: 'home-composer-slot' });
+  els.backup = h('div', { class: 'shh-backup-slot' }); // Single Mode backup reminder (Shadchan Mode draws its own)
   els.notes = h('section', { class: 'home-notes', 'data-id': 'home.notes' });
   els.fus = h('section', { class: 'home-panel home-followups', 'data-id': 'home.followups' });
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
@@ -48,14 +49,25 @@ export async function render(container, params) {
     // the Notes / To Do List / History tabs sit underneath.
     h('div', { class: 'home-searchline', 'data-id': 'home.searchline' }, els.search, modeToggle(), settingsLink()),
     h('div', { class: 'home-tabline' }, tabRow()),
-    els.results, els.composer, els.grid));
+    SHH ? null : els.backup, els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
-    if (ch.store === 'prefs' && ch.key !== 'homeSuggestions' && !(SHH && (ch.key === 'shHomeBlocks' || ch.type === 'backup'))) return;
+    if (ch.store === 'prefs' && ch.key !== 'homeSuggestions' && !(ch.type === 'backup' || (SHH && ch.key === 'shHomeBlocks'))) return;
     if (ch.store === 'meta') return;
     clearTimeout(timer); timer = setTimeout(() => reload(), 120);
   });
   await reload(true);
+}
+
+// Backup reminder (Single Mode; same line as Shadchan Mode's Home): shows when there is something
+// to lose and no backup in the last 14 days.
+function drawBackup() {
+  const last = store.lastBackupAt(), days = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;
+  const hasData = D.notes.length > 0 || D.contacts.length > 0;
+  if (!hasData || (days !== null && days < 14)) { els.backup.replaceChildren(); return; }
+  els.backup.replaceChildren(h('div', { class: 'shh-backup', 'data-id': 'home.backup-reminder' },
+    h('span', {}, days === null ? 'No backup has been made on this device yet.' : `Last backup was ${days} days ago.`),
+    h('button', { type: 'button', class: 'linkish', 'data-id': 'home.backup-now', onClick: () => import('./backup-sheet.js').then(m => m.exportSheet()) }, 'Back up now')));
 }
 
 async function reload(first = false) {
@@ -67,7 +79,7 @@ async function reload(first = false) {
   X = { stageEvents, offersById: new Map(offers.map(o => [o.id, o])), interests, activity, shares };
   keepFocus(() => {
     if (first) drawComposer();
-    drawNotes(); drawFollowUps(); drawHistory(); drawBlocks(); if (U.q) drawSearch();
+    drawNotes(); drawFollowUps(); drawHistory(); drawBlocks(); if (!SHH) drawBackup(); if (U.q) drawSearch();
     tabCounts(); applySection();
   });
   if (first && U.expanded) setTimeout(() => root?.querySelector(`[data-note="${CSS.escape(U.expanded)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);

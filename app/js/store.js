@@ -12,7 +12,7 @@ import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim,
 const DB = isShadchan ? SHADCHAN_DB : SINGLE_DB;
 const { idb } = DB;
 export const SCHEMA_VERSION = DB.version;
-export const APP_VERSION = '0.9.2'; // raise the last number with each batch of changes, so Settings shows whether the phone has the update
+export const APP_VERSION = '0.9.3'; // raise the last number with each batch of changes, so Settings shows whether the phone has the update
 export const STAGE = isShadchan ? 'S6' : 8; // last finished stage of this mode (shown in Settings → About)
 
 const listeners = new Set();
@@ -25,11 +25,11 @@ export function newId(prefix = 'r') {
 }
 export const now = () => new Date().toISOString();
 
-// ---------- Recently deleted (Shadchan Mode only) ----------
-// There, remove() does not erase: the record gets `deletedAt` and waits KEEP_DELETED_DAYS in
+// ---------- Recently deleted (both modes) ----------
+// remove() does not erase: the record gets `deletedAt` and waits KEEP_DELETED_DAYS in
 // Settings → Recently deleted. list / get / byIndex / count never return such records, so pages
-// need no changes. Single Mode erases at once, as before.
-export const SOFT_DELETE = isShadchan;
+// need no changes. (Single Mode got this too, owner request Nov 2026.)
+export const SOFT_DELETE = true;
 export const KEEP_DELETED_DAYS = 30;
 const alive = (r) => !!r && !r.deletedAt;
 let openBatch = null;
@@ -166,8 +166,8 @@ export const FULL_DEMO_SEED = 200;
 
 export async function init() {
   if (!(await getMeta('seeded'))) await setMeta('seeded', { at: now(), count: 0 });
+  await purgeExpired(); // both modes: erase what waited longer than 30 days
   if (isShadchan) { // Shadchan Mode has none of Single Mode's older demo steps
-    await purgeExpired();
     // Stage S3: a device that already shows the demo singles gets the fictional shidduchim once.
     if (!(await getMeta('demoShidduchimS3'))) {
       if (await idb.get('people', 'demo_s_g01')) await loadShadchanDemo();
