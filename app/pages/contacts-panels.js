@@ -31,6 +31,8 @@ export function statusText(c) {
 // Tap a fact to change it right here (like My Profile). Choices save on each tap; text has Save / Cancel.
 const METHODS = ['WhatsApp', 'Phone call', 'Email', 'Text message'];
 let OPEN = null; // `${contactId}.${field}` of the fact being edited (kept across re-draws)
+let TYPED = null; // { key, value }: what is typed in that editor, so a re-draw does not wipe it
+export function closeFacts() { OPEN = null; TYPED = null; } // another contact was chosen
 let CHOICES = null;
 store.getChoices().then(x => { CHOICES = x; });
 const EDIT = {
@@ -40,13 +42,17 @@ const EDIT = {
 };
 async function saveField(c, field, value) {
   const cur = await fresh(c.id);
+  if (field === 'phone') value = store.cleanPhone(value); // no plus signs: 00 for a country code
+  TYPED = null;
   await store.contacts.save({ ...cur, [field]: value });
 }
 function factEditor(c, field, close) {
   const ed = EDIT[field];
   const box = h('div', { class: 'qf-edit', 'data-id': `contact.fact-edit.${field}` });
   if (ed.type === 'text') {
-    const inp = h('input', { class: 'input', dir: 'auto', value: c[field] || '', inputmode: ed.inputmode, 'data-id': 'contact.fact-input' });
+    const key = c.id + '.' + field;
+    const inp = h('input', { class: 'input', dir: 'auto', value: TYPED?.key === key ? TYPED.value : (c[field] || ''), inputmode: ed.inputmode, 'data-id': 'contact.fact-input',
+      onInput: (e) => { TYPED = { key, value: e.target.value }; } });
     const save = async () => { close(); await saveField(c, field, inp.value.trim()); toast('Saved'); };
     inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') save(); });
     box.append(inp, h('div', { class: 'qf-edit-btns' },
@@ -107,7 +113,7 @@ export function personBlock(c, opts = {}) {
         h('div', { class: 'sub', dir: 'auto' }, nameLine(c))),
       pinBtn),
     actions(c),
-    opts.facts ? h('section', { class: 'psec', 'data-id': 'contact.facts' }, quickFacts(c, 'contact.facts')) : null,
+    opts.facts ? h('section', { class: 'psec', 'data-id': 'contact.facts-sec' }, quickFacts(c, 'contact.facts')) : null,
     followUpsSection(c),
     composer(c),
     historySection(c, opts),
@@ -256,7 +262,7 @@ export async function eventSheet(e) {
       h('div', { class: 'field' }, h('label', {}, 'Date'), date), people],
     actions: [{ id: 'save', label: 'Save', primary: true, run: async () => {
       if (!text.value.trim()) { toast('The entry cannot be empty — delete it instead'); return false; }
-      const keepTime = (e.at || '').slice(0, 10) === date.value;
+      const keepTime = !date.value || (e.at || '').slice(0, 10) === date.value; // a cleared date keeps the old one
       await store.recordEvent({ ...e, type: type === '_unknown' ? '' : type, text: text.value, at: keepTime ? e.at : new Date(date.value + 'T12:00:00').toISOString() });
       toast('Updated everywhere it appears');
     } }] });

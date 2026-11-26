@@ -137,7 +137,7 @@ export async function render(container, params = {}) {
       h('span', { class: 'spacer' }),
       editing ? h('button', { type: 'button', class: 'btn danger', 'data-id': 'shadchan.delete-btn', onClick: del }, 'Delete') : null,
       h('button', { type: 'button', class: 'btn', 'data-id': 'shadchan.cancel-btn', onClick: cancel }, 'Cancel'),
-      h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shadchan.save-btn' }, editing ? 'Save changes' : 'Save Shadchan')));
+      h('button', { type: 'submit', class: 'btn primary', 'data-id': 'shadchan.save-btn' }, editing ? 'Save changes' : isShadchan ? 'Save contact' : 'Save Shadchan')));
 
   root.append(
     h('div', { class: 'page-head' },

@@ -9,7 +9,7 @@ import { h, icon, toast } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { isShadchan } from '../js/mode.js';
 import { S, D, load, visible, extraFilterCount, anyFilter, clearFilters, ensureSelection, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel } from './contacts-data.js';
-import { personBlock, quickFacts, nameLine, statusText, filtersSheet, viewSheet, shortDate, eventItem } from './contacts-panels.js';
+import { personBlock, quickFacts, nameLine, statusText, filtersSheet, viewSheet, shortDate, eventItem, closeFacts } from './contacts-panels.js';
 
 const DESK = window.matchMedia('(min-width: 1024px)');
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
@@ -214,6 +214,7 @@ function markSelected(scope) {
 
 // Selecting keeps the directory exactly where it is; only the person areas redraw.
 function select(c, scope, panes) {
+  if (S.selectedId !== c.id) closeFacts(); // an open fact editor belongs to the contact it was opened on
   S.selectedId = c.id;
   markSelected(scope);
   panes();
