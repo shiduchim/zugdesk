@@ -1,7 +1,7 @@
 // Ideas — every saved person (one record each), originals saved for later,
 // and unsaved Add Person drafts. A saved idea is not a formal shidduch offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, confirmDialog, swipeTabs } from '../js/ui.js';
+import { h, icon, toast, confirmDialog, swipeTabs, dock } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
 import { kindLabel, dateOnly, seekingKind, pron } from './people-data.js';
 import { ideaStatus, latestByPerson, recordInterest } from './idea-flow.js';
@@ -58,8 +58,7 @@ async function draw() {
 
   root.innerHTML = '';
   root.append(...[
-    // Add Person sits top right, next to the title, so it never moves (owner request).
-    h('div', { class: 'page-head' }, h('h1', {}, 'Ideas'), h('a', { class: 'btn primary', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
+    h('div', { class: 'page-head' }, h('h1', {}, 'Ideas')),
     h('div', { class: 'ct-search' }, ico('search'), search),
     h('div', { class: 'chip-row filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
       filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'fchip', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
@@ -91,6 +90,8 @@ async function draw() {
         : h('div', { class: 'empty' }, people.length ? (S.q ? 'Nobody matches. ' : `Nobody here right now.`) : 'No people saved yet. ',
             people.length ? (S.q ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; draw(); } }, 'Clear search') : null)
               : h('a', { href: '#/people/new' }, 'Add the first person'))),
+    // Add Person sits at the bottom, near the thumb (owner-approved, Nov 2026).
+    dock('people.dock', h('a', { class: 'btn primary wide', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
   ].filter(Boolean));
 }
 

@@ -3,7 +3,7 @@
 // removable tags, rows loaded while scrolling, To file. The data comes from one in-memory index
 // in singles-data.js, so typing stays quick with 3,000 singles.
 import * as store from '../js/store.js';
-import { h, icon, toast, confirmDialog, sheet, bubbles } from '../js/ui.js';
+import { h, icon, toast, confirmDialog, sheet, bubbles, dock } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { peopleListPath, rememberList } from '../js/mode.js';
 import { openDrafts, dropDraft } from './person-form.js';
@@ -80,8 +80,7 @@ async function draw() {
   root.innerHTML = '';
   root.append(...[
     h('div', { class: 'page-head' },
-      h('h1', { 'data-id': 'singles.title' }, w.title, h('span', { class: 'sg-count', 'data-id': 'singles.count' }, '')),
-      h('button', { type: 'button', class: 'btn primary', 'data-id': 'singles.add-btn', onClick: () => { store.setPref('personKind', kind); navigate('/people/new'); } }, w.add)),
+      h('h1', { 'data-id': 'singles.title' }, w.title, h('span', { class: 'sg-count', 'data-id': 'singles.count' }, ''))),
 
     mine ? tools() : null,
 
@@ -106,6 +105,8 @@ async function draw() {
     unmarked.length ? h('section', { class: 'section', 'data-id': 'singles.unmarked' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, T.unmarkedHead(unmarked.length))),
       unmarked.map(r => personRow(r, ''))) : null,
+    // Add Guy / Add Girl sits at the bottom, near the thumb (owner-approved, Nov 2026).
+    dock('singles.dock', h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'singles.add-btn', onClick: () => { store.setPref('personKind', kind); navigate('/people/new'); } }, w.add)),
   ].filter(Boolean));
   if (mine) drawResults(); else root.querySelector('[data-id="singles.count"]').textContent = '0';
   window.scrollTo(0, y);

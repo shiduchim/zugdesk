@@ -117,17 +117,9 @@ _Last updated: 2026-11-26 (profile pages review done; whole-app check started)_
 - GitHub Pages publish failed for a few hours on Nov 25 (GitHub side); a later workflow_dispatch run worked.
 
 ### In progress
-- Whole-app bug check DONE (version 0.9.2, published). Bug list: all fixed except low ones (Undo moves updatedAt; Single Shidduchim no Undo after References checked / saved date; contacts filters apply on dismiss; Show menu with two filters).
-- Fable improvements the owner APPROVED (build in this order, push each, raise APP_VERSION):
-  11 less clutter (explanation lines on Ideas unfiled / Guys-Girls / Shadchan Home / Contacts composer / Add Shadchan / Add Person paste footnote; "Nothing to do until the date", "Waiting for answers."; "1 dated entry" only when >1; remove "Delete all N notes"; demo-record footers; 10-segment strip on Offers before any date)
-  12 words under every bottom-bar icon, both modes (app.js:12-22)
-  10 Settings: Backup near the top, fold Claude instructions / Install / About
-  2 backup reminder on Home in Single Mode (like sh-home.js:316)
-  1 Single Mode 30-day Recently deleted (store.js:32 SOFT_DELETE = isShadchan) — test delete paths
-  8 Contacts phone default = plain full-width list (contacts.js:19)
-  9 Add Shadchan: basics first, rest under More details (contact-form.js)
-  7 Add buttons at the bottom (contacts, people, singles, sh-shidduchim)
-- Owner said NO: remove Home mode switch, shrink note box, change To Do rows, WhatsApp button.
+- Nothing open. Whole-app bug check and the approved improvements (1, 2, 7, 8, 9, 10, 11, 12) are done: version 0.9.4.
+- Owner said NO to: removing the Home mode switch, shrinking the note box, changing To Do rows, a WhatsApp button.
+- Small known leftovers (low): Undo moves a shidduch's updatedAt; Single Shidduchim has no Undo after References checked / saved date; Contacts filters apply when the sheet is dismissed; Show menu with two filters.
 
 ### Next
 - PR not made yet (owner says "make the PR").

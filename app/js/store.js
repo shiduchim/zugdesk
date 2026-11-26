@@ -12,7 +12,7 @@ import { makeDemoContacts, makeDemoActivity, makeDemoPeople, makeDemoShidduchim,
 const DB = isShadchan ? SHADCHAN_DB : SINGLE_DB;
 const { idb } = DB;
 export const SCHEMA_VERSION = DB.version;
-export const APP_VERSION = '0.9.3'; // raise the last number with each batch of changes, so Settings shows whether the phone has the update
+export const APP_VERSION = '0.9.4'; // raise the last number with each batch of changes, so Settings shows whether the phone has the update
 export const STAGE = isShadchan ? 'S6' : 8; // last finished stage of this mode (shown in Settings → About)
 
 const listeners = new Set();
@@ -118,7 +118,7 @@ const PREF_DEFAULTS = {
   mode: 'single',            // 'single' | 'shadchan' — changed only through switchMode() in js/mode.js (it reloads the app)
   showLabels: false,
   theme: 'dark',             // 'light' | 'dark' | 'auto' (match phone) — dark is the default (owner choice)
-  contactsLayout: 'a',       // phone view: a | rail | tabs | list | inbox (spec/contacts.md CT-13)
+  contactsLayout: 'inbox',   // phone view: a | rail | tabs | list | inbox (spec/contacts.md CT-13); default plain list (Nov 2026)
   contactsSort: 'recent',    // recent | oldest | name | city | language | community
   iAm: '',                  // My Profile: 'guy' | 'girl' — Ideas then shows only the other
   personKind: 'guy',         // Add Person: last chosen Guy / Girl
@@ -134,6 +134,11 @@ export function getPrefs() {
   if (p.contactsLayout === 'split') p.contactsLayout = 'a'; // the top/bottom split view was removed
   return p;
 }
+// One time: phones on the old default Contacts view (A) move to the plain list (owner-approved, Nov 2026).
+try {
+  const raw = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');
+  if (!raw.contactsListV1) { if (!raw.contactsLayout || raw.contactsLayout === 'a') raw.contactsLayout = 'inbox'; raw.contactsListV1 = true; localStorage.setItem(PREF_KEY, JSON.stringify(raw)); }
+} catch {}
 // One time: dark becomes the default on phones that already chose light (owner request).
 try {
   const raw = JSON.parse(localStorage.getItem(PREF_KEY) || '{}');

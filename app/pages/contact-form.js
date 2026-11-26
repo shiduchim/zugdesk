@@ -99,14 +99,17 @@ export async function render(container, params = {}) {
 
   const form = h('form', { class: 'shadchan-form', 'data-id': 'shadchan.form', novalidate: true, onSubmit: (e) => { e.preventDefault(); save(); } },
     block('Contact basics', 'shadchan.basics',
-      h('div', { class: 'field' }, h('label', {}, 'Title (optional)'),
-        bubbles({ options: TITLES.map(t => [t, t]), selected: v.title ? [v.title] : [], multi: false, dataId: 'shadchan.title', onChange: (x) => { v.title = x; } })),
       input('name', 'Name (required)', v.name, { required: true, autocomplete: 'off', placeholder: 'e.g. Miriam Cohen' }),
       input('phone', 'Phone number', c?.phone, { type: 'tel', inputmode: 'tel', placeholder: 'Use 00 for country codes' }),
-      input('email', 'Email', c?.email, { type: 'email', inputmode: 'email' }),
       input('city', 'City', c?.city, { list: 'cf-cities', autocomplete: 'off' }),
       h('datalist', { id: 'cf-cities' }, cities.map(x => h('option', { value: x }))),
-      h('div', { class: 'field' }, h('label', {}, 'Roles (a person can have several)'), rolesB),
+      h('div', { class: 'field' }, h('label', {}, 'Roles (a person can have several)'), rolesB)),
+    // The rest folds away (owner-approved: the basics first, the long part under More details).
+    h('details', { class: 'cf-more', open: editing || null, 'data-id': 'shadchan.more' }, h('summary', {}, 'More details'),
+    block('More about them', 'shadchan.more-basics',
+      h('div', { class: 'field' }, h('label', {}, 'Title (optional)'),
+        bubbles({ options: TITLES.map(t => [t, t]), selected: v.title ? [v.title] : [], multi: false, dataId: 'shadchan.title', onChange: (x) => { v.title = x; } })),
+      input('email', 'Email', c?.email, { type: 'email', inputmode: 'email' }),
       h('div', { class: 'field' }, h('label', {}, 'Preferred way to reach them'),
         bubbles({ options: METHODS.map(m => [m, m]), selected: v.preferredContact ? [v.preferredContact] : [], multi: false, dataId: 'shadchan.preferred', onChange: (x) => { v.preferredContact = x; } })),
       h('div', { class: 'field' }, h('label', {}, 'Current status'),
@@ -130,6 +133,7 @@ export async function render(container, params = {}) {
     block('Attached items', 'shadchan.attachments',
       attList, fileIn,
       h('button', { type: 'button', class: 'btn', 'data-id': 'shadchan.attach-btn', onClick: () => fileIn.click() }, h('span', { html: icon('file') }).firstChild, 'Attach file or photo')),
+    ),
     h('div', { class: 'form-foot', 'data-id': 'shadchan.footer' },
       h('button', { type: 'button', class: 'linkish manage', 'data-id': 'shadchan.manage-choices', onClick: () => manageChoices(choices, async (next) => {
         choices = next; await store.saveChoices(choices); [rolesB, agesB, comB, langB].forEach(b => b.refresh());
