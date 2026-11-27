@@ -143,7 +143,7 @@ export function stepChips(p, st) {
   const b = (label, id, onClick, primary) => h('button', { type: 'button', class: 'btn small' + (primary ? ' primary' : ''), 'data-id': 'idea.step-' + id,
     onClick: (e) => { e.preventDefault(); e.stopPropagation(); onClick(); } }, label);
   const row = (...kids) => h('div', { class: 'pc-status-btns idea-steps', 'data-id': 'idea.steps' }, ...kids);
-  if (st.key === 'new') return row(b('I’m interested', 'interested', () => run(p, 'interested'), true), b(`${P.He} said yes`, 'yes', () => run(p, 'yes')), b('We met', 'met', () => run(p, 'met')), b('No', 'no', () => noSheet(p, false)));
+  if (st.key === 'new') return row(b('Interested', 'interested', () => run(p, 'interested'), true), b(`${P.He} said yes`, 'yes', () => run(p, 'yes')), b('We met', 'met', () => run(p, 'met')), b('No', 'no', () => noSheet(p, false)));
   if (st.key === 'waiting') return row(b(`${P.He} said yes`, 'yes', () => run(p, 'yes'), true), b('We met', 'met', () => run(p, 'met')), b('No', 'no', () => noSheet(p, false)));
   if (st.key === 'shidduch') return row(b('We met', 'again', () => run(p, 'metAgain'), true), b('Ended', 'end', () => noSheet(p, true)));
   return null;

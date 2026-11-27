@@ -88,4 +88,6 @@
 .people-closed>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
 .people-closed>summary::-webkit-details-marker{display:none}
 .people-closed-hint{margin-left:auto}
-.idea-steps{margin:4px 0 10px}
+/* the step buttons stay on one line (owner request): they share the width and shrink a little on small phones */
+.idea-steps{margin:4px 0 10px;flex-wrap:nowrap}
+.idea-steps .btn.small{flex:1 1 auto;min-width:0;padding:4px 6px;white-space:normal;text-align:center;line-height:1.15;overflow-wrap:normal}
