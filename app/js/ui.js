@@ -119,16 +119,24 @@ export function sheet({ title, dataId, body, actions = [], className = '' }) {
   return new Promise((resolve) => {
     let done = false;
     const finish = (v) => { if (done) return; done = true; dlg.close(); keepToast(dlg); dlg.remove(); resolve(v); };
+    // Typed something, then Cancel / Close / Back: ask first, so nothing typed is lost by mistake (owner request).
+    let typed = false;
+    const leave = async () => {
+      if (typed && !(await confirmDialog({ title: 'Leave without saving?', text: 'What you typed here will be lost.', ok: 'Discard', cancel: 'Keep editing', danger: true, dataId: dataId + '.leave-dialog' }))) return;
+      finish(null);
+    };
     // Close sits at the bottom right, after the other buttons, where a thumb can reach it (owner request).
-    const closeBtn = h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.close', onClick: () => finish(null) }, 'Close');
+    // Next to an action (Save, End shidduch …) it says Cancel, so it is clear it does not save.
+    const closeBtn = h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.close', onClick: leave }, actions.length ? 'Cancel' : 'Close');
     const dlg = h('dialog', { class: 'sheet form-sheet ' + className, 'data-id': dataId },
       h('div', { class: 'sheet-head' }, h('h2', {}, title)),
       h('div', { class: 'sheet-body' }, body),
       h('div', { class: 'btn-row sheet-actions' }, actions.map(a =>
         h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger' : ''), type: 'button', 'data-id': dataId + '.' + a.id,
           onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label)), closeBtn));
-    dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); leave(); });
     dlg.addEventListener('close', () => finish(null));
+    dlg.addEventListener('input', (e) => { if (e.target.matches('textarea, input:not([type=checkbox]):not([type=radio]):not([type=file])')) typed = true; });
     document.body.append(dlg);
     dlg.showModal();
     dlg.finish = finish;
