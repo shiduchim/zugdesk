@@ -3,16 +3,13 @@
 // shared person card. Saves straight to the one person record through the card's save().
 import * as store from '../js/store.js';
 import { h, icon, toast, sheet } from '../js/ui.js';
-import { navigate } from '../js/router.js';
 import { STATUSES, statusOf, agoWords } from './singles-data.js';
 import { dateOnly } from './people-data.js';
 
 const T = {
-  head: 'Shadchan',
+  head: 'Matching',
   status: 'Status',
-  working: 'Working on',
   workingOn: 'Working on',
-  workingOff: 'On file',
   ages: 'Looking for ages',
   from: 'from', to: 'to',
   talkTo: 'Talk to',
@@ -29,7 +26,6 @@ const T = {
   busyTitle: 'Busy elsewhere',
   busyText: 'When should you check again? A follow-up is made for that day. Leave empty for no reminder.',
   busyFu: (name) => `Check if ${name} is free again`,
-  find: 'Find a match',
 };
 const STALE_DAYS = 90; // older than this, "Last confirmed looking" is shown in the warning colour
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
@@ -46,12 +42,13 @@ export function singlePanel(p, save) {
     onChange: (e) => save({ [key]: e.target.value.trim() }, true) });
 
   return h('section', { class: 'pc-sec sp-panel', 'data-id': 'person-card.shadchan' },
+    h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow' }, T.head)),
     row(T.status, 'person-card.status',
       h('select', { class: 'input', 'aria-label': T.status, 'data-id': 'person-card.status-select', onChange: (e) => setStatus(p, e.target.value, save, e.target) },
         STATUSES.map(([v, l]) => h('option', { value: v, selected: st === v || null }, l))),
       h('button', { type: 'button', class: 'btn small sp-star', 'aria-pressed': p.starred ? 'true' : 'false', 'data-id': 'person-card.working-on',
         title: p.starred ? 'Tap to put back on file' : 'Tap to mark Working on',
-        onClick: () => save({ starred: !p.starred }, true) }, ico('star'), p.starred ? T.workingOn : T.workingOff)),
+        onClick: () => save({ starred: !p.starred }, true) }, ico('star'), T.workingOn)), // the filled star shows it is on
     st === 'busy' && p.busyUntil ? h('p', { class: 'note', 'data-id': 'person-card.busy-until' }, T.busyUntil(p.busyUntil)) : null,
     // Stage S3: Busy or Engaged that a shidduch set by itself (it goes back to Available when that shidduch ends).
     p.statusBy && (st === 'busy' || st === 'engaged') ? h('p', { class: 'note', 'data-id': 'person-card.status-by' }, st === 'busy' ? T.busyAuto : T.engagedAuto, ' ',
@@ -65,8 +62,7 @@ export function singlePanel(p, save) {
     row(T.confirmed, 'person-card.confirmed',
       h('span', { class: 'grow small' + (days > STALE_DAYS ? ' sp-stale' : '') }, p.confirmedAt ? agoWords(p.confirmedAt) : T.never),
       h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.confirm-btn', onClick: async () => { await save({ confirmedAt: today() }, true); toast(T.confirmedToast); } }, T.confirmBtn)),
-    // Main action, last and full width (easy to reach with the thumb), with a line above it.
-    h('button', { type: 'button', class: 'btn primary sp-find', 'data-id': 'person-card.find-match', onClick: () => navigate(`/match/${encodeURIComponent(p.id)}`) }, T.find));
+    ); // Find a match sits in the card's bottom bar (dock), like the main button on the other profile pages
 }
 
 // Busy by hand asks "check again on …" and makes a follow-up for that day (design.md 6.2).

@@ -8,6 +8,9 @@ function schedule() { if (!enabled) return; cancelAnimationFrame(raf); raf = req
 
 function draw() {
   if (!layer) return;
+  // with a sheet open, the names live inside it (a sheet covers everything else, so they could not be tapped)
+  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+  if (layer.parentNode !== host) host.append(layer);
   layer.innerHTML = '';
   const els = document.querySelectorAll('[data-id]');
   const vw = window.innerWidth, vh = window.innerHeight;

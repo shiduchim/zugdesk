@@ -15,12 +15,15 @@ const SHH = isShadchan ? await import('./sh-home.js') : null;
 
 const STAR = '<svg class="star" viewBox="230 215 533 605" width="12" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" fill-rule="evenodd" d="M 491 228 L 477 233 L 463 245 L 417 324 L 405 337 L 397 343 L 384 350 L 361 355 L 292 354 L 271 356 L 258 363 L 247 376 L 243 388 L 243 400 L 246 411 L 291 489 L 296 507 L 297 525 L 290 549 L 245 627 L 243 646 L 246 657 L 252 667 L 260 674 L 271 679 L 292 681 L 359 680 L 376 683 L 398 693 L 407 700 L 418 713 L 462 790 L 470 798 L 483 805 L 501 807 L 517 802 L 530 791 L 576 712 L 592 695 L 598 691 L 617 683 L 633 680 L 718 680 L 730 676 L 736 672 L 744 663 L 750 647 L 749 630 L 745 620 L 701 544 L 697 530 L 696 517 L 698 502 L 703 487 L 747 411 L 750 400 L 750 387 L 743 371 L 734 362 L 721 356 L 708 354 L 624 354 L 608 349 L 595 342 L 575 322 L 528 242 L 523 237 L 510 230 Z M 493 255 L 503 256 L 509 262 L 554 339 L 564 351 L 585 367 L 602 375 L 627 381 L 712 381 L 717 383 L 723 391 L 723 398 L 679 475 L 670 505 L 671 536 L 676 553 L 683 568 L 723 637 L 722 647 L 713 654 L 620 655 L 597 662 L 585 668 L 571 678 L 559 690 L 542 716 L 512 770 L 507 776 L 500 780 L 490 779 L 484 774 L 440 698 L 422 678 L 408 668 L 385 658 L 364 654 L 279 654 L 272 648 L 270 643 L 270 638 L 274 629 L 317 554 L 323 530 L 323 506 L 318 484 L 311 469 L 273 405 L 270 397 L 271 389 L 277 383 L 283 381 L 374 380 L 395 374 L 407 368 L 425 355 L 437 342 L 483 263 L 487 258 Z"/></svg>';
 const FU_FIRST = 10, HIST_FIRST = 5, HIST_STEP = 50;
-const DRAFT_KEY = 'zugdesk.homeDrafts';
+const DRAFT_KEY = 'zugdesk.homeDrafts' + (isShadchan ? '.shadchan' : ''); // each mode keeps its own unsent text (its links point into that mode's records)
 const fine = () => window.matchMedia('(hover:hover) and (pointer:fine)').matches;
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 
 let root = null, unsub = null, timer = 0, gen = 0;
-let D = null, X = null, IX = null, SH = null;
+let D = null, X = null, SH = null;
+// Names for recognising people in a note: built only when a note is being written (not on every Home redraw).
+let IXD = null, IXV = null;
+const ix = () => (IXD === D && IXV ? IXV : (IXD = D, IXV = nameIndex(D)));
 let U = { expanded: null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
 let drafts = {};
 const els = {};
@@ -39,6 +42,7 @@ export async function render(container, params) {
     onInput: (e) => { U.q = e.target.value; drawSearch(); } });
   els.results = h('section', { class: 'home-results hidden', 'data-id': 'home.search-results', 'aria-live': 'polite' });
   els.composer = h('div', { class: 'home-composer-slot' });
+  els.backup = h('div', { class: 'shh-backup-slot' }); // Single Mode backup reminder (Shadchan Mode draws its own)
   els.notes = h('section', { class: 'home-notes', 'data-id': 'home.notes' });
   els.fus = h('section', { class: 'home-panel home-followups', 'data-id': 'home.followups' });
   els.hist = h('section', { class: 'home-panel home-history', 'data-id': 'home.history' });
@@ -48,14 +52,25 @@ export async function render(container, params) {
     // the Notes / To Do List / History tabs sit underneath.
     h('div', { class: 'home-searchline', 'data-id': 'home.searchline' }, els.search, modeToggle(), settingsLink()),
     h('div', { class: 'home-tabline' }, tabRow()),
-    els.results, els.composer, els.grid));
+    SHH ? null : els.backup, els.results, els.composer, els.grid));
   PHONE.addEventListener('change', applySection);
   unsub = store.subscribe((ch) => {
-    if (ch.store === 'prefs' && ch.key !== 'homeSuggestions' && !(SHH && (ch.key === 'shHomeBlocks' || ch.type === 'backup'))) return;
+    if (ch.store === 'prefs' && ch.key !== 'homeSuggestions' && !(ch.type === 'backup' || (SHH && ch.key === 'shHomeBlocks'))) return;
     if (ch.store === 'meta') return;
     clearTimeout(timer); timer = setTimeout(() => reload(), 120);
   });
   await reload(true);
+}
+
+// Backup reminder (Single Mode; same line as Shadchan Mode's Home): shows when there is something
+// to lose and no backup in the last 14 days.
+function drawBackup() {
+  const last = store.lastBackupAt(), days = last ? Math.floor((Date.now() - new Date(last).getTime()) / 86400000) : null;
+  const hasData = D.notes.length > 0 || D.contacts.length > 0;
+  if (!hasData || (days !== null && days < 14)) { els.backup.replaceChildren(); return; }
+  els.backup.replaceChildren(h('div', { class: 'shh-backup', 'data-id': 'home.backup-reminder' },
+    h('span', {}, days === null ? 'No backup has been made on this device yet.' : `Last backup was ${days} days ago.`),
+    h('button', { type: 'button', class: 'linkish', 'data-id': 'home.backup-now', onClick: () => import('./backup-sheet.js').then(m => m.exportSheet()) }, 'Back up now')));
 }
 
 async function reload(first = false) {
@@ -63,11 +78,11 @@ async function reload(first = false) {
   const [d, stageEvents, offers, interests, activity, shares, sh] = await Promise.all([
     N.loadNotes(), store.stageEvents.list(), store.offers.list(), store.interests.list(), store.activity.list(), store.shares.list(), SHH ? SHH.load() : null]);
   if (token !== gen || !root) return;
-  D = d; IX = nameIndex(D); SH = sh;
+  D = d; SH = sh;
   X = { stageEvents, offersById: new Map(offers.map(o => [o.id, o])), interests, activity, shares };
   keepFocus(() => {
     if (first) drawComposer();
-    drawNotes(); drawFollowUps(); drawHistory(); drawBlocks(); if (U.q) drawSearch();
+    drawNotes(); drawFollowUps(); drawHistory(); drawBlocks(); if (!SHH) drawBackup(); if (U.q) drawSearch();
     tabCounts(); applySection();
   });
   if (first && U.expanded) setTimeout(() => root?.querySelector(`[data-note="${CSS.escape(U.expanded)}"]`)?.scrollIntoView({ block: 'start', behavior: 'smooth' }), 60);
@@ -109,7 +124,7 @@ function composer(key) {
   const target = h('div', { class: 'ed-target' });
   const foot = h('div', { class: 'ed-foot' });
   const sync = () => {
-    const a = recognize(d.text, IX, D);
+    const a = recognize(d.text, ix(), D);
     mirror.innerHTML = suggestionsOn() ? highlighted(d.text, a) : esc(d.text) + '\n';
     const writing = !!d.text.trim() || !!voicePend[key]?.audio?.length;
     wrap.classList.toggle('writing', writing);
@@ -238,7 +253,7 @@ function chips(key, a, sync) {
       const name = await promptText({ title: 'Create new contact', label: 'Name (no phone or details are added for you)', value: nm, ok: 'Create', dataId: 'home.create-contact' });
       if (!name) return;
       const c = await N.createMinimalContact(name);
-      d.contactIds = [...d.contactIds, c.id]; persist(); D.contacts.push(c); D.contactsById.set(c.id, c); IX = nameIndex(D); sync();
+      d.contactIds = [...d.contactIds, c.id]; persist(); D.contacts.push(c); D.contactsById.set(c.id, c); IXV = null; sync();
       toast(`${store.displayName(c)} added to Contacts and linked`);
     }, 'new', 'home.suggestion-create'));
   }
@@ -261,14 +276,14 @@ function quickFollowUp(key, sync) {
   if (d.followUp) { d.followUp = null; toast('Follow Up removed'); }
   else {
     if (!d.text.trim()) { toast('Write a note first'); return; }
-    const a = recognize(d.text, IX, D);
+    const a = recognize(d.text, ix(), D);
     d.followUp = { text: firstSentence(d.text), due: a.date ? a.date.due : null };
     toast(d.followUp.due ? `Follow Up ready for ${store.formatDate(d.followUp.due)}` : 'Follow Up ready — no date needed');
   }
   persist(); sync();
 }
 async function followUpDetails(key, sync) {
-  const d = draft(key), a = recognize(d.text, IX, D);
+  const d = draft(key), a = recognize(d.text, ix(), D);
   const text = h('input', { class: 'input', dir: 'auto', value: d.followUp?.text || firstSentence(d.text), 'data-id': 'home.fu-details.text', 'aria-label': 'What needs to happen?' });
   const due = h('input', { class: 'input', type: 'date', value: d.followUp?.due || a.date?.due || '', 'data-id': 'home.fu-details.date', 'aria-label': 'Date (optional)' });
   const acts = [{ id: 'save', label: 'Use this Follow Up', primary: true, run: () => { d.followUp = { text: text.value.trim() || 'Follow up', due: due.value || null }; persist(); sync(); } }];
@@ -346,7 +361,7 @@ async function deleteNoteFlow(note, key = 'note:' + note.id) {
 
 function linkFor(anchor, key, sync, query = '') {
   const d = draft(key), note = noteOf(key);
-  const a = recognize(d.text, IX, D);
+  const a = recognize(d.text, ix(), D);
   const suggest = a.refs.flatMap(r => r.matches.map(m => m.id));
   const sel = { contactIds: [...d.contactIds, ...(note?.contactIds || [])], personIds: [...d.personIds, ...(note?.personIds || [])] };
   N.linkMenu(anchor, 'home.link-menu', D, sel, async (s) => {
@@ -362,7 +377,14 @@ function linkFor(anchor, key, sync, query = '') {
 }
 
 // ---------- saving ----------
+// One save at a time per box: a quick second tap never makes a second note.
+const saving = new Set();
 async function save(key) {
+  if (saving.has(key)) return;
+  saving.add(key);
+  try { return await saveNow(key); } finally { saving.delete(key); }
+}
+async function saveNow(key) {
   const d = draft(key), pend = voicePend[key] || {}, hasAudio = !!pend.audio?.length;
   const text = d.text.trim() || (hasAudio ? 'Voice note' : '');
   if (!text) { toast('Write something or record a voice note first'); root?.querySelector(`textarea[data-key="${CSS.escape(key)}"]`)?.focus(); return; }
@@ -449,7 +471,7 @@ function drawNotes() {
   if (pinned.length) els.notes.append(h('div', { class: 'note-group-title', 'data-id': 'home.pinned' }, 'Pinned ', h('span', { class: 'count' }, String(pinned.length))), h('div', { class: 'note-list' }, pinned.map(noteCard)));
   if (other.length) els.notes.append(pinned.length ? h('div', { class: 'note-group-title', 'data-id': 'home.other-notes' }, 'Other Notes ', h('span', { class: 'count' }, String(other.length))) : '', h('div', { class: 'note-list' }, other.map(noteCard)));
   els.notes.append(h('div', { class: 'notes-delete-all' },
-    h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'home.notes-delete-all', onClick: () => deleteAllFlow(list) }, `Delete all ${list.length} notes`)));
+    ));
 }
 // Deletes exactly the notes shown (My notes, or All). Pinned ones too. Follow Ups stay.
 async function deleteAllFlow(list) {
@@ -473,7 +495,7 @@ function noteCard(n) {
       pin,
       h('h3', { dir: 'auto' }, n.title),
       h('p', { class: 'preview', dir: 'auto' }, es[es.length - 1]?.text || ''),
-      h('div', { class: 'note-meta' }, h('span', {}, `${store.formatDate(D.lastAt(n))} · ${es.length} dated ${es.length === 1 ? 'entry' : 'entries'}`), linkRow),
+      h('div', { class: 'note-meta' }, h('span', {}, store.formatDate(D.lastAt(n)) + (es.length > 1 ? ` · ${es.length} dated entries` : '')), linkRow),
       h('div', { class: 'note-card-foot' },
         h('button', { type: 'button', class: 'add-to-note', 'data-id': 'home.note-add', onClick: (e) => { e.stopPropagation(); expand(n.id); } }, 'Add to note'),
         h('button', { type: 'button', class: 'add-to-note danger-text', 'data-id': 'home.note-delete', onClick: (e) => { e.stopPropagation(); deleteNoteFlow(n); } }, 'Delete')));
@@ -490,7 +512,7 @@ function noteCard(n) {
         } }, 'Rename'),
         h('button', { type: 'button', class: 'pin-text danger-text', 'data-id': 'home.note-delete', onClick: () => deleteNoteFlow(n) }, 'Delete'),
         h('button', { type: 'button', class: 'pin-text', 'data-id': 'home.note-close', onClick: () => { U.expanded = null; drawNotes(); } }, 'Close'))),
-    h('div', { class: 'note-meta' }, h('span', {}, `Started ${store.formatDate(n.createdAt)} · ${es.length} dated ${es.length === 1 ? 'entry' : 'entries'}`), linkRow),
+    h('div', { class: 'note-meta' }, h('span', {}, `Started ${store.formatDate(n.createdAt)}` + (es.length > 1 ? ` · ${es.length} dated entries` : '')), linkRow),
     h('div', { class: 'note-entries', 'data-id': 'home.note-entries' }, es.map(e => h('div', { class: 'note-entry' },
       h('div', { class: 'date-divider' }, dateTimeLabel(e.at)),
       e.audioIds?.length && e.text === 'Voice note' ? null : h('div', { class: 'prewrap', dir: 'auto' }, e.text),

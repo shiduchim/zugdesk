@@ -201,7 +201,8 @@ function dateForm(m) {
   const status = bubbles({ options: ['Arranged', 'Happened', 'Cancelled'].map(x => [x, x]), selected: [stat], multi: false, dataId: 'shidduch.date-status', onChange: (x) => { stat = x || stat; } });
   const feedback = h('textarea', { class: 'input', id: 'sh-date-feedback', rows: 3, dir: 'auto', placeholder: 'Optional notes about the date', 'data-id': 'shidduch.date-feedback' }, d?.feedback || '');
   const fld = (label, el) => h('div', { class: 'field' }, h('label', { for: el.id }, label), el);
-  const fbPend = VP['date:' + (d?.id || 'new')] || (VP['date:' + (d?.id || 'new')] = {});
+  const vk = 'date:' + (d?.id || 'new:' + m.o.id); // a recording for a new date stays with this shidduch
+  const fbPend = VP[vk] || (VP[vk] = {});
   return h('form', { class: 'sh-formbox', 'data-id': 'shidduch.date-form', onSubmit: async (e) => {
     e.preventDefault();
     await sh.saveDate(m, d, { when: when.value, where: where.value, status: stat, feedback: feedback.value, audioIds: await savePending(fbPend) });

@@ -1,9 +1,10 @@
-// Recently deleted (Shadchan Mode) — everything deleted waits here for 30 days.
+// Recently deleted (both modes) — everything deleted waits here for 30 days.
 // One line per deletion: a single deleted with her originals and follow-ups is one line,
 // and Restore puts all of it back together. The store does the work (js/store.js).
 import * as store from '../js/store.js';
 import { h, icon, toast, confirmDialog } from '../js/ui.js';
-import { reapplyStatus } from './sh-shidduch-data.js';
+import { isShadchan } from '../js/mode.js';
+const reapplyStatus = async (ids) => { if (isShadchan && ids.length) (await import('./sh-shidduch-data.js')).reapplyStatus(ids); };
 
 const T = {
   title: 'Recently deleted',
@@ -20,15 +21,17 @@ const T = {
 };
 // Which record names a deletion, most important first, and the word shown for it.
 const KINDS = [
-  ['people', 'Single', (r) => store.personName(r)],
+  ['people', isShadchan ? 'Single' : 'Person', (r) => store.personName(r)],
   ['contacts', 'Contact', (r) => store.displayName(r)],
   ['notes', 'Note', (r) => r.title],
-  ['offers', 'Shidduch', (r) => [r.guyName, r.girlName].filter(Boolean).join(' – ')],
+  ['offers', 'Shidduch', (r) => [r.guyName, r.girlName, r.personName].filter(Boolean).join(' – ')],
   ['sources', 'Saved profile', (r) => firstLine(r.text)],
   ['events', 'Conversation', (r) => firstLine(r.text)],
   ['followUps', 'Follow-up', (r) => r.text],
   ['folders', 'Folder', (r) => r.name],
   ['attachments', 'File', (r) => r.name],
+  ['profileVersions', 'Short version', (r) => r.title],
+  ['interests', 'Interest', (r) => r.value],
 ];
 const firstLine = (t) => (t || '').trim().split('\n').find(l => l.trim())?.trim().slice(0, 80) || '';
 

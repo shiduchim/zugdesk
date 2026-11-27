@@ -19,3 +19,5 @@
   .form-foot .btn{flex:1}
 }
 @media (min-width:1024px){ .form-foot{bottom:0} }
+/* "More details": the long part of the form, open on tap */
+.cf-more>summary{cursor:pointer;min-height:var(--touch-min);display:flex;align-items:center;color:var(--link);font-weight:600}

@@ -10,8 +10,8 @@ import { isShadchan, listState } from './mode.js';
 // Each mode has its own five places (spec/shadchan/design.md section 5); the bar looks the same.
 const NAV = isShadchan ? [
   { path: '/home', label: 'Home', icon: 'home', id: 'nav.home' },
-  { path: '/guys', label: 'Guys', icon: 'profile', id: 'nav.guys', word: true },
-  { path: '/girls', label: 'Girls', icon: 'profile', id: 'nav.girls', word: true },
+  { path: '/guys', label: 'Guys', icon: 'profile', id: 'nav.guys' },
+  { path: '/girls', label: 'Girls', icon: 'profile', id: 'nav.girls' },
   { path: '/shidduchim', label: 'Shidduchim', icon: 'shidduchim', id: 'nav.shidduchim' },
   { path: '/contacts', label: 'Contacts', icon: 'contacts', id: 'nav.contacts' },
 ] : [
@@ -23,7 +23,7 @@ const NAV = isShadchan ? [
 ];
 const TITLES = isShadchan
   ? { '/home': 'Home', '/guys': 'Guys', '/girls': 'Girls', '/people': 'Singles', '/shidduchim': 'Shidduchim', '/contacts': 'Contacts', '/settings': 'Settings', '/deleted': 'Recently deleted', '/match': 'Find a match' }
-  : { '/home': 'Home', '/contacts': 'Contacts', '/people': 'Ideas', '/shidduchim': 'Shidduchim', '/profile': 'My Profile', '/settings': 'Settings' };
+  : { '/home': 'Home', '/contacts': 'Contacts', '/people': 'Ideas', '/shidduchim': 'Shidduchim', '/profile': 'My Profile', '/settings': 'Settings', '/deleted': 'Recently deleted' };
 
 // Shared by both modes: Home, Contacts, Add Person, the person card, Settings.
 route('/home', () => import('../pages/home.js'));
@@ -41,6 +41,7 @@ route('/people/:id/edit/:section', () => import('../pages/person-form.js'));
 route('/people/:id', () => import('../pages/person-card.js'));
 route('/people/:id/:tab', () => import('../pages/person-card.js'));
 route('/settings', () => import('../pages/settings.js'));
+route('/deleted', () => import('../pages/deleted.js')); // Recently deleted: both modes
 if (isShadchan) {
   route('/guys', () => import('../pages/singles.js'));
   route('/girls', () => import('../pages/singles.js'));
@@ -48,7 +49,6 @@ if (isShadchan) {
   route('/shidduchim', () => import('../pages/sh-shidduchim.js'));
   route('/shidduchim/:id', () => import('../pages/sh-shidduch-detail.js'));
   route('/shidduchim/:id/:tab', () => import('../pages/sh-shidduch-detail.js'));
-  route('/deleted', () => import('../pages/deleted.js'));
   route('/match/:id', () => import('../pages/sh-match.js'));
 } else {
   route('/people', () => import('../pages/people.js'));
@@ -70,8 +70,8 @@ function renderNav() {
   for (const it of NAV) {
     // A single's card and Add Person live under /people: they light up the list they came from.
     const active = path === it.path || path.startsWith(it.path + '/') || (isShadchan && path.startsWith('/people') && listState.last === it.path);
-    // `word`: the name stays visible under the icon (Guys and Girls share one icon).
-    inner.append(h('a', { href: '#' + it.path, class: it.word ? 'with-word' : null, 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': it.label, title: it.label },
+    // Every place shows its name under the icon (owner request: words under every icon, both modes).
+    inner.append(h('a', { href: '#' + it.path, class: 'with-word', 'data-id': it.id, 'aria-current': active ? 'page' : null, 'aria-label': it.label, title: it.label },
       h('span', { class: 'ico', html: icon(it.icon) }).firstChild, h('span', {}, it.label)));
   }
 }
@@ -123,7 +123,18 @@ async function boot() {
   await start($('#content'), (path) => { renderNav(); setTitle(path); document.body.classList.remove('bar-hidden'); document.body.classList.toggle('focus-mode', path.startsWith('/profile/edit')); });
 
   if ('serviceWorker' in navigator) {
+    // A new version just took over: if the app was opened moments ago and nothing is being typed, switch at once
+    // (so one close-and-reopen is still enough after a publish); otherwise the message below asks to reopen.
+    const openedAt = Date.now(), hadOne = !!navigator.serviceWorker.controller;
+    let switching = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadOne || switching) return;
+      const busy = document.activeElement?.matches?.('input, textarea') || document.querySelector('dialog[open]');
+      if (Date.now() - openedAt < 15000 && !busy) { switching = true; location.reload(); }
+    });
     navigator.serviceWorker.register('./sw.js').then(reg => {
+      // coming back to the app (not only a fresh open) also checks for a new version
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
       reg.addEventListener('updatefound', () => {
         const w = reg.installing;
         w && w.addEventListener('statechange', () => {
@@ -146,11 +157,14 @@ function applyTheme() {
 }
 
 // Phones (mainly iPhone): while the keyboard is open the page can slide under "pinned" bars.
-// Keep --vv-top = how far the visible area has moved, so edit bars stay at the visible top.
+// Keep --vv-top = how far the visible area has moved, and --vv-kb = how much the keyboard covers at the
+// bottom, so the editing bar (Cancel / Save at the bottom) stays just above the keyboard.
 (function keepBarsOnScreen() {
   const vv = window.visualViewport; if (!vv) return;
   let raf = 0;
-  const set = () => { raf = 0; document.documentElement.style.setProperty('--vv-top', Math.max(0, Math.round(vv.offsetTop)) + 'px'); };
+  const set = () => { raf = 0; const st = document.documentElement.style;
+    st.setProperty('--vv-top', Math.max(0, Math.round(vv.offsetTop)) + 'px');
+    st.setProperty('--vv-kb', Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)) + 'px'); };
   const soon = () => { if (!raf) raf = requestAnimationFrame(set); };
   vv.addEventListener('scroll', soon); vv.addEventListener('resize', soon);
   window.addEventListener('scroll', soon, { passive: true }); document.addEventListener('focusin', () => setTimeout(set, 350)); document.addEventListener('focusout', () => setTimeout(set, 350));

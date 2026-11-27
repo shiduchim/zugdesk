@@ -315,7 +315,7 @@ export function makeDemoProfile() {
   const facts = [
     ['f_bg', 'Religious background', 'Chabad'], ['f_learn', 'Learning', 'Daily learning seder'],
     ['f_edu', 'Education', 'Yeshiva in Israel; degree in architecture'], ['f_height', 'Height', '178 cm'],
-    ['f_lang', 'Languages', 'Hebrew, English, Russian'], ['f_status', 'Status', 'Never married'],
+    ['f_lang', 'Languages', 'Hebrew, English, Russian'], ['f_status', 'Marital status', 'Never married'],
     ['f_family', 'Family', 'Parents in Jerusalem; 2 married sisters, 1 brother'], ['f_int', 'Interests', 'Hiking, piano, cooking for friends'],
     ['f_kohen', 'Kohen', 'No'],
   ].map(([id, label, value]) => ({ id, label, value }));

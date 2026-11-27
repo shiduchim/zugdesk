@@ -49,7 +49,7 @@ async function draw(keepScroll = false) {
     ? (b.cur.t.endedAt || b.o.updatedAt || '').localeCompare(a.cur.t.endedAt || a.o.updatedAt || '')
     : (b.o.updatedAt || '').localeCompare(a.o.updatedAt || ''));
   const shown = keepOrder(rank, list, m => m.o.id);
-  const intro = { offers: 'Waiting for answers.' };
+  const intro = {}; // no explanation lines above the lists (owner: less clutter)
 
   root.innerHTML = '';
   root.append(
@@ -68,6 +68,7 @@ async function draw(keepScroll = false) {
 
 // ---------- shared card pieces ----------
 export function bar(t, dates, { dim = false, large = false, dataId = null } = {}) {
+  if (!large && !dim && !(dates || []).length) return null; // before the first date the strip says nothing (one lit step)
   const done = sh.segmentsDone(t, dates), next = sh.segmentsNext(t, dates);
   return h('div', { class: 'sh-bars' + (large ? ' large' : ''), role: 'img', 'aria-label': 'Progress: offer, references, dates 1 through 8, marriage', 'data-id': dataId },
     sh.SEG_LABELS.map((label, i) => {
@@ -124,7 +125,7 @@ function progressWhere(m) {
 }
 function progressNext(m) {
   const t = m.cur.t;
-  if (upcomingDate(m)) return 'Nothing to do until the date';
+  if (upcomingDate(m)) return '';
   const mine = t.myAnswer === 'Yes', theirs = t.theirAnswer === 'Yes';
   if (!mine && !theirs) return 'Waiting for both answers';
   if (!mine) return 'Your answer is needed';

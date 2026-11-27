@@ -363,6 +363,7 @@ function dateForm(m) {
   const fld = (label, el) => h('div', { class: 'field' }, h('label', { for: el.id }, label), el);
   return h('form', { class: 'sh-formbox', 'data-id': 'shidduch.date-form', onSubmit: async (e) => {
     e.preventDefault();
+    if (!when.value) { toast(T.whenMissing); when.focus?.(); return; } // an empty form must not make both singles Busy
     const r = await sd.saveDate(m, d, { when: when.value, where: where.value, status: stat });
     U.dateEdit = null;
     if (r) undoToast(T.dateSaved, r); else draw(true);

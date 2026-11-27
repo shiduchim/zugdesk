@@ -243,10 +243,13 @@ export function whoSide(who, cand) {
 export function answerOf(v) {
   const s = norm(v);
   let a = '';
-  if (/^(yes|כן|agreed|wants to go out|wants to meet)/.test(s)) a = 'yes';
-  else if (/^(no|לא|not interested|declined)/.test(s)) a = 'no';
-  else if (/^(thinking|maybe|considering|חושב|חושבת|אולי)/.test(s)) a = 'thinking';
-  else if (/^(asked|נשאל|נשאלה)/.test(s)) a = 'asked';
+  const w = '(?=[\\s.,!;:)-]|$)'; // whole words only: "Not yet" is not No, "Yesterday…" is not Yes
+  const t = (re) => new RegExp('^(' + re + ')' + w).test(s);
+  if (t('not yet|nothing yet|no answer|not sure|not decided')) a = '';
+  else if (t('yes|כן|agreed|wants to go out|wants to meet')) a = 'yes';
+  else if (t('no|לא|not interested|declined')) a = 'no';
+  else if (t('thinking|maybe|considering|חושב|חושבת|אולי')) a = 'thinking';
+  else if (t('asked|נשאל|נשאלה')) a = 'asked';
   return a === 'asked' && !isShadchan ? '' : a;
 }
 const ANSWER_BTNS = () => (isShadchan ? [['asked', 'Asked'], ['thinking', 'Thinking'], ['yes', 'Yes'], ['no', 'No']] : [['yes', 'Yes'], ['thinking', 'Thinking'], ['no', 'No']]);
@@ -547,7 +550,7 @@ function datePick(c, cand) {
 function field(label, c, k, dataId, onInput, extra = {}) {
   return h('label', { class: 'field bulk-field' }, h('span', { class: 'bulk-label' }, label),
     h('input', { class: 'input', dir: 'auto', value: c[k] || '', 'data-id': dataId, ...extra,
-      onInput: (e) => { c[k] = e.target.value; onInput && onInput(); } }));
+      onInput: (e) => { if (k === 'name' && c.firstName == null) c.firstName = c.name || ''; c[k] = e.target.value; onInput && onInput(); } })); // firstName: the name as Claude wrote it (singles still point to it)
 }
 
 function dupChoice(c, text, draw, contact = false) {
@@ -594,6 +597,7 @@ async function saveAll(m, text) {
       made.contacts.push(rec.id);
     }
     byName.set(norm(c.name), rec);
+    if (c.firstName) byName.set(norm(c.firstName), rec); // renamed in the preview: singles that named her the old way still link
     if (c.dup) byName.set(norm(store.displayName(c.dup)), rec);
   }
   for (const c of m.cards) if (c.raw) c.raw = noPlus(c.raw);

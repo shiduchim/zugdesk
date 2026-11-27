@@ -2,21 +2,24 @@
 // My Profile (source/Shadchanim Offers.html). Reads the one shared person record; editing
 // opens the Add Person form. Interest never creates, ends or reopens a formal offer.
 import * as store from '../js/store.js';
-import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock, swipeTabs } from '../js/ui.js';
+import { h, icon, toast, sheet, bubbles, confirmDialog, telLink, mailLink, dock, editDock, swipeTabs } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { isShadchan, peopleListPath, peopleListName, rememberList } from '../js/mode.js';
 import { suggestedFor, loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
-import { ideaStatus, latestByPerson, recordInterest, reopen } from './idea-flow.js';
+import { ideaStatus, latestByPerson, recordInterest, reopen, stepChips } from './idea-flow.js';
 import { singlePanel } from './single-panel.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 import { forSingle, removeShidduch, fullName as shName, other as shOther } from './sh-shidduch-data.js';
 import { singleShidduchim } from './sh-shidduch-parts.js';
+import { filesInline } from './files-inline.js';
+import { dropDraft } from './person-form.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 const NR = () => h('span', { class: 'muted' }, 'Not recorded');
-// Shadchan Mode (spec/shadchan/design.md 6.2): Profile · Shidduchim · Notes. The tab key stays 'offers' so links keep working.
-const TABS = isShadchan ? [['profile', 'Profile'], ['offers', 'Shidduchim'], ['notes', 'Notes']]
+// Shadchan Mode (spec/shadchan/design.md 6.2): Profile · Short versions · Shidduchim · Notes. The tab key stays 'offers' so links keep working.
+// Short versions: the pasted original word for word, and texts the shadchan writes (Send offers them all).
+const TABS = isShadchan ? [['profile', 'Profile'], ['short', 'Short versions'], ['offers', 'Shidduchim'], ['notes', 'Notes']]
   : [['profile', 'Profile'], ['short', 'Short versions'], ['offers', 'Offers'], ['notes', 'Notes']];
 export const MY_INTEREST = ['Interested', 'Want to learn more', 'Not sure yet', 'Not interested'];
 export const THEIR_RESPONSE = ['Yes, interested', 'Checking availability', 'Thinking about it', 'Not available now', 'No', 'Not asked yet'];
@@ -26,15 +29,15 @@ const atFrom = (d, prev) => (!d ? store.now() : prev && prev.slice(0, 10) === d 
 
 let root = null, gen = 0, unsub = null, timer = 0, B = null, tab = 'profile';
 const drafts = {}; // personId → unsent note text
-export function destroy() { if (root) swipeTabs(root, null); EDITF = false; SEC = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
+export function destroy() { if (root) swipeTabs(root, null); EDITF = false; SEC = null; SNAPF = null; OPENF = null; ACT = null; root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
 
 export async function render(container, params) {
   root = container;
   root.classList.add('person-card-page');
-  swipeTabs(root, { keys: () => TABS.map(t => t[0]), current: () => tab, go: (k) => setTab(k) });
+  swipeTabs(root, { keys: () => (busy() ? [] : TABS.map(t => t[0])), current: () => tab, go: (k) => setTab(k) });
   tab = TABS.some(t => t[0] === params.tab) ? params.tab : 'profile';
   unsub && unsub();
-  unsub = store.subscribe((ch) => { if (EDITF || SEC) return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
+  unsub = store.subscribe((ch) => { if (busy() || document.activeElement?.dataset.id === 'person-card.note-text') return; if (ch.store !== 'prefs' && ch.store !== 'meta') { clearTimeout(timer); timer = setTimeout(() => draw(params.id, true), 80); } });
   await draw(params.id);
 }
 
@@ -44,7 +47,7 @@ async function draw(id, keepScroll = false) {
   if (b && isShadchan) b.sh = await forSingle(b.p); // every shidduch this single is part of (stage S3)
   if (token !== gen || !root) return;
   CH = ch;
-  if (B && B.p.id !== id) { EDITF = false; SEC = null; }
+  if (B && B.p.id !== id) { EDITF = false; SEC = null; OPENF = null; }
   const y = window.scrollY;
   root.innerHTML = '';
   if (!b) { root.append(h('p', { class: 'empty' }, 'This person is no longer saved.'), h('a', { class: 'btn', href: '#/people' }, isShadchan ? 'Back to the list' : 'Back to Ideas')); return; }
@@ -55,8 +58,8 @@ async function draw(id, keepScroll = false) {
   root.append(
     h('div', { class: 'pc-namebar', 'data-id': 'person-card.namebar' },
       h('a', { class: 'icon-btn', href: '#' + peopleListPath(p.kind), 'aria-label': 'Back to ' + peopleListName(p.kind), 'data-id': 'person-card.back', html: icon('back') }),
-      h('h1', { dir: 'auto' }, store.personName(p)),
-      p.kind ? h('span', { class: 'pc-kind' }, kindLabel(p.kind)) : null,
+      // Guy / Girl tag only in Shadchan Mode (in Single Mode everyone on this list is the same kind). Inside the title so it stays beside a long name.
+      h('h1', { dir: 'auto' }, store.personName(p), isShadchan && p.kind ? h('span', { class: 'pc-kind' }, kindLabel(p.kind)) : null),
       h('span', { class: 'spacer' }),
       h('a', { class: 'icon-btn bordered', href: `#/people/${enc}/edit`, 'aria-label': 'Edit person', title: 'Edit person', 'data-id': 'person-card.edit', html: icon('edit') })),
     h('div', { class: 'pc-actions', 'data-id': 'person-card.actions' },
@@ -65,10 +68,16 @@ async function draw(id, keepScroll = false) {
     h('div', { class: 'pc-tabs', role: 'tablist', 'data-id': 'person-card.tabs' },
       TABS.map(([k, l]) => h('button', { type: 'button', role: 'tab', 'aria-selected': tab === k ? 'true' : 'false', 'data-id': 'person-card.tab-' + k, onClick: () => setTab(k) }, l,
         isShadchan && k === 'offers' && b.sh.length ? h('span', { class: 'pc-tab-n' }, b.sh.length) : null))),
-    h('div', { class: 'pc-body', 'data-id': 'person-card.' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? singleShidduchim(b.p, b.sh, { refresh: redraw }) : offersTab(b)) : notesTab(b)),
-    // Status buttons stay on screen at the bottom (owner request); hidden while a section is being edited.
-    // (Single Mode's interest buttons. In Shadchan Mode, Status and Talk to sit at the top of the Profile tab.)
-    EDITF || SEC || isShadchan ? '' : dock('person-card.dock', statusStrip(b)));
+    h('div', { class: 'pc-body', 'data-id': 'person-card.body-' + tab }, tab === 'profile' ? profileTab(b) : tab === 'short' ? shortTab(b) : tab === 'offers' ? (isShadchan ? singleShidduchim(b.p, b.sh, { refresh: redraw }) : offersTab(b)) : notesTab(b)),
+    // The main step stays on screen at the bottom (owner request); hidden while a section is being edited.
+    // Single Mode: the interest buttons. Shadchan Mode: Find a match (Status and Talk to sit at the top of the Profile tab).
+    EDITF || SEC ? (ACT ? editDock(ACT) : '') : isShadchan
+      ? dock('person-card.dock', h('span', { class: 'grow note', dir: 'auto' }, 'Ideas for ' + firstName(p)),
+          h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'person-card.find-match', onClick: () => navigate(`/match/${encodeURIComponent(p.id)}`) }, 'Find a match'))
+      : dock('person-card.dock', statusStrip(b)));
+  // small phones: the tab bar scrolls sideways; keep the chosen tab in view
+  const bar = root.querySelector('.pc-tabs'), on = bar?.querySelector('[aria-selected="true"]');
+  if (bar && on && bar.scrollWidth > bar.clientWidth) bar.scrollLeft += on.getBoundingClientRect().left - bar.getBoundingClientRect().left - (bar.clientWidth - on.offsetWidth) / 2;
   if (keepScroll) window.scrollTo(0, y);
 }
 
@@ -80,18 +89,40 @@ function setTab(k) {
 // Every pencil edits its section right here (owner request, tweak mode). Facts save as you go
 // (one Done); the other sections are a small Cancel / Save form. The top pencil opens the full form.
 let CH = {}, EDITF = false, SEC = null, SNAPF = null; // SNAPF: person as it was when Editing facts began (Cancel puts it back)
+let OPENF = null; // one fact open right in its row (tap a fact): saves as you go, Undo in the message
+let ACT = null;   // Cancel / Save of what is being edited; shown in the bottom bar
+const busy = () => EDITF || SEC || OPENF;
 const pencil = (label, dataId, onClick) => h('button', { type: 'button', class: 'icon-btn', 'aria-label': label, 'data-id': dataId, html: icon('edit'), onClick });
 const redraw = () => draw(B.p.id, true);
-const openSec = (key) => { SEC = key; EDITF = false; redraw(); };
+const openSec = (key) => { SEC = key; EDITF = false; OPENF = null; redraw(); };
+// Facts editing (pencil, or tap one fact like on My Profile): every fact opens; a tapped one gets the focus.
+// Facts pencil = edit all facts at once; Cancel / Done in the bottom bar.
+async function startFacts() {
+  EDITF = true; SEC = null; OPENF = null; SNAPF = structuredClone(B.p);
+  ACT = { dataId: 'person-card.facts-dock', label: 'Editing facts', cancelId: 'person-card.facts-cancel', saveId: 'person-card.facts-done', saveLabel: 'Done',
+    cancel: async () => { document.activeElement?.blur(); await new Promise(r => setTimeout(r, 120)); EDITF = false; ACT = null; if (SNAPF && B.p.updatedAt !== SNAPF.updatedAt) { B.p = await store.people.save(SNAPF); toast('Changes undone'); } SNAPF = null; redraw(); },
+    save: () => { document.activeElement?.blur(); EDITF = false; ACT = null; SNAPF = null; setTimeout(redraw, 120); } };
+  redraw();
+}
+// Tap one fact: only that row opens, right where it is.
+async function openFact(id) {
+  if (OPENF === id) return;
+  document.activeElement?.blur(); await new Promise(r => setTimeout(r, 60)); // a half-typed row saves first
+  OPENF = id; SEC = null; await redraw();
+  const row = root?.querySelector(`[data-id="${id}"]`);
+  if (row) { row.scrollIntoView({ block: 'center' }); row.querySelector('input')?.focus({ preventScroll: true }); }
+}
+const closeFact = () => { OPENF = null; redraw(); };
+const keyTap = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); e.currentTarget.click(); } };
+const tapFact = (f) => { const el = fact(f.label, f.value, f.dataId); if (el && f.ed) { el.classList.add('mp-tap'); el.setAttribute('role', 'button'); el.tabIndex = 0;
+  el.addEventListener('click', () => openFact(f.dataId)); el.addEventListener('keydown', keyTap); } return el; };
 function sec(title, dataId, key, ...kids) {
   const facts = key === 'facts', editing = facts ? EDITF : key && SEC === key;
   return h('section', { class: 'pc-sec' + (editing ? ' mp-editing' : ''), 'data-id': dataId },
     h('div', { class: 'pc-sec-head' }, h('h2', { class: 'eyebrow', dir: 'auto' }, title),
-      facts && EDITF ? h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': dataId + '-bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing facts'),
-        h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '-cancel', onClick: async () => { document.activeElement?.blur(); EDITF = false; if (SNAPF) { B.p = await store.people.save(SNAPF); toast('Changes undone'); } SNAPF = null; redraw(); } }, 'Cancel'),
-        h('button', { type: 'button', class: 'btn small primary', 'data-id': dataId + '-done', onClick: () => { document.activeElement?.blur(); EDITF = false; SNAPF = null; setTimeout(redraw, 120); } }, 'Save'))
-      : facts ? pencil('Edit facts here', dataId + '-edit', () => { EDITF = true; SEC = null; SNAPF = structuredClone(B.p); redraw(); })
-      : key && !editing ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
+      EDITF || SEC ? null
+      : facts ? pencil('Edit facts here', dataId + '-edit', () => startFacts())
+      : key ? pencil('Edit ' + title.toLowerCase() + ' here', dataId + '-edit', () => openSec(key)) : null),
     ...(editing && !facts ? [secForm(key, dataId)] : kids));
 }
 // Empty answers are left out of the profile screen (owner request): no "Not recorded" rows.
@@ -102,50 +133,57 @@ const firstName = (p) => (p.name || '').trim().split(/\s+/)[0] || pron(p).him;
 // ---------- Profile ----------
 function profileTab(b) {
   const { p, srcs, atts } = b;
-  const P = pron(p), enc = encodeURIComponent(p.id), A = p.answers || {};
-  const edit = (s) => `#/people/${enc}/edit/${s}`;
+  const P = pron(p);
   const summary = [p.age, p.city, p.occupation].filter(Boolean).join(' · ');
   const first = srcs[0];
   const cards = p.contactCards || [];
   const ownCards = cards.filter(c => c.role === 'person' && (c.number || c.email));
   const others = cards.filter(c => c.role !== 'person');
+  const sender = p.sender || first?.sender || '';
+  const inquiries = others.filter(c => c.role !== 'reference'), refs = others.filter(c => c.role === 'reference');
+  const missing = [[!p.about, 'about', 'About'], [!p.looking, 'looking', 'What ' + P.he + (p.kind ? '’s' : '’re') + ' looking for'],
+    [!(others.length || sender), 'contacts', 'Inquiries and references'], [!((p.know || []).length || p.yearsKnown || p.howKnow), 'known', 'How I know ' + P.him]]
+    .filter(m => m[0]).map(m => [m[1], m[2]]);
   return [
     SEC === 'summary' ? h('div', { class: 'pc-summary mp-editing', 'data-id': 'person-card.summary' }, secForm('summary', 'person-card.summary')) :
     h('div', { class: 'pc-summary', 'data-id': 'person-card.summary' },
       h('div', { class: 'avatar lg' }, store.initials(p)),
       h('div', { class: 'pc-summary-text' },
-        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || ''),
+        h('div', { class: 'pc-summary-line', dir: 'auto' }, summary || h('span', { class: 'muted' }, 'Age · city · work')),
         // Their own phone and email live only here, under the name (owner request).
-        ownCards.length ? h('div', { class: 'reach', 'data-id': 'person-card.phone' }, ownCards.map(c => [c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null])) : null,
-        p.about ? h('div', { class: 'note clamp', dir: 'auto' }, p.about) : null),
-      pencil('Edit basic info here', 'person-card.summary-edit', () => openSec('summary'))),
+        ownCards.length ? h('div', { class: 'reach', 'data-id': 'person-card.phone' }, ownCards.map(c => [c.number ? telLink(c.number, 'person-card.own-phone') : null, c.email ? mailLink(c.email, 'person-card.own-email') : null])) : null,
+        ),
+      EDITF || SEC ? null : pencil('Edit summary here', 'person-card.summary-edit', () => openSec('summary'))),
     // Shadchan Mode: Status, Working on, ages, Talk to, Last confirmed, Find a match (stage S2).
-    isShadchan ? singlePanel(p, savePerson) : null,
+    isShadchan && !EDITF && !SEC ? singlePanel(p, savePerson) : null,
     sec('Facts', 'person-card.facts', 'facts',
       h('dl', { class: 'facts' },
-        ...factList(p).map(f => EDITF && f.ed ? editRow(f) : fact(f.label, f.value, f.dataId)),
-        EDITF ? null : fact('Profile source', first ? [first.sender || 'Sender not recorded', dateOnly(first.receivedAt || first.createdAt)].join(' · ') : (p.sender || ''), 'person-card.fact-source')),
-      h('a', { class: 'pc-add', href: edit('about'), 'data-id': 'person-card.add-fact' }, 'Add a fact…')),
-    !p.about ? null : sec(`About ${firstName(p)}`, 'person-card.about', 'about',
+        ...factList(p).map(f => (EDITF || OPENF === f.dataId) && f.ed ? editRow(f, !EDITF) : tapFact(f))),
+      !EDITF && !factList(p).some(f => !isEmpty(f.value)) ? h('p', { class: 'muted' }, 'Not filled in yet') : null),
+    !p.about && SEC !== 'about' ? null : sec(`About ${firstName(p)}`, 'person-card.about', 'about',
       h('p', { class: 'prewrap', dir: 'auto' }, p.about)),
-    !p.looking ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', 'looking',
+    !p.looking && SEC !== 'looking' ? null : sec(`What ${P.he}${p.kind ? '’s' : '’re'} looking for`, 'person-card.looking', 'looking',
       h('p', { class: 'prewrap', dir: 'auto' }, p.looking)),
-    !(others.length || p.sender) ? null : sec('Contacts and source', 'person-card.contacts', 'contacts',
-      others.length || p.sender ? h('dl', { class: 'facts' },
-        ...others.map(c => contactFact(c, b)),
-        p.sender ? h('div', { class: 'fact' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(p.sender, p.senderContactId, b)), h('span', { class: 'priv' }, 'private')) : null)
-        : h('p', {}, NR()),
-      h('p', { class: 'note' }, 'A number given for a mother, father, reference or shadchan is never shown as their own number.')),
-    !((p.know || []).length || p.yearsKnown || p.howKnow) ? null : sec(`How I know ${P.him}`, 'person-card.known', 'known',
+    // "Sent by" carries the date the profile came in (it used to be repeated as "Profile source" in Facts).
+    !(others.length || sender) && SEC !== 'contacts' ? null : sec('Inquiries and references', 'person-card.contacts', 'contacts',
+      // same shape as My Profile: whom to call first, then references under their own heading
+      h('dl', { class: 'facts' },
+        ...inquiries.map(c => contactFact(c, b)),
+        sender ? h('div', { class: 'fact', 'data-id': 'person-card.sent-by' }, h('dt', {}, 'Sent by'), h('dd', { dir: 'auto' }, linkedName(sender, p.senderContactId || first?.senderContactId, b),
+          first ? h('span', { class: 'note' }, ' · ' + store.formatDate(first.receivedAt || first.createdAt)) : null)) : null),
+      refs.length ? h('div', { class: 'mp-sub' }, 'References') : null,
+      refs.length ? h('dl', { class: 'facts' }, refs.map(c => contactFact(c, b))) : null),
+    !((p.know || []).length || p.yearsKnown || p.howKnow) && SEC !== 'known' ? null : sec(`How I know ${P.him}`, 'person-card.known', 'known',
       (p.know || []).length || p.yearsKnown || p.howKnow ? h('dl', { class: 'facts' },
         fact('Contact', p.know, 'person-card.fact-know'),
         p.yearsKnown ? fact('Years known', p.yearsKnown) : null,
-        p.howKnow ? fact('How', p.howKnow) : null) : h('p', {}, NR()),
-      h('p', { class: 'note' }, 'Internal only. Never part of anything you share.')),
-    sec('Also yours to keep', 'person-card.keep', null,
-      h('button', { type: 'button', class: 'pc-keep-row', 'data-id': 'person-card.attachments', onClick: () => attachmentsSheet(b) },
-        ico('folder'), h('span', { class: 'grow' }, 'Attachments'), h('span', { class: 'mono note' }, `${atts.length ? atts.length : 'No files'} · private`), ico('chevron'))),
-    h('div', { class: 'stamp pc-stamp' }, `updated ${dateOnly(p.updatedAt)} · added ${dateOnly(p.createdAt)}`),
+        p.howKnow ? fact('How', p.howKnow) : null) : h('p', {}, NR())),
+    // Empty sections stay hidden (owner request); this line opens any of them right here.
+    EDITF || SEC || !missing.length ? null : h('div', { class: 'pc-add-row', 'data-id': 'person-card.add-row' }, h('span', { class: 'note' }, 'Add:'),
+      missing.map(([key, label]) => h('button', { type: 'button', class: 'linkish', 'data-id': 'person-card.add-' + key, onClick: () => openSec(key) }, label))),
+    sec('Photos and docs', 'person-card.files-sec', null,
+      filesInline({ files: atts, dataId: 'person-card.files', extra: { personId: p.id }, tag: (a) => a.sourceId ? 'original' : '' })),
+    h('div', { class: 'stamp pc-stamp' }, `updated ${store.formatDate(p.updatedAt)} · added ${store.formatDate(p.createdAt)}`),
     h('div', { class: 'pc-danger' }, h('button', { type: 'button', class: 'linkish danger-text', 'data-id': 'person-card.delete', onClick: () => deletePerson(b) }, 'Delete this person')),
   ];
 }
@@ -155,22 +193,14 @@ function linkedName(name, contactId, b) {
   return c ? h('a', { href: `#/contacts/${encodeURIComponent(c.id)}` }, name || store.displayName(c)) : name;
 }
 
-function contactFact(c, b) {
-  const own = c.role === 'person';
-  const name = c.name || (own ? b.p.name : '');
+function contactFact(c, b) { // never their own number: that one shows under the name
+  const name = c.name;
   return h('div', { class: 'fact', 'data-id': 'person-card.contact' },
-    h('dt', {}, own ? 'Own number' : store.phoneRoleLabel(c.role)),
+    h('dt', {}, store.phoneRoleLabel(c.role)),
     h('dd', { dir: 'auto' },
       h('div', {}, name ? linkedName(name, c.contactId, b) : h('span', { class: 'muted' }, c.role === 'unknown' ? 'Not sure whose number' : 'Name not recorded')),
-      c.number || c.email ? h('div', { class: 'reach' }, c.number ? telLink(c.number) : null, c.email ? mailLink(c.email) : null) : h('div', { class: 'small' }, 'Phone not recorded')),
-    h('span', { class: 'priv' }, 'private'));
-}
-
-function attachmentsSheet(b) {
-  sheet({ title: 'Attachments', dataId: 'person-card.attachments-sheet',
-    body: b.atts.length ? b.atts.map(a => h('a', { class: 'att-row', href: a.dataUrl, download: a.name, 'data-id': 'person-card.attachment' }, ico('file'),
-      h('span', { dir: 'auto', class: 'att-name' }, a.name), h('span', { class: 'note' }, a.sourceId ? 'original' : '')))
-      : [h('p', { class: 'note' }, 'No files attached. Use Edit person → Attached items to add some.')] });
+      c.number || c.email ? h('div', { class: 'reach' }, c.number ? telLink(c.number, 'person-card.contact-phone') : null, c.email ? mailLink(c.email, 'person-card.contact-email') : null) : h('div', { class: 'small' }, 'Phone not recorded')),
+    );
 }
 
 async function deletePerson(b) {
@@ -197,6 +227,7 @@ async function deletePerson(b) {
     }
     await store.people.remove(p.id);
   });
+  dropDraft('edit:' + p.id); // an open edit form must not bring the person back
   toast(store.SOFT_DELETE ? 'Deleted. It waits 30 days in Settings → Recently deleted' : 'Deleted', store.SOFT_DELETE ? 5000 : undefined); navigate(peopleListPath(p.kind));
 }
 
@@ -218,17 +249,14 @@ function offersTab(b) {
     sec('Formal offers and shidduchim', 'person-card.formal', null,
       offersList.length
         ? offersList.map(o => formalRow(o, b))
-        : h('p', {}, 'No formal offer has been created. Saving a name or recording interest does not move anyone into In Progress.'),
+        : h('p', {}, 'No formal offer yet.'),
       h('dl', { class: 'facts' },
-        fact('Existing tries', b.tries.length ? String(b.tries.length) : 'None'),
+        b.tries.length ? fact('Existing tries', String(b.tries.length)) : null,
         b.fus.filter(f => !f.done)[0] ? fact('Next step', b.fus.filter(f => !f.done).sort((a, c) => (a.dueAt || '9').localeCompare(c.dueAt || '9'))[0].text) : null),
-      offersList.length
-        ? h('p', { class: 'note' }, 'Answers, dates, ending and Try Again are recorded on the shidduch itself, never here.')
+      offersList.length ? null
         : h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.start-offer', onClick: () => startOfferSheet(b) }, 'Start a formal offer')),
     sec('Suggested by', 'person-card.suggested', null,
-      suggestedBy(b),
-      h('p', { class: 'note' }, 'One person record. Several sources. No duplicate profiles.')),
-    h('p', { class: 'note pc-foot' }, 'Formal dates and earlier tries, once there are any, live in Shidduchim with their own history. This card only shows a short status.'),
+      suggestedBy(b)),
   ];
 }
 
@@ -338,12 +366,7 @@ function notesTab(b) {
   const open = fus.filter(f => !f.done).sort((a, c) => (a.dueAt || '9').localeCompare(c.dueAt || '9'));
   const done = fus.filter(f => f.done);
   return [
-    sec('Private notes and conversations', 'person-card.notes', null,
-      evs.length ? h('ol', { class: 'timeline' }, evs.map(e => eventItem(e, b))) : h('p', { class: 'note' }, 'Nothing recorded yet.')),
-    sec('Follow-ups', 'person-card.followups', null,
-      open.length ? open.map(f => fuRow(f, b)) : h('p', { class: 'note' }, 'No open follow-ups.'),
-      done.length ? h('details', { class: 'pc-history' }, h('summary', {}, `Done · ${done.length}`), done.map(f => fuRow(f, b))) : null,
-      h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.add-followup', onClick: () => followUpSheet() }, ico('clock'), 'Add a follow-up')),
+    // Writing box first (owner: "Add note" lands at the top), then the notes, then follow-ups.
     sec('Add private note', 'person-card.composer', null,
       text,
       h('div', { class: 'field' }, h('label', {}, 'How'), bubbles({ options: TYPE_OPTS, selected: [d.type], multi: false, dataId: 'person-card.note-type', onChange: (v) => { d.type = v || '_unknown'; } })),
@@ -356,10 +379,13 @@ function notesTab(b) {
           await store.recordEvent({ personIds: [p.id], contactIds: d.contactIds, type: d.type === '_unknown' ? '' : d.type, text: d.text, at: atFrom(d.date) });
           drafts[p.id] = { text: '', type: '_unknown', date: today(), contactIds: [] };
           toast(d.contactIds.length ? 'Saved — also in the contact’s history' : 'Note saved');
-        } }, 'Save note')),
-      h('p', { class: 'note' }, 'Saved only on this phone. Nothing is sent to anyone.')),
-    sec('Source and privacy', 'person-card.privacy', null,
-      h('p', {}, 'These notes are separate from anything you send from My Profile. A note linked to a shadchan is one record that shows in both places.')),
+        } }, 'Save note'))),
+    sec('Private notes and conversations', 'person-card.notes', null,
+      evs.length ? h('ol', { class: 'timeline' }, evs.map(e => eventItem(e, b))) : h('p', { class: 'note' }, 'Nothing recorded yet.')),
+    sec('Follow-ups', 'person-card.followups', null,
+      open.length ? open.map(f => fuRow(f, b)) : h('p', { class: 'note' }, 'No open follow-ups.'),
+      done.length ? h('details', { class: 'pc-history', 'data-id': 'person-card.followups-done' }, h('summary', {}, `Done · ${done.length}`), done.map(f => fuRow(f, b))) : null,
+      h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.add-followup', onClick: () => followUpSheet() }, ico('clock'), 'Add a follow-up')),
   ];
 }
 function grow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight + 2, 420) + 'px'; }
@@ -398,8 +424,8 @@ async function eventSheet(e, b) {
 function fuRow(f, b) {
   const c = f.contactId && b.contactsById.get(f.contactId);
   return h('div', { class: 'fu-row' + (f.done ? ' done' : ''), 'data-id': 'person-card.followup' },
-    h('input', { type: 'checkbox', checked: f.done || null, 'aria-label': 'Done', onChange: async (e) => { await store.followUps.save({ ...f, done: e.target.checked }); toast(e.target.checked ? 'Marked done' : 'Reopened'); } }),
-    h('button', { type: 'button', class: 'fu-main', onClick: () => followUpSheet(f) },
+    h('input', { type: 'checkbox', checked: f.done || null, 'aria-label': 'Done', 'data-id': 'person-card.followup-done', onChange: async (e) => { await store.followUps.save({ ...f, done: e.target.checked }); toast(e.target.checked ? 'Marked done' : 'Reopened'); } }),
+    h('button', { type: 'button', class: 'fu-main', 'data-id': 'person-card.followup-open', onClick: () => followUpSheet(f) },
       h('span', { dir: 'auto' }, f.text),
       h('span', { class: 'note' }, [f.dueAt ? dateOnly(f.dueAt) : 'No date', c ? store.displayName(c) : ''].filter(Boolean).join(' · '))));
 }
@@ -423,11 +449,11 @@ async function followUpSheet(f = null) {
 }
 
 // ---------- Short versions (owner request, tweak mode) ----------
-// Like My Profile › Short versions. A pasted profile shows here word for word ("Pasted profile");
+// Like My Profile › Short versions. A pasted profile shows here word for word ("Original as received");
 // editing it saves an editable copy on the person (shortVersions) — the original itself never changes.
 // Suggested is built from the person's fields and is always up to date.
-function shortCard({ title, sub, text, dataId, edit, remove }) {
-  return h('article', { class: 'mp-card', 'data-id': dataId },
+function shortCard({ title, sub, text, dataId, edit, remove, outlined = false }) {
+  return h('article', { class: 'mp-card' + (outlined ? ' mp-card-exp' : ''), 'data-id': dataId },
     h('div', { class: 'mp-card-head' },
       h('div', { class: 'mp-card-title' }, h('strong', { dir: 'auto' }, title), h('span', { class: 'stamp' }, sub)),
       h('button', { type: 'button', class: 'btn small', 'data-id': dataId + '.copy', onClick: async () => { if (await copy(text)) toast('Copied'); } }, 'Copy'),
@@ -440,15 +466,19 @@ function shortTab(b) {
   const edited = new Set(list.map(x => x.fromSourceId).filter(Boolean));
   const pasted = b.srcs.filter(s => (s.text || '').trim() && !edited.has(s.id));
   const saveList = async (next) => { await store.people.save({ ...p, shortVersions: next }); };
+  // Same look as My Profile › Short versions: heading, cards, Suggested last and outlined; Delete has Undo.
+  const undo = (x) => async () => { const cur = await store.people.get(p.id); if (!cur) return; await store.people.save({ ...cur, shortVersions: [...(cur.shortVersions || []).filter(y => y.id !== x.id), x] }); toast('Restored'); };
   return [
-    ...list.map(x => shortCard({ title: x.title || 'Short version', sub: (x.fromSourceId ? 'pasted, edited · ' : 'saved · ') + dateOnly(x.savedAt), text: x.text, dataId: 'person-card.short-version',
-      edit: () => shortSheet(p, x), remove: async () => {
-        if (!(await confirmDialog({ title: 'Delete this short version?', text: x.fromSourceId ? 'The pasted original stays in Original profiles.' : '', ok: 'Delete', danger: true, dataId: 'person-card.short-delete' }))) return;
-        await saveList(list.filter(y => y.id !== x.id)); toast('Deleted');
-      } })),
-    ...pasted.map(s => shortCard({ title: 'Pasted profile', sub: [s.sender, dateOnly(s.receivedAt || s.createdAt)].filter(Boolean).join(' · '), text: s.text, dataId: 'person-card.short-pasted',
-      edit: () => shortSheet(p, { id: store.newId('sv'), title: 'Pasted profile', text: s.text, fromSourceId: s.id }) })),
-    shortCard({ title: 'Suggested', sub: 'auto · always up to date', text: suggestedFor(p), dataId: 'person-card.short-suggested' }),
+    h('div', { class: 'pc-sec-head mp-short-head' }, h('h2', { class: 'eyebrow' }, 'Short versions')),
+    h('div', { class: 'mp-cards' },
+      ...list.map(x => shortCard({ title: x.title || 'Short version', sub: (x.fromSourceId ? 'original, edited · ' : 'saved · ') + dateOnly(x.savedAt), text: x.text, dataId: 'person-card.short-version',
+        edit: () => shortSheet(p, x), remove: async () => {
+          await saveList(list.filter(y => y.id !== x.id));
+          toast(`“${x.title || 'Short version'}” deleted`, 5000, { label: 'Undo', run: undo(x) });
+        } })),
+      ...pasted.map(s => shortCard({ title: 'Original as received', sub: [s.sender, dateOnly(s.receivedAt || s.createdAt)].filter(Boolean).join(' · '), text: s.text, dataId: 'person-card.short-pasted',
+        edit: () => shortSheet(p, { id: store.newId('sv'), title: 'Original as received', text: s.text, fromSourceId: s.id }) })),
+      shortCard({ title: 'Suggested', sub: 'auto · always up to date', text: suggestedFor(p), dataId: 'person-card.short-suggested', outlined: true })),
     h('button', { type: 'button', class: 'btn', 'data-id': 'person-card.short-new', onClick: () => shortSheet(p, { id: store.newId('sv'), title: '', text: '' }) }, 'New short version'),
   ];
 }
@@ -472,26 +502,35 @@ function factList(p) {
   const A = p.answers || {};
   const t = (label, field, dataId) => ({ label, value: p[field], dataId, ed: { type: 'text', get: () => p[field], set: (x) => ({ [field]: x }) } });
   const c = (label, key, dataId) => ({ label, value: key === 'languages' ? p.languages : A[key], dataId, ed: { type: 'choice', key } });
-  const custom = Object.entries(A).filter(([k, v]) => !LISTS[k] && (Array.isArray(v) ? v.length : v)).map(([k]) => c((p.answerLabels || {})[k] || k, k, 'person-card.fact-custom'));
-  return [t('Age', 'age', 'person-card.fact-age'), t('City', 'city', 'person-card.fact-city'), t('Occupation', 'occupation', 'person-card.fact-occupation'),
-    c('Languages', 'languages', 'person-card.fact-languages'), c('Status', 'pStatus', 'person-card.fact-status'), c('Religious level', 'pLevel', 'person-card.fact-level'),
+  const custom = Object.entries(A).filter(([k, v]) => !LISTS[k] && (Array.isArray(v) ? v.length : v)).map(([k]) => c((p.answerLabels || {})[k] || k, k, 'person-card.fact-custom-' + k));
+  return [t('Age', 'age', 'person-card.fact-age'), t('City', 'city', 'person-card.fact-city'), t('Work / learning', 'occupation', 'person-card.fact-occupation'),
+    c('Languages', 'languages', 'person-card.fact-languages'), c('Marital status', 'pStatus', 'person-card.fact-status'), c('Religious level', 'pLevel', 'person-card.fact-level'),
     c('Tzniut', 'pTzniut', 'person-card.fact-tzniut'), c('Religious background', 'pBackground', 'person-card.fact-background'),
     c('Religious', 'pReligious', 'person-card.fact-religious'), t('Other religious details', 'religiousOther', 'person-card.fact-religious-other'),
     c('Character & lifestyle', 'pTraits', 'person-card.fact-traits'), c('Body type', 'pBody', 'person-card.fact-body'),
     isShadchan ? null : t('Looking up to age', 'maxAge', 'person-card.fact-max-age'), ...custom].filter(Boolean);
 }
-async function savePerson(patch, quiet) {
-  const p = { ...B.p, ...patch };
+async function savePerson(patch, quiet, undo = false) {
+  const prev = B.p, p = { ...prev, ...patch };
   if (patch.contactCards) p.contactIds = [...new Set([...p.contactCards.map(c => c.contactId), p.senderContactId].filter(Boolean))];
   B.p = await store.people.save(p);
-  toast('Saved', quiet ? 1200 : 2600);
+  if (!undo) { toast('Saved', quiet ? 1200 : 2600); return; }
+  // Undo puts back only what this save changed, so a later change to another fact stays.
+  const keys = Object.keys(patch).concat(patch.contactCards ? ['contactIds'] : []);
+  toast('Saved', 5000, { label: 'Undo', run: async () => {
+    const cur = await store.people.get(prev.id); if (!cur) return;
+    const back = { ...cur }; for (const k of keys) back[k] = prev[k];
+    B.p = await store.people.save(back); toast('Undone'); redraw();
+  } });
 }
-function editRow(f) {
+function editRow(f, one = false) {
   const p = B.p, box = h('div', { class: 'mp-inline' });
   if (f.ed.type === 'text') {
-    const inp = h('input', { class: 'input', dir: 'auto', value: f.ed.get() || '', 'aria-label': f.label, 'data-id': 'person-card.inline-text' });
-    inp.addEventListener('change', () => savePerson(f.ed.set(inp.value.trim()), true));
-    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } });
+    const inp = h('input', { class: 'input', dir: 'auto', value: f.ed.get() || '', enterkeyhint: 'done', 'aria-label': f.label, 'data-id': 'person-card.inline-text' });
+    const before = inp.value;
+    inp.addEventListener('change', async () => { await savePerson(f.ed.set(inp.value.trim()), true, one); if (one && OPENF === f.dataId) closeFact(); });
+    inp.addEventListener('blur', () => { if (one && inp.value === before) setTimeout(() => { if (OPENF === f.dataId) closeFact(); }, 150); }); // nothing typed: just close
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); inp.blur(); } if (e.key === 'Escape' && one) { inp.value = before; closeFact(); } });
     box.append(inp);
   } else {
     const key = f.ed.key, A = p.answers || {};
@@ -500,14 +539,17 @@ function editRow(f) {
     const opts = (CH[key] || []).filter(o => !o.hidden && (girl || !only.includes(o.v))).map(o => [o.v, o.v]);
     let cur = [].concat((key === 'languages' ? p.languages : A[key]) ?? []).filter(Boolean);
     for (const v of cur) if (!opts.some(o => o[0] === v)) opts.push([v, v]); // keep answers no longer in the list
-    const put = (val) => savePerson(key === 'languages' ? { languages: val } : { answers: { ...(B.p.answers || {}), [key]: multi ? val : (val[0] || '') } }, true);
+    const put = (val) => savePerson(key === 'languages' ? { languages: val } : { answers: { ...(B.p.answers || {}), [key]: multi ? val : (val[0] || '') } }, true, one);
     const wrap = h('div', {});
     const paint = () => { wrap.innerHTML = ''; wrap.append(bubbles({ options: opts, selected: cur, multi, dataId: 'person-card.inline-choice', onChange: (v) => {
       let next = multi ? v : (v ? [v] : []);
       for (const group of EXCLUSIVE[key] || []) { const added = next.find(x => group.includes(x) && !cur.includes(x)); if (added) next = next.filter(x => !group.includes(x) || x === added); }
-      const changed = next.length !== v.length; cur = next; put(next); if (changed) paint();
+      const changed = next.length !== v.length; cur = next;
+      if (one && !multi) { put(next).then(closeFact); return; } // one answer: saved, row closes
+      put(next); if (changed) paint();
     } })); };
     paint(); box.append(wrap);
+    if (one && multi) box.append(h('button', { type: 'button', class: 'btn small mp-row-done', 'data-id': 'person-card.fact-done', onClick: closeFact }, 'Done'));
   }
   return h('div', { class: 'fact mp-edit-row', 'data-id': f.dataId }, h('dt', { dir: 'auto' }, f.label), h('dd', {}, box));
 }
@@ -524,7 +566,7 @@ function secForm(key, dataId) {
     const own = cards.find(c => c.role === 'person');
     const f = { name: tin(p.name, 'name'), age: tin(p.age, 'age', { inputmode: 'numeric' }), city: tin(p.city, 'city'), occupation: tin(p.occupation, 'occupation'),
       phone: tin(own?.number, 'phone', { type: 'tel' }), email: tin(own?.email, 'email', { type: 'email' }) };
-    body = [row('Name', f.name), h('div', { class: 'mp-fgrid' }, row('Age', f.age), row('City', f.city)), row('Occupation', f.occupation),
+    body = [row('Name', f.name), h('div', { class: 'mp-fgrid' }, row('Age', f.age), row('City', f.city)), row('Work / learning', f.occupation),
       h('div', { class: 'mp-fgrid' }, row('Their phone', f.phone), row('Their email', f.email))];
     collect = () => {
       const number = store.cleanPhone(t(f.phone.value)), email = t(f.email.value);
@@ -568,16 +610,14 @@ function secForm(key, dataId) {
     body = [wrap, row('Years known', years), row('How do you know them?', how)];
     collect = () => ({ know, yearsKnown: t(years.value), howKnow: how.value.trim() });
   }
-  const close = () => { SEC = null; redraw(); };
-  const form = h('div', { class: 'mp-form', 'data-id': id },
-    h('div', { class: 'mp-inline-actions mp-form-bar', 'data-id': id + '.bar' }, h('span', { class: 'mp-form-bar-label' }, 'Editing'),
-      h('button', { type: 'button', class: 'btn small', 'data-id': id + '.cancel', onClick: close }, 'Cancel'),
-      h('button', { type: 'button', class: 'btn small primary', 'data-id': id + '.save', onClick: async () => {
-        const patch = collect();
-        if (key === 'summary' && !patch.name && !(patch.contactCards || []).some(c => c.role === 'person' && c.number)) { toast('Write a name or their own phone number first'); return; }
-        await savePerson(patch); close();
-      } }, 'Save')),
-    ...body);
+  const close = () => { SEC = null; ACT = null; redraw(); };
+  ACT = { dataId: id + '.bar', label: 'Editing', cancelId: id + '.cancel', saveId: id + '.save', cancel: close,
+    save: async () => {
+      const patch = collect();
+      if (key === 'summary' && !patch.name && !(patch.contactCards || []).some(c => c.role === 'person' && c.number)) { toast('Write a name or their own phone number first'); return; }
+      await savePerson(patch); close();
+    } };
+  const form = h('div', { class: 'mp-form', 'data-id': id }, ...body);
   setTimeout(() => form.querySelector('input,textarea,select')?.focus({ preventScroll: true }), 30);
   return form;
 }
@@ -587,26 +627,16 @@ function movedToast(o) {
   toast('Both said yes. Moved to Shidduchim → Offers', 5000, { label: 'Open', run: () => navigate(`/shidduchim/${encodeURIComponent(o.id)}`) });
 }
 function statusStrip(b) {
-  const p = b.p, P = pron(p), l = latestByPerson(b.ints).get(p.id) || {};
+  const p = b.p, l = latestByPerson(b.ints).get(p.id) || {};
   const live = b.offers.filter(o => o.status !== 'ended'), endedOnly = !live.length && b.offers.length > 0;
-  const st = ideaStatus(p, l, live.length > 0, endedOnly);
-  const quick = (label, dataId, rec, primary) => h('button', { type: 'button', class: 'btn small' + (primary ? ' primary' : ''), 'data-id': dataId, onClick: async () => {
-    const o = await recordInterest(p.id, rec);
-    if (o) movedToast(o); else toast('Saved');
-  } }, label);
-  const strip = (...kids) => h('div', { class: 'pc-status pc-status-' + st.key, 'data-id': 'person-card.status' }, ...kids);
+  const st = ideaStatus(p, l, live.length > 0, endedOnly && (b.offers[0].updatedAt || true));
+  const strip = (...kids) => h('div', { class: 'pc-status pc-status-' + st.key, 'data-id': 'person-card.interest-strip' }, ...kids);
   const label = h('span', { class: 'pc-status-label' }, st.label);
   if (st.key === 'shidduch') {
     const o = live[0];
-    return strip(h('a', { class: 'pc-status-link', href: `#/shidduchim/${encodeURIComponent(o.id)}`, 'data-id': 'person-card.status-open' }, label, h('span', { class: 'note' }, 'Open'), ico('chevron')));
+    return strip(h('a', { class: 'pc-status-link', href: `#/shidduchim/${encodeURIComponent(o.id)}`, 'data-id': 'person-card.status-open' }, label, h('span', { class: 'note' }, 'Open'), ico('chevron')), stepChips(p, st));
   }
   if (st.key === 'closed') return strip(label, h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.status-reopen', onClick: async () => { await reopen(p.id, l, endedOnly); toast('Reopened'); } }, 'Reopen'));
-  if (st.key === 'waiting') return strip(label, h('div', { class: 'pc-status-btns' },
-    quick(`${P.He} said yes`, 'person-card.status-yes', { side: 'theirs', value: 'Yes, interested' }, true),
-    quick(`${P.He} said no`, 'person-card.status-no', { side: 'theirs', value: 'No' }),
-    quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
-  return strip(label, h('div', { class: 'pc-status-btns' },
-    quick('I’m interested', 'person-card.status-interested', { side: 'mine', value: 'Interested' }, true),
-    quick(`${P.He} is not interested`, 'person-card.status-no', { side: 'theirs', value: 'No' }),
-    quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
+  // New or waiting: the same one-tap steps as under the person in Ideas (idea-flow.js stepChips).
+  return strip(label, stepChips(p, st));
 }

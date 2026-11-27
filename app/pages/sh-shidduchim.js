@@ -4,7 +4,7 @@
 // opens its quick actions. The lane is never chosen by hand: it follows from the answers and dates.
 // Look: Single Mode's Shidduchim (shidduchim.css) plus the shs-… rules in singles.css.
 import * as store from '../js/store.js';
-import { h, icon, toast, swipeTabs, keepOrder } from '../js/ui.js';
+import { h, icon, toast, swipeTabs, keepOrder, dock } from '../js/ui.js';
 import { norm } from './singles-data.js';
 import * as sd from './sh-shidduch-data.js';
 import { bar, barDim, endDialog, newIdeaSheet } from './sh-shidduch-parts.js';
@@ -24,7 +24,7 @@ const T = {
   elsewhere: (list) => `Also found in: ${list.join(', ')}`,
   demoHint: 'Want to look around first? Load the fictional demo in Guys or Girls.',
   yourMove: 'Your move',
-  nothingYet: 'Nothing to do until the date',
+  nothingYet: '',
   afterDate: (n) => `After Date ${n}`,
   changeAnswer: (side, name) => `${side} · ${name}`,
   endedPanel: 'This try has ended',
@@ -77,12 +77,13 @@ export async function render(container) {
   document.addEventListener('keydown', docKey);
   root.append(
     h('div', { class: 'page-head sh-head', 'data-id': 'shidduchim.head' },
-      h('div', { class: 'sh-head-text' }, h('h1', {}, T.title)),
-      h('button', { type: 'button', class: 'btn primary', 'data-id': 'shidduchim.new-idea', onClick: () => newIdeaSheet({ onSaved: () => { S.lane = 'ideas'; S.picked = true; } }) }, T.newIdea)),
+      h('div', { class: 'sh-head-text' }, h('h1', {}, T.title))),
     h('div', { class: 'ct-search shs-search' }, ico('search'),
       h('input', { class: 'input', type: 'search', value: S.q, placeholder: T.search, 'aria-label': 'Search', dir: 'auto', 'data-id': 'shidduchim.search',
         onInput: (e) => { S.q = e.target.value; S.menu = null; drawList(); } })),
-    h('div', { class: 'shs-body' }));
+    h('div', { class: 'shs-body' }),
+    // The main button sits at the bottom, near the thumb (owner-approved, Nov 2026).
+    dock('shidduchim.dock', h('button', { type: 'button', class: 'btn primary wide', 'data-id': 'shidduchim.new-idea', onClick: () => newIdeaSheet({ onSaved: () => { S.lane = 'ideas'; S.picked = true; } }) }, T.newIdea)));
   await load();
 }
 

@@ -120,7 +120,7 @@ The looks of the blocks are sketched in `home-options.html` (layouts A–D each 
 - If the same person arrives again: Open existing / Add as updated version / Save as new (exists today).
 
 **A single's card** (the person card from Single Mode)
-- Tabs: Profile · Shidduchim · Notes.
+- Tabs: Profile · Short versions · Shidduchim · Notes. (Short versions added after the profile pages review: Send offers them, with each pasted original "as received".)
 - **Status**: Available · Busy · Engaged · Paused · Not relevant. The list can be changed later.
   - Busy is set by itself while a shidduch is dating.
   - Busy can also be set by hand ("busy elsewhere, check again on …"), which makes a follow-up.

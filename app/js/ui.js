@@ -60,6 +60,12 @@ export function icon(name, size) {
 // Dock: the page's main button(s) stay on screen at the bottom, where the thumb is (owner request).
 // Put it last in the page; it sticks above the bottom bar while the page scrolls.
 export function dock(dataId, ...kids) { return h('div', { class: 'dock', 'data-id': dataId }, ...kids); }
+// While a section is being edited, its Cancel / Save sit in the bottom bar, near the thumb (owner request).
+export function editDock({ dataId, label, cancelId, saveId, cancel, save, saveLabel = 'Save' }) {
+  return h('div', { class: 'dock dock-edit', 'data-id': dataId }, h('span', { class: 'grow note' }, label),
+    h('button', { type: 'button', class: 'btn', 'data-id': cancelId, onClick: cancel }, 'Cancel'),
+    h('button', { type: 'button', class: 'btn primary', 'data-id': saveId, onClick: save }, saveLabel));
+}
 
 // Phone / email links: same look everywhere (green phone, blue mail).
 export function telLink(n, dataId) { return h('a', { class: 'tel-link', href: 'tel:' + String(n).replace(/[^0-9]/g, ''), dir: 'ltr', 'data-id': dataId || null, html: icon('phone') }, String(n)); }
@@ -67,10 +73,15 @@ export function mailLink(e, dataId) { return h('a', { class: 'mail-link', href: 
 export function iconEl(name) { const span = h('span', { class: 'ico', html: icon(name) }); return span.firstChild; }
 
 let toastTimer;
+// A closing sheet hands a message shown inside it back to the page, so it stays (e.g. Undo after Save).
+export function keepToast(dlg) { const t = dlg?.querySelector('#toast'); if (t) document.body.append(t); }
 // Optional `action`: { label, run } adds one button (e.g. Undo) to the toast.
 export function toast(msg, ms = 2600, action = null) {
   let t = document.getElementById('toast');
-  if (!t) { t = h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' }); document.body.append(t); }
+  if (!t) t = h('div', { id: 'toast', class: 'toast', role: 'status', 'aria-live': 'polite' });
+  // inside an open sheet the message must sit in the sheet, or the sheet covers it
+  const host = [...document.querySelectorAll('dialog[open]')].pop() || document.body;
+  if (t.parentNode !== host) host.append(t);
   t.textContent = msg; t.classList.remove('hidden');
   if (action) t.append(h('button', { type: 'button', class: 'toast-action', 'data-id': 'toast.action', onClick: () => { t.classList.add('hidden'); clearTimeout(toastTimer); action.run(); } }, action.label));
   clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), action ? Math.max(ms, 5000) : ms);
@@ -86,7 +97,7 @@ export function confirmDialog({ title, text, ok = 'OK', cancel = 'Cancel', dange
         h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.cancel', onClick: () => { dlg.close(); resolve(false); } }, cancel),
         h('button', { class: 'btn ' + (danger ? 'danger' : 'primary'), type: 'button', 'data-id': dataId + '.ok', onClick: () => { dlg.close(); resolve(true); } }, ok),
       ));
-    dlg.addEventListener('close', () => { dlg.remove(); resolve(false); });
+    dlg.addEventListener('close', () => { keepToast(dlg); dlg.remove(); resolve(false); });
     document.body.append(dlg);
     dlg.showModal();
   });
@@ -107,17 +118,25 @@ export function section(eyebrow, dataId, ...children) {
 export function sheet({ title, dataId, body, actions = [], className = '' }) {
   return new Promise((resolve) => {
     let done = false;
-    const finish = (v) => { if (done) return; done = true; dlg.close(); dlg.remove(); resolve(v); };
+    const finish = (v) => { if (done) return; done = true; dlg.close(); keepToast(dlg); dlg.remove(); resolve(v); };
+    // Typed something, then Cancel / Close / Back: ask first, so nothing typed is lost by mistake (owner request).
+    let typed = false;
+    const leave = async () => {
+      if (typed && !(await confirmDialog({ title: 'Leave without saving?', text: 'What you typed here will be lost.', ok: 'Discard', cancel: 'Keep editing', danger: true, dataId: dataId + '.leave-dialog' }))) return;
+      finish(null);
+    };
     // Close sits at the bottom right, after the other buttons, where a thumb can reach it (owner request).
-    const closeBtn = h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.close', onClick: () => finish(null) }, 'Close');
+    // Next to an action (Save, End shidduch …) it says Cancel, so it is clear it does not save.
+    const closeBtn = h('button', { class: 'btn', type: 'button', 'data-id': dataId + '.close', onClick: leave }, actions.length ? 'Cancel' : 'Close');
     const dlg = h('dialog', { class: 'sheet form-sheet ' + className, 'data-id': dataId },
       h('div', { class: 'sheet-head' }, h('h2', {}, title)),
       h('div', { class: 'sheet-body' }, body),
       h('div', { class: 'btn-row sheet-actions' }, actions.map(a =>
         h('button', { class: 'btn ' + (a.primary ? 'primary' : a.danger ? 'danger' : ''), type: 'button', 'data-id': dataId + '.' + a.id,
           onClick: async () => { const v = a.run ? await a.run() : a.id; if (v !== false) finish(v === undefined ? a.id : v); } }, a.label)), closeBtn));
-    dlg.addEventListener('cancel', (e) => { e.preventDefault(); finish(null); });
+    dlg.addEventListener('cancel', (e) => { e.preventDefault(); leave(); });
     dlg.addEventListener('close', () => finish(null));
+    dlg.addEventListener('input', (e) => { if (e.target.matches('textarea, input:not([type=checkbox]):not([type=radio]):not([type=file])')) typed = true; });
     document.body.append(dlg);
     dlg.showModal();
     dlg.finish = finish;

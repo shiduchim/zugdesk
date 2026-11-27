@@ -3,7 +3,7 @@
 //   zugdesk           Single Mode (unchanged since Stage 6)
 //   zugdesk-shadchan  Shadchan Mode
 export const DB_NAME = 'zugdesk';
-export const DB_VERSION = 2;
+export const DB_VERSION = 3; // v3: Recently deleted indexes in Single Mode too
 export const SH_DB_NAME = 'zugdesk-shadchan';
 export const SH_DB_VERSION = 1;
 
@@ -39,7 +39,9 @@ export const STORES = {
 //   unlinkedIn  ids of the deletions that took a link off this record (Restore puts it back)
 const SH_EXTRA = { people: ['kind'], offers: ['guyId', 'girlId'] };
 export const SH_STORES = Object.fromEntries(Object.entries(STORES).map(([name, def]) =>
-  [name, { indexes: name === 'meta' ? [] : [...def.indexes, ...(SH_EXTRA[name] || []), 'deletedAt', 'unlinkedIn*'] }]));
+  [name, { indexes: name === 'meta' ? [] : [...new Set([...def.indexes, ...(SH_EXTRA[name] || []), 'deletedAt', 'unlinkedIn*'])] }]));
+// Single Mode has Recently deleted too (owner request, Nov 2026): the same two indexes (added on upgrade to v3).
+for (const [name, def] of Object.entries(STORES)) if (name !== 'meta') def.indexes.push('deletedAt', 'unlinkedIn*');
 
 function reqToPromise(req) {
   return new Promise((resolve, reject) => {

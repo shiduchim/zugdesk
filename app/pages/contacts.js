@@ -5,18 +5,19 @@
 // Switching views changes presentation only; selection, search, sort and filters
 // live in contacts-data.js `S` and survive every switch.
 import * as store from '../js/store.js';
-import { h, icon, toast } from '../js/ui.js';
+import { h, icon, toast, dock } from '../js/ui.js';
 import { navigate } from '../js/router.js';
 import { isShadchan } from '../js/mode.js';
 import { S, D, load, visible, extraFilterCount, anyFilter, clearFilters, ensureSelection, SORTS, ROLE_TABS, ACTIVITY, STATUS_LABEL, roleLabel } from './contacts-data.js';
-import { personBlock, quickFacts, nameLine, statusText, filtersSheet, viewSheet, shortDate, eventItem } from './contacts-panels.js';
+import { personBlock, quickFacts, nameLine, statusText, filtersSheet, viewSheet, shortDate, eventItem, closeFacts } from './contacts-panels.js';
 
 const DESK = window.matchMedia('(min-width: 1024px)');
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 
 let deskPick = null, gen = 0;
 let root = null, mode = 'list', routeId = null, unsub = null, timer = 0, onScroll = null;
-const layout = () => (DESK.matches ? 'desk' : (store.getPrefs().contactsLayout || 'a'));
+// Phone default: the plain full-width list; tap a name to open the contact (owner-approved, Nov 2026). Other views stay in Settings → Contacts view.
+const layout = () => (DESK.matches ? 'desk' : (store.getPrefs().contactsLayout || 'inbox'));
 
 export async function render(container, params = {}, path = '') {
   root = container;
@@ -93,10 +94,11 @@ function draw() {
 // ---------- shared toolbar ----------
 const ADD_WORD = isShadchan ? 'Add Contact' : 'Add Shadchan';
 const addBtn = (cls) => h('button', { class: 'btn primary ' + cls, type: 'button', 'data-id': 'contacts.add-btn', onClick: () => navigate('/contacts/new') }, ADD_WORD);
-// Add Shadchan sits top right, next to the heading, on phone and computer (owner request).
-function head() {
-  return h('div', { class: 'page-head ct-head' }, h('h1', {}, 'Contacts'), addBtn(''));
+// Computer: Add Shadchan sits next to the heading. Phone: in a bar at the bottom, near the thumb (owner-approved, Nov 2026).
+function head(withAdd = true) {
+  return h('div', { class: 'page-head ct-head' }, h('h1', {}, 'Contacts'), withAdd ? addBtn('') : null);
 }
+const addDock = () => dock('contacts.dock', addBtn('wide'));
 
 function tools() {
   const v = visible();
@@ -214,6 +216,7 @@ function markSelected(scope) {
 
 // Selecting keeps the directory exactly where it is; only the person areas redraw.
 function select(c, scope, panes) {
+  if (S.selectedId !== c.id) closeFacts(); // an open fact editor belongs to the contact it was opened on
   S.selectedId = c.id;
   markSelected(scope);
   panes();
@@ -222,9 +225,9 @@ function select(c, scope, panes) {
 // ---------- phone views ----------
 function drawPhone(lay) {
   root.classList.add('lay-' + lay);
-  if (!D.contacts.length) { root.append(head(), firstRun()); return; } // a new phone starts empty
+  if (!D.contacts.length) { root.append(head(false), firstRun(), addDock()); return; } // a new phone starts empty
 
-  root.append(head(), tools(), phoneBody(lay));
+  root.append(head(false), tools(), phoneBody(lay), addDock());
   restoreScrolls();
   if (lay === 'list' || lay === 'inbox') requestAnimationFrame(() => window.scrollTo(0, S.pageScroll || 0));
   if (lay === 'tabs') requestAnimationFrame(() => root.querySelector('.dir-row[aria-current="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' }));
