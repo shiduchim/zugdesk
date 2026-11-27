@@ -1,7 +1,11 @@
-// Service worker: makes ZugDesk installable and usable offline.
-// Strategy: network first (so updates arrive as soon as they are published),
-// cache fallback when offline. Bump CACHE when the shell changes shape.
-const CACHE = 'zugdesk-v35';
+// Service worker: makes ZugDesk installable, usable offline and quick to open.
+// Published app: opens straight from the saved copy (no waiting for the internet). Each publish writes its
+// commit into BUILD (.github/workflows/deploy.yml), so the phone sees a new sw.js, saves the new files in the
+// background and app.js switches to them (at once if the app was just opened, otherwise on the next open).
+// Local testing (BUILD not filled in): asks the network first, so edits show at once.
+const BUILD = '__BUILD__';
+const DEV = BUILD === '__' + 'BUILD__';
+const CACHE = 'zugdesk-v36-' + BUILD;
 const SHELL = [
   './', './index.html', './manifest.webmanifest',
   './css/fonts.css', './css/tokens.css', './css/theme-dark.css', './css/base.css', './css/voice.css', './js/voice.js',
@@ -16,27 +20,23 @@ const SHELL = [
 ];
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // cache: 'reload' so the new copy never comes from the browser's own short-term cache
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));
 });
 
+const save = (req, res) => { if (res && res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(req, copy)); } return res; };
+const offline = (req) => caches.match(req, { ignoreSearch: true }).then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error()));
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  const sameOrigin = url.origin === location.origin;
-  if (!sameOrigin) return; // the app uses no outside services (fonts are in ./fonts)
-  e.respondWith(
-    // no-cache: always ask the server if the file changed (GitHub Pages lets phones keep files 10 min)
-    fetch(new Request(req, { cache: 'no-cache' })).then(res => {
-      if (res && res.ok) {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-      }
-      return res;
-    }).catch(() => caches.match(req, { ignoreSearch: true }).then(hit => hit || (req.mode === 'navigate' ? caches.match('./index.html') : Response.error())))
-  );
+  if (url.origin !== location.origin) return; // the app uses no outside services (fonts are in ./fonts)
+  if (DEV) { e.respondWith(fetch(new Request(req, { cache: 'no-cache' })).then(res => save(req, res)).catch(() => offline(req))); return; }
+  // saved copy first; anything not saved yet comes from the network once and is kept
+  e.respondWith(caches.match(req, { ignoreSearch: true }).then(hit => hit || fetch(req).then(res => save(req, res)).catch(() => offline(req))));
 });

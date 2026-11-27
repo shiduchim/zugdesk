@@ -23,6 +23,9 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+      # Every publish is a new version for the phones: the service worker gets this commit's id.
+      - name: Mark the version in the service worker
+        run: sed -i "s/const BUILD = '__BUILD__';/const BUILD = '${GITHUB_SHA::8}';/" app/sw.js
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

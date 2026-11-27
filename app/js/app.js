@@ -123,7 +123,18 @@ async function boot() {
   await start($('#content'), (path) => { renderNav(); setTitle(path); document.body.classList.remove('bar-hidden'); document.body.classList.toggle('focus-mode', path.startsWith('/profile/edit')); });
 
   if ('serviceWorker' in navigator) {
+    // A new version just took over: if the app was opened moments ago and nothing is being typed, switch at once
+    // (so one close-and-reopen is still enough after a publish); otherwise the message below asks to reopen.
+    const openedAt = Date.now(), hadOne = !!navigator.serviceWorker.controller;
+    let switching = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadOne || switching) return;
+      const busy = document.activeElement?.matches?.('input, textarea') || document.querySelector('dialog[open]');
+      if (Date.now() - openedAt < 15000 && !busy) { switching = true; location.reload(); }
+    });
     navigator.serviceWorker.register('./sw.js').then(reg => {
+      // coming back to the app (not only a fresh open) also checks for a new version
+      document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') reg.update().catch(() => {}); });
       reg.addEventListener('updatefound', () => {
         const w = reg.installing;
         w && w.addEventListener('statechange', () => {

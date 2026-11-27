@@ -20,7 +20,10 @@ const fine = () => window.matchMedia('(hover:hover) and (pointer:fine)').matches
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
 
 let root = null, unsub = null, timer = 0, gen = 0;
-let D = null, X = null, IX = null, SH = null;
+let D = null, X = null, SH = null;
+// Names for recognising people in a note: built only when a note is being written (not on every Home redraw).
+let IXD = null, IXV = null;
+const ix = () => (IXD === D && IXV ? IXV : (IXD = D, IXV = nameIndex(D)));
 let U = { expanded: null, fuAll: false, histN: HIST_FIRST, histOpen: new Set(), q: '' };
 let drafts = {};
 const els = {};
@@ -75,7 +78,7 @@ async function reload(first = false) {
   const [d, stageEvents, offers, interests, activity, shares, sh] = await Promise.all([
     N.loadNotes(), store.stageEvents.list(), store.offers.list(), store.interests.list(), store.activity.list(), store.shares.list(), SHH ? SHH.load() : null]);
   if (token !== gen || !root) return;
-  D = d; IX = nameIndex(D); SH = sh;
+  D = d; SH = sh;
   X = { stageEvents, offersById: new Map(offers.map(o => [o.id, o])), interests, activity, shares };
   keepFocus(() => {
     if (first) drawComposer();
@@ -121,7 +124,7 @@ function composer(key) {
   const target = h('div', { class: 'ed-target' });
   const foot = h('div', { class: 'ed-foot' });
   const sync = () => {
-    const a = recognize(d.text, IX, D);
+    const a = recognize(d.text, ix(), D);
     mirror.innerHTML = suggestionsOn() ? highlighted(d.text, a) : esc(d.text) + '\n';
     const writing = !!d.text.trim() || !!voicePend[key]?.audio?.length;
     wrap.classList.toggle('writing', writing);
@@ -250,7 +253,7 @@ function chips(key, a, sync) {
       const name = await promptText({ title: 'Create new contact', label: 'Name (no phone or details are added for you)', value: nm, ok: 'Create', dataId: 'home.create-contact' });
       if (!name) return;
       const c = await N.createMinimalContact(name);
-      d.contactIds = [...d.contactIds, c.id]; persist(); D.contacts.push(c); D.contactsById.set(c.id, c); IX = nameIndex(D); sync();
+      d.contactIds = [...d.contactIds, c.id]; persist(); D.contacts.push(c); D.contactsById.set(c.id, c); IXV = null; sync();
       toast(`${store.displayName(c)} added to Contacts and linked`);
     }, 'new', 'home.suggestion-create'));
   }
@@ -273,14 +276,14 @@ function quickFollowUp(key, sync) {
   if (d.followUp) { d.followUp = null; toast('Follow Up removed'); }
   else {
     if (!d.text.trim()) { toast('Write a note first'); return; }
-    const a = recognize(d.text, IX, D);
+    const a = recognize(d.text, ix(), D);
     d.followUp = { text: firstSentence(d.text), due: a.date ? a.date.due : null };
     toast(d.followUp.due ? `Follow Up ready for ${store.formatDate(d.followUp.due)}` : 'Follow Up ready — no date needed');
   }
   persist(); sync();
 }
 async function followUpDetails(key, sync) {
-  const d = draft(key), a = recognize(d.text, IX, D);
+  const d = draft(key), a = recognize(d.text, ix(), D);
   const text = h('input', { class: 'input', dir: 'auto', value: d.followUp?.text || firstSentence(d.text), 'data-id': 'home.fu-details.text', 'aria-label': 'What needs to happen?' });
   const due = h('input', { class: 'input', type: 'date', value: d.followUp?.due || a.date?.due || '', 'data-id': 'home.fu-details.date', 'aria-label': 'Date (optional)' });
   const acts = [{ id: 'save', label: 'Use this Follow Up', primary: true, run: () => { d.followUp = { text: text.value.trim() || 'Follow up', due: due.value || null }; persist(); sync(); } }];
@@ -358,7 +361,7 @@ async function deleteNoteFlow(note, key = 'note:' + note.id) {
 
 function linkFor(anchor, key, sync, query = '') {
   const d = draft(key), note = noteOf(key);
-  const a = recognize(d.text, IX, D);
+  const a = recognize(d.text, ix(), D);
   const suggest = a.refs.flatMap(r => r.matches.map(m => m.id));
   const sel = { contactIds: [...d.contactIds, ...(note?.contactIds || [])], personIds: [...d.personIds, ...(note?.personIds || [])] };
   N.linkMenu(anchor, 'home.link-menu', D, sel, async (s) => {

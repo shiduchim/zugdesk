@@ -7,12 +7,14 @@ import { isShadchan } from '../js/mode.js';
 // ---------- name index ----------
 // alias (normalised) → [{ kind: 'c' | 'p', id }]. More than one = ambiguous, never auto-picked.
 export function nameIndex(D) {
-  const map = new Map();
+  const map = new Map(), seen = new Set(); // seen: alias|kind|id already added (a Set, so thousands of singles stay fast)
   const add = (alias, ref) => {
     const k = norm(alias);
     if (!k || k.length < 3) return;
-    const l = map.get(k) || map.set(k, []).get(k);
-    if (!l.some(r => r.kind === ref.kind && r.id === ref.id)) l.push(ref);
+    const key = k + '|' + ref.kind + '|' + ref.id;
+    if (seen.has(key)) return;
+    seen.add(key);
+    (map.get(k) || map.set(k, []).get(k)).push(ref);
   };
   for (const c of D.contacts) {
     const ref = { kind: 'c', id: c.id };
