@@ -48,7 +48,7 @@
 - [ ] Close and reopen the app: it loads, Home shows
 - [ ] In Claude (phone app): tap Copy on the ZugDesk code box, then Home → Paste from AI: the preview opens (if the phone blocks the clipboard: long-press in New Note → Paste → Add … from this note)
 - [ ] Settings → Show labels shows names on buttons
-- [ ] Ideas: Active / Open / Closed tabs show the right people
+- [ ] Ideas: people show in the right group (To decide / Waiting / In a shidduch / Closed); "We met" moves a new idea to In a shidduch in one tap
 - [ ] Shidduchim: Offers / In Progress / Ended lanes work
 - [ ] Add a person and a shadchan; they appear in the lists
 - [ ] Shadchan Mode → Guys: type a city in search, open Filters and set an age; tap a single, change Status and the star
@@ -57,7 +57,7 @@
 - [ ] Settings → Mode → Shadchan: the bottom bar changes; Guys → Try the demo shows 30 guys; Settings → Mode → Single brings my own things back
 
 ## Regression (add one line per fixed bug or approved feature)
-- Ending a shidduch moves the person out of Ideas → Active into Closed ("Shidduch ended"); Reopen puts them back in Open.
+- Ending a shidduch moves the person into Ideas → Closed ("Shidduch ended"); Reopen puts them back in To decide.
 - Ideas → Open rows have "I'm not interested" and "She/He is not interested" buttons; the person card shows the same choice.
 - Shadchan Mode Home at 360 px: search · switch · gear fit on one row, nothing pushes the page sideways; no mode name under the gear.
 - In Shadchan Mode, Add Person offers both Guy and Girl even when My Profile in Single Mode says who I am.
@@ -95,3 +95,4 @@
 - Single Mode Recently deleted: deleting a person, contact or note says it waits 30 days; Settings → Recently deleted lists it; Restore brings it all back; after 30 days it is erased when the app opens. Home in Single Mode shows the backup reminder until a backup is made (then again after 14 days).
 - Contacts on the phone open as a plain list (tap a name to open); Add Shadchan shows Name, Phone, City and Roles, the rest under More details (open when editing); Add Shadchan / Add Contact, Add Person, Add Guy / Girl and New idea sit in a bar at the bottom of their lists (Contacts on a computer keeps it at the top).
 - Speed: with 3,000 singles (Shadchan) or 400 people and 1,500 conversations (Single), every page opens in under about 0.4 s at 4× slowed CPU; the published app opens from its saved copy in under 0.1 s even on a slow connection, works offline, and one reopen after a publish shows the new version (sw.js gets the commit id from the publish step). Local copies (BUILD not filled in) still ask the network first.
+- Ideas (Single Mode): one list in groups (To decide, Waiting for her answer, In a shidduch, Closed folded); under each person the next steps: I'm interested · She said yes · We met · No, then We met · Ended. "We met" on a new idea = both yes + shidduch started + Date 1 Happened now (In Progress); Undo removes all of it; the person card has the same buttons.

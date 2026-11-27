@@ -4,13 +4,13 @@ import * as store from '../js/store.js';
 import { h, icon, toast, confirmDialog, swipeTabs, dock } from '../js/ui.js';
 import { openDrafts, dropDraft } from './person-form.js';
 import { kindLabel, dateOnly, seekingKind, pron } from './people-data.js';
-import { ideaStatus, latestByPerson, recordInterest } from './idea-flow.js';
+import { ideaStatus, latestByPerson, stepChips } from './idea-flow.js';
 
 const ico = (n) => h('span', { html: icon(n) }).firstChild;
-const S = { q: '', filter: 'active' };   // survives leaving the page
-// Active = new + waiting; Closed (not for me / they said no) is hidden unless chosen (owner request).
-// Three tabs only (owner request): Active = interested or in a shidduch, Open = nobody decided yet, Closed.
-const filters = () => [['active', 'Active'], ['open', 'Open'], ['closed', 'Closed']];
+const S = { q: '', closedOpen: false };   // survives leaving the page
+// One list in groups instead of tabs (owner request, Nov 2026: tabs made people hard to find).
+// Closed is folded at the bottom. Each row carries its next-step buttons (idea-flow.js stepChips).
+const GROUPS = (P) => [['new', 'To decide'], ['waiting', 'Waiting for ' + P.his + ' answer'], ['shidduch', 'In a shidduch'], ['closed', 'Closed']];
 
 let root = null, gen = 0, unsub = null, timer = 0;
 export function destroy() { if (root) swipeTabs(root, null); root = null; gen++; unsub && unsub(); unsub = null; clearTimeout(timer); }
@@ -18,7 +18,6 @@ export function destroy() { if (root) swipeTabs(root, null); root = null; gen++;
 export async function render(container) {
   root = container;
   root.classList.add('people-page');
-  swipeTabs(root, { keys: () => filters(seekingKind(store.getPrefs())).map(f => f[0]), current: () => S.filter, go: (k) => { S.filter = k; draw(); } });
   unsub && unsub();
   unsub = store.subscribe((ch) => { if (ch.store !== 'prefs') { clearTimeout(timer); timer = setTimeout(draw, 80); } });
   await draw();
@@ -41,16 +40,12 @@ async function draw() {
     ...(senders.get(p.id) || [])].filter(Boolean).join(' ').toLowerCase();
   const words = S.q.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const seek = seekingKind(store.getPrefs());
-  if (!filters(seek).some(f => f[0] === S.filter)) S.filter = 'active';
   const list = people.filter(p => {
     if (seek && p.kind && p.kind !== seek) return false;
-    if (words.length && !words.every(w => searchText(p).includes(w))) return false;
-    const st = status.get(p.id).key;
-    if (S.filter === 'active') return st === 'waiting' || st === 'shidduch';
-    if (S.filter === 'open') return st === 'new';
-    if (S.filter === 'closed') return st === 'closed';
-    return true;
+    return !words.length || words.every(w => searchText(p).includes(w));
   }).sort((a, b) => (b.updatedAt || '').localeCompare(a.updatedAt || ''));
+  const P = pron({ kind: seek || 'girl' });
+  const groups = GROUPS(P).map(([key, label]) => [key, label, list.filter(p => status.get(p.id).key === key)]);
 
   const search = h('input', { class: 'input', type: 'search', value: S.q, placeholder: 'Search name, city, shadchan…', 'aria-label': 'Search people', dir: 'auto', 'data-id': 'people.search',
     onInput: (e) => { S.q = e.target.value; clearTimeout(timer); timer = setTimeout(() => draw().then(() => { const s = root?.querySelector('[data-id="people.search"]'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }), 150); } });
@@ -60,9 +55,6 @@ async function draw() {
   root.append(...[
     h('div', { class: 'page-head' }, h('h1', {}, 'Ideas')),
     h('div', { class: 'ct-search' }, ico('search'), search),
-    h('div', { class: 'chip-row filter-chips', role: 'group', 'aria-label': 'Show', 'data-id': 'people.filters' },
-      filters(seek).map(([k, l]) => h('button', { type: 'button', class: 'fchip', 'aria-pressed': S.filter === k ? 'true' : 'false', 'data-id': 'people.filter-' + k,
-        onClick: () => { S.filter = k; draw(); } }, l))),
     drafts.length ? h('section', { class: 'section', 'data-id': 'people.drafts' },
       h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `Not saved yet · ${drafts.length}`)),
       drafts.map(x => h('div', { class: 'row-link' },
@@ -84,12 +76,18 @@ async function draw() {
           for (const a of (await store.attachments.list()).filter(a => a.sourceId === s.id)) await store.attachments.remove(a.id);
           await store.sources.remove(s.id); toast('Deleted');
         } }, 'Delete')))) : null,
-    h('section', { class: 'section', 'data-id': 'people.list' },
-      h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `People · ${list.length}${list.length !== people.length ? ' of ' + people.length : ''}`)),
-      list.length ? list.map(p => personRow(p, status.get(p.id), byId))
-        : h('div', { class: 'empty' }, people.length ? (S.q ? 'Nobody matches. ' : `Nobody here right now.`) : 'No people saved yet. ',
-            people.length ? (S.q ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; draw(); } }, 'Clear search') : null)
-              : h('a', { href: '#/people/new' }, 'Add the first person'))),
+    !list.length ? h('section', { class: 'section', 'data-id': 'people.list' },
+      h('div', { class: 'empty' }, people.length ? 'Nobody matches. ' : 'No people saved yet. ',
+        people.length ? h('button', { type: 'button', class: 'linkish', 'data-id': 'people.clear', onClick: () => { S.q = ''; draw(); } }, 'Clear search')
+          : h('a', { href: '#/people/new' }, 'Add the first person'))) : null,
+    ...groups.filter(g => g[2].length).map(([key, label, rows]) => key === 'closed'
+      ? h('details', { class: 'section people-closed', open: S.closedOpen || S.q ? true : null, 'data-id': 'people.group-closed',
+          onToggle: (e) => { if (!S.q) S.closedOpen = e.currentTarget.open; } },
+          h('summary', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `${label} · ${rows.length}`), h('span', { class: 'note people-closed-hint' }, S.closedOpen || S.q ? 'tap to hide' : 'tap to show')),
+          rows.map(p => personRow(p, status.get(p.id), byId)))
+      : h('section', { class: 'section', 'data-id': 'people.group-' + key },
+          h('div', { class: 'section-head' }, h('div', { class: 'eyebrow' }, `${label} · ${rows.length}`)),
+          rows.map(p => personRow(p, status.get(p.id), byId)))),
     // Add Person sits at the bottom, near the thumb (owner-approved, Nov 2026).
     dock('people.dock', h('a', { class: 'btn primary wide', href: '#/people/new', 'data-id': 'people.add-btn' }, 'Add Person')),
   ].filter(Boolean));
@@ -107,14 +105,9 @@ function personRow(p, st, byId) {
       h('div', { class: 'row-sub', dir: 'auto' }, sub),
       from.length || p.sender ? h('div', { class: 'row-sub', dir: 'auto' }, 'via ' + (from.length ? from.join(', ') : p.sender)) : null,
       // Status sits on its own line under the details, so it never covers the work or city (owner request).
-      st.label !== 'New' ? h('span', { class: 'chip row-status st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null),
+      st.key === 'closed' ? h('span', { class: 'chip row-status st-' + (st.key === 'new' ? 'yes' : st.key), 'data-id': 'people.row-status' }, st.label) : null),
     p.kind ? h('div', { class: 'row-tags' }, h('span', { class: 'chip' }, kindLabel(p.kind))) : null);
-  if (st.key !== 'new') return link;
-  // Open tab: answer "not interested" without opening the card (owner request).
-  const P = pron(p);
-  const quick = (label, dataId, rec) => h('button', { type: 'button', class: 'btn small', 'data-id': dataId, onClick: async () => { await recordInterest(p.id, rec); toast('Saved'); } }, label);
-  return h('div', { class: 'person-row-wrap', 'data-id': 'people.row-wrap' }, link,
-    h('div', { class: 'pc-status-btns person-row-btns', 'data-id': 'people.row-btns' },
-      quick('I’m not interested', 'people.row-pass', { side: 'mine', value: 'Not interested' }),
-      quick(`${P.He} is not interested`, 'people.row-no', { side: 'theirs', value: 'No' })));
+  // The next steps sit right under the person: one tap, Undo in the message (owner request, Nov 2026).
+  const steps = stepChips(p, st);
+  return steps ? h('div', { class: 'person-row-wrap', 'data-id': 'people.row-wrap' }, link, steps) : link;
 }

@@ -84,3 +84,8 @@
 .mp-tabs button{flex:1 1 0}
 .person-row-wrap{margin-bottom:var(--gap)}
 .person-row-btns{padding:0 var(--gap) var(--gap)}
+/* Ideas: Closed group folded at the bottom (tap the heading) */
+.people-closed>summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px}
+.people-closed>summary::-webkit-details-marker{display:none}
+.people-closed-hint{margin-left:auto}
+.idea-steps{margin:4px 0 10px}

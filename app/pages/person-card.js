@@ -7,7 +7,7 @@ import { navigate } from '../js/router.js';
 import { isShadchan, peopleListPath, peopleListName, rememberList } from '../js/mode.js';
 import { suggestedFor, loadPerson, pron, kindLabel, dateOnly, LISTS, listType, GIRLS_ONLY, KNOW_CONTACT, KNOW_FLAGS, EXCLUSIVE } from './people-data.js';
 import { copy } from './profile-share.js';
-import { ideaStatus, latestByPerson, recordInterest, reopen } from './idea-flow.js';
+import { ideaStatus, latestByPerson, recordInterest, reopen, stepChips } from './idea-flow.js';
 import { singlePanel } from './single-panel.js';
 import { startOffer, laneOf, laneLabel, stageWord, tryName, endedByName } from './shidduch-data.js';
 import { forSingle, removeShidduch, fullName as shName, other as shOther } from './sh-shidduch-data.js';
@@ -627,26 +627,16 @@ function movedToast(o) {
   toast('Both said yes. Moved to Shidduchim → Offers', 5000, { label: 'Open', run: () => navigate(`/shidduchim/${encodeURIComponent(o.id)}`) });
 }
 function statusStrip(b) {
-  const p = b.p, P = pron(p), l = latestByPerson(b.ints).get(p.id) || {};
+  const p = b.p, l = latestByPerson(b.ints).get(p.id) || {};
   const live = b.offers.filter(o => o.status !== 'ended'), endedOnly = !live.length && b.offers.length > 0;
   const st = ideaStatus(p, l, live.length > 0, endedOnly && (b.offers[0].updatedAt || true));
-  const quick = (label, dataId, rec, primary) => h('button', { type: 'button', class: 'btn small' + (primary ? ' primary' : ''), 'data-id': dataId, onClick: async () => {
-    const o = await recordInterest(p.id, rec);
-    if (o) movedToast(o); else toast('Saved');
-  } }, label);
   const strip = (...kids) => h('div', { class: 'pc-status pc-status-' + st.key, 'data-id': 'person-card.interest-strip' }, ...kids);
   const label = h('span', { class: 'pc-status-label' }, st.label);
   if (st.key === 'shidduch') {
     const o = live[0];
-    return strip(h('a', { class: 'pc-status-link', href: `#/shidduchim/${encodeURIComponent(o.id)}`, 'data-id': 'person-card.status-open' }, label, h('span', { class: 'note' }, 'Open'), ico('chevron')));
+    return strip(h('a', { class: 'pc-status-link', href: `#/shidduchim/${encodeURIComponent(o.id)}`, 'data-id': 'person-card.status-open' }, label, h('span', { class: 'note' }, 'Open'), ico('chevron')), stepChips(p, st));
   }
   if (st.key === 'closed') return strip(label, h('button', { type: 'button', class: 'btn small', 'data-id': 'person-card.status-reopen', onClick: async () => { await reopen(p.id, l, endedOnly); toast('Reopened'); } }, 'Reopen'));
-  if (st.key === 'waiting') return strip(label, h('div', { class: 'pc-status-btns' },
-    quick(`${P.He} said yes`, 'person-card.status-yes', { side: 'theirs', value: 'Yes, interested' }, true),
-    quick(`${P.He} said no`, 'person-card.status-no', { side: 'theirs', value: 'No' }),
-    quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
-  return strip(label, h('div', { class: 'pc-status-btns' },
-    quick('I’m interested', 'person-card.status-interested', { side: 'mine', value: 'Interested' }, true),
-    quick(`${P.He} is not interested`, 'person-card.status-no', { side: 'theirs', value: 'No' }),
-    quick('Not for me', 'person-card.status-pass', { side: 'mine', value: 'Not interested' })));
+  // New or waiting: the same one-tap steps as under the person in Ideas (idea-flow.js stepChips).
+  return strip(label, stepChips(p, st));
 }
